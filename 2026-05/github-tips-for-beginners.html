@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="A field guide to GitHub for people who learned to build with AI before they learned the platform. Ten moves, real commands, honest commentary." />
+<meta property="og:title" content="GitHub for AI-era beginners — ten moves I wish someone showed me first" />
+<meta property="og:description" content="Practical GitHub for builders who got here through AI. No fluff, no jargon, just the moves that compound." />
+<title>GitHub for AI-era beginners — ten moves that compound</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: light;
+    --ink:           oklch(0.20 0.02 250);
+    --ink-soft:      oklch(0.42 0.02 250);
+    --ink-faint:     oklch(0.60 0.02 250);
+    --paper:         oklch(0.985 0.008 95);
+    --paper-2:       oklch(0.955 0.012 95);
+    --paper-3:       oklch(0.92 0.018 95);
+    --line:          oklch(0.86 0.015 95);
+    --line-strong:   oklch(0.72 0.02 95);
+    --blue:          oklch(0.49 0.19 264);
+    --soft-blue:     oklch(0.79 0.06 223);
+    --amber:         oklch(0.76 0.13 68);
+    --red:           oklch(0.46 0.17 27);
+    --sage:          oklch(0.90 0.07 130);
+    --sage-ink:      oklch(0.36 0.06 140);
+    --radius:        14px;
+    --radius-sm:     8px;
+
+    --step-fs: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
+    --h1-fs:   clamp(2.4rem, 1.6rem + 3.4vw, 4.4rem);
+    --h2-fs:   clamp(1.55rem, 1.2rem + 1.2vw, 2.2rem);
+    --h3-fs:   clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: var(--step-fs);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(circle at 12% 8%, oklch(0.92 0.04 230 / 0.35), transparent 38%),
+      radial-gradient(circle at 92% 22%, oklch(0.94 0.05 68 / 0.30), transparent 42%),
+      radial-gradient(circle at 30% 92%, oklch(0.94 0.06 130 / 0.28), transparent 40%);
+  }
+  h1, h2, h3 {
+    font-family: "Lora", Georgia, serif;
+    font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  p { text-wrap: pretty; overflow-wrap: break-word; margin: 0 0 1em; }
+  code, pre, kbd {
+    font-family: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.92em;
+  }
+  a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  a:hover { color: var(--red); }
+
+  .shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: clamp(24px, 4vw, 56px) clamp(20px, 4vw, 48px) 80px;
+  }
+
+  /* ──────────── HEADER ──────────── */
+  header.mast {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 16px;
+  }
+  .mast .brand {
+    font-family: "Lora", Georgia, serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+  }
+  .mast .brand small {
+    font-family: "Geist Mono", monospace;
+    font-weight: 400;
+    color: var(--ink-soft);
+    margin-left: 10px;
+    font-size: 0.78rem;
+  }
+  .mast .meta {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .mast .meta b { color: var(--ink); font-weight: 500; }
+
+  /* ──────────── HERO ──────────── */
+  .hero {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: clamp(20px, 3vw, 48px);
+    align-items: start;
+    padding: clamp(24px, 4vw, 56px) 0 clamp(28px, 4vw, 64px);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: clamp(28px, 4vw, 56px);
+  }
+  @media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  .eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: var(--amber);
+    box-shadow: 0 0 0 3px oklch(0.76 0.13 68 / 0.25);
+  }
+  h1 {
+    font-size: var(--h1-fs);
+    margin-bottom: 18px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--blue);
+    font-family: "Lora", Georgia, serif;
+    font-weight: 600;
+  }
+  .lede {
+    font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
+    color: var(--ink-soft);
+    max-width: 56ch;
+    line-height: 1.5;
+  }
+
+  .hero-side {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    font-size: 0.95rem;
+  }
+  .hero-side h3 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-family: "Geist Mono", monospace;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .hero-side ol {
+    margin: 0; padding: 0; list-style: none;
+    counter-reset: contents;
+  }
+  .hero-side ol li {
+    counter-increment: contents;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--line);
+    align-items: baseline;
+  }
+  .hero-side ol li:last-child { border-bottom: none; }
+  .hero-side ol li::before {
+    content: counter(contents, decimal-leading-zero);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+  }
+  .hero-side a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s ease;
+  }
+  .hero-side a:hover { border-bottom-color: var(--blue); color: var(--blue); }
+
+  /* ──────────── STEPS ──────────── */
+  .step {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: clamp(20px, 2.4vw, 40px);
+    padding: clamp(28px, 4vw, 48px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 720px) { .step { grid-template-columns: 1fr; gap: 16px; } }
+
+  .step-num {
+    font-family: "Lora", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(3rem, 5vw, 4.6rem);
+    line-height: 0.9;
+    color: var(--blue);
+    letter-spacing: -0.04em;
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+  .step-num .tag {
+    display: block;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-faint);
+    margin-top: 10px;
+    font-weight: 400;
+  }
+  .step-body { max-width: 68ch; }
+  .step h2 { font-size: var(--h2-fs); margin-bottom: 14px; }
+  .step .why {
+    font-style: italic;
+    color: var(--ink-soft);
+    font-family: "Lora", Georgia, serif;
+    font-size: 1.05em;
+    margin-bottom: 18px;
+    padding-left: 14px;
+    border-left: 3px solid var(--amber);
+  }
+
+  /* ──────────── CODE BLOCKS ──────────── */
+  pre.code {
+    background: oklch(0.22 0.03 250);
+    color: oklch(0.95 0.01 95);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    margin: 0 0 18px;
+    border: 1px solid oklch(0.32 0.04 250);
+    position: relative;
+  }
+  pre.code .prompt { color: var(--soft-blue); user-select: none; }
+  pre.code .comment { color: oklch(0.65 0.02 130); font-style: italic; }
+  pre.code .flag { color: var(--amber); }
+  pre.code .str { color: oklch(0.85 0.10 90); }
+  pre.code .kw { color: oklch(0.78 0.12 320); }
+  pre.code::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 10px; right: 14px;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.68rem;
+    color: oklch(0.65 0.02 250);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  /* inline code chip */
+  p code, li code {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-size: 0.88em;
+  }
+
+  /* ──────────── CALLOUTS ──────────── */
+  .callout {
+    background: var(--paper-2);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 0.96em;
+  }
+  .callout.amber { border-left-color: var(--amber); background: oklch(0.97 0.04 68 / 0.5); }
+  .callout.sage  { border-left-color: var(--sage-ink); background: oklch(0.96 0.05 130 / 0.45); }
+  .callout.red   { border-left-color: var(--red); background: oklch(0.96 0.05 27 / 0.35); }
+  .callout .label {
+    display: inline-block;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ──────────── CHIPS ──────────── */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 22px;
+  }
+  .chip {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.76rem;
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    padding: 5px 11px;
+    border-radius: 999px;
+    color: var(--ink-soft);
+  }
+  .chip.solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* ──────────── BIG-TYPE BREAK ──────────── */
+  .break {
+    padding: clamp(40px, 6vw, 80px) 0;
+    text-align: left;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 24px;
+  }
+  .break .quote {
+    font-family: "Lora", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 1.4rem + 2.8vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    max-width: 24ch;
+    margin-bottom: 14px;
+    text-wrap: balance;
+  }
+  .break .quote em { color: var(--blue); font-style: italic; font-weight: 600; }
+  .break .attr {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+  }
+
+  /* ──────────── FIELD GRID ──────────── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 16px 0 24px;
+  }
+  .field {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .field h4 {
+    margin: 0 0 6px;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .field p { margin: 0; font-size: 0.95em; }
+  .field strong { font-family: "Lora", Georgia, serif; }
+
+  /* ──────────── CLOSING ──────────── */
+  .closer {
+    margin-top: 48px;
+    padding: clamp(28px, 4vw, 56px);
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: var(--radius);
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+  }
+  @media (max-width: 720px) { .closer { grid-template-columns: 1fr; } }
+  .closer h2 {
+    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
+    color: var(--paper);
+    margin-bottom: 14px;
+  }
+  .closer h2 em { color: var(--amber); font-style: italic; font-weight: 600; }
+  .closer p { color: oklch(0.85 0.02 250); }
+  .closer .signoff {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-top: 24px;
+  }
+  .closer .next {
+    background: oklch(0.28 0.04 250);
+    border-radius: var(--radius-sm);
+    padding: 20px 22px;
+    font-size: 0.92em;
+  }
+  .closer .next h3 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-family: "Geist Mono", monospace;
+    color: var(--soft-blue);
+    margin-bottom: 12px;
+  }
+  .closer .next ul { margin: 0; padding-left: 18px; }
+  .closer .next li { margin-bottom: 6px; }
+
+  footer.colophon {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+<div class="shell">
+
+<header class="mast">
+  <div class="brand">Lupo Studios <small>field notes / no. 014</small></div>
+  <div class="meta">
+    <b>Issue:</b> GitHub for AI-era beginners<br />
+    <b>Read time:</b> 11 min &middot; <b>Stack:</b> git, gh, ai
+  </div>
+</header>
+
+<section class="hero">
+  <div>
+    <span class="eyebrow"><span class="dot"></span>Field guide &middot; 2026</span>
+    <h1>I learned to build with AI <em>before</em> I learned GitHub. Here&rsquo;s how I got un-stuck.</h1>
+    <p class="lede">
+      Most GitHub tutorials assume you came up through computer science. This one assumes you came up through Claude, Cursor, and a stubborn refusal to give up. Ten moves, real commands, the stuff that finally clicked for me.
+    </p>
+    <div class="chips">
+      <span class="chip solid">non-dev friendly</span>
+      <span class="chip">git</span>
+      <span class="chip">gh cli</span>
+      <span class="chip">ai pair-programming</span>
+      <span class="chip">no fluff</span>
+    </div>
+  </div>
+  <aside class="hero-side">
+    <h3>What&rsquo;s inside</h3>
+    <ol>
+      <li><a href="#one">The three commands that actually matter</a></li>
+      <li><a href="#two">What &ldquo;staging&rdquo; really means</a></li>
+      <li><a href="#three">Commits future-you will thank you for</a></li>
+      <li><a href="#four">The .gitignore you forget until it&rsquo;s too late</a></li>
+      <li><a href="#five">Branches are cheap. Use them.</a></li>
+      <li><a href="#six">git stash &mdash; the &ldquo;step away&rdquo; button</a></li>
+      <li><a href="#seven">Pull requests are conversations</a></li>
+      <li><a href="#eight">README is your storefront</a></li>
+      <li><a href="#nine">gh CLI is underrated</a></li>
+      <li><a href="#ten">Let AI write your commit messages</a></li>
+    </ol>
+  </aside>
+</section>
+
+<!-- 01 -->
+<article class="step" id="one">
+  <div class="step-num">01<span class="tag">the basics</span></div>
+  <div class="step-body">
+    <h2>The three commands that actually matter on day one</h2>
+    <p class="why">There are 150+ git commands. You will use three of them 95% of the time. Start there.</p>
+
+    <p>Everyone tries to teach you the whole tree at once. Don&rsquo;t learn the whole tree. Learn <code>status</code>, <code>add</code>, and <code>commit</code>. That&rsquo;s it. The rest comes when you need it.</p>
+
+    <pre class="code" data-label="terminal"><span class="prompt">$</span> git status              <span class="comment"># what changed?</span>
+<span class="prompt">$</span> git add .                <span class="comment"># stage everything I changed</span>
+<span class="prompt">$</span> git commit -m <span class="str">"first one"</span>  <span class="comment"># save a snapshot</span></pre>
+
+    <p>If you can run those three in a loop without panicking, you&rsquo;re already past the wall. Everything else &mdash; branches, remotes, rebases &mdash; is a flavor of save, restore, or share.</p>
+
+    <div class="callout amber">
+      <span class="label">Hot take</span>
+      <p>Memorizing flags before you understand the loop is like memorizing keyboard shortcuts in an app you&rsquo;ve never opened. Get the loop first. The flags will find you.</p>
+    </div>
+  </div>
+</article>
+
+<!-- 02 -->
+<article class="step" id="two">
+  <div class="step-num">02<span class="tag">mental model</span></div>
+  <div class="step-body">
+    <h2>What &ldquo;staging&rdquo; really means (and why it&rsquo;s a gift)</h2>
+    <p class="why">Staging isn&rsquo;t bureaucracy. It&rsquo;s a quiet room where you decide what&rsquo;s ready to ship.</p>
+
+    <p>The thing nobody tells you: <strong>git has three places your file can live</strong>.</p>
+
+    <div class="field-grid">
+      <div class="field">
+        <h4>working</h4>
+        <p><strong>The mess.</strong> Whatever you&rsquo;ve typed but haven&rsquo;t marked as ready.</p>
+      </div>
+      <div class="field">
+        <h4>staging</h4>
+        <p><strong>The waiting room.</strong> You picked this. It&rsquo;s about to be saved.</p>
+      </div>
+      <div class="field">
+        <h4>commit</h4>
+        <p><strong>The save point.</strong> A snapshot you can rewind to.</p>
+      </div>
+    </div>
+
+    <p>Staging lets you commit two things separately even when you changed them in the same session. That sounds boring until you&rsquo;ve done it &mdash; then it feels like a superpower.</p>
+
+    <pre class="code" data-label="staging"><span class="prompt">$</span> git add src/button.tsx        <span class="comment"># stage just this one</span>
+<span class="prompt">$</span> git commit -m <span class="str">"fix button hover"</span>
+<span class="prompt">$</span> git add src/utils/colors.ts
+<span class="prompt">$</span> git commit -m <span class="str">"new oklch palette"</span></pre>
+
+    <p>Two commits. Two stories. Future-you reads the log and instantly knows what happened.</p>
+  </div>
+</article>
+
+<!-- 03 -->
+<article class="step" id="three">
+  <div class="step-num">03<span class="tag">craft</span></div>
+  <div class="step-body">
+    <h2>Commit messages future-you will actually thank you for</h2>
+    <p class="why">A commit message is a note to a stranger. That stranger is you, six months from now, debugging at 1am.</p>
+
+    <p>The rule I stole and haven&rsquo;t broken: start with a verb, finish the sentence &ldquo;if applied, this commit will...&rdquo;</p>
+
+    <div class="field-grid">
+      <div class="field">
+        <h4>weak</h4>
+        <p><code>updates</code><br /><code>fix stuff</code><br /><code>final final v2</code></p>
+      </div>
+      <div class="field">
+        <h4>strong</h4>
+        <p><code>add OKLCH color picker to settings</code><br /><code>fix race condition in upload queue</code><br /><code>remove dead auth middleware</code></p>
+      </div>
+    </div>
+
+    <p>50 character subject line. Imperative mood. If you need a body, blank line, then the why &mdash; not the what. The diff already shows the what.</p>
+
+    <div class="callout sage">
+      <span class="label">Field note</span>
+      <p>I write the commit message <em>before</em> I write the code now. If I can&rsquo;t describe the change in one line, the change is too big. Split it.</p>
+    </div>
+  </div>
+</article>
+
+<!-- 04 -->
+<article class="step" id="four">
+  <div class="step-num">04<span class="tag">safety net</span></div>
+  <div class="step-body">
+    <h2>The .gitignore you forget until it&rsquo;s too late</h2>
+    <p class="why">Everyone learns about .gitignore the day they commit their API key. Be the rare bird who learns it the day before.</p>
+
+    <p>Before your second commit, drop a <code>.gitignore</code> at the project root. Here&rsquo;s the version I paste into every new repo:</p>
+
+    <pre class="code" data-label=".gitignore"><span class="comment"># dependencies</span>
+node_modules/
+.venv/
+__pycache__/
+
+<span class="comment"># secrets &mdash; never commit these</span>
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+auth.json
+credentials.json
+
+<span class="comment"># builds &amp; caches</span>
+.next/
+dist/
+build/
+.cache/
+*.log
+
+<span class="comment"># macOS junk</span>
+.DS_Store
+Thumbs.db
+
+<span class="comment"># editor noise</span>
+.vscode/
+.idea/
+*.swp</pre>
+
+    <div class="callout red">
+      <span class="label">If you already committed a secret</span>
+      <p>Rotate the key first. Today. Right now. <em>Then</em> deal with git history. The internet has already scraped it &mdash; assume compromise, rotate, move on.</p>
+    </div>
+  </div>
+</article>
+
+<!-- BIG TYPE BREAK -->
+<section class="break">
+  <p class="quote">Branches are <em>cheap.</em><br />Mistakes on branches are <em>free.</em></p>
+  <p class="attr">&mdash; the thing that finally unlocked it for me</p>
+</section>
+
+<!-- 05 -->
+<article class="step" id="five">
+  <div class="step-num">05<span class="tag">branches</span></div>
+  <div class="step-body">
+    <h2>Branches are cheap. Use them like sticky notes.</h2>
+    <p class="why">A branch is not a commitment. It&rsquo;s a workspace. Make one for every idea, even the dumb ones.</p>
+
+    <p>I used to be scared of branches. I treated <code>main</code> like a museum floor and tiptoed around it. Then I learned: a branch is just a label that says &ldquo;these commits belong together.&rdquo; You can throw it away. You can keep it. You can do five at once.</p>
+
+    <pre class="code" data-label="branches"><span class="prompt">$</span> git switch -c try-new-hero    <span class="comment"># new branch + switch to it</span>
+<span class="prompt">$</span> <span class="comment"># mess around freely</span>
+<span class="prompt">$</span> git switch main                <span class="comment"># back to safety</span>
+<span class="prompt">$</span> git branch -D try-new-hero     <span class="comment"># nuke it if it sucked</span></pre>
+
+    <p>The pattern: <strong>one branch per idea</strong>. Don&rsquo;t mix &ldquo;fix the bug&rdquo; and &ldquo;refactor the header&rdquo; on the same branch. Future-you can&rsquo;t review what&rsquo;s tangled.</p>
+  </div>
+</article>
+
+<!-- 06 -->
+<article class="step" id="six">
+  <div class="step-num">06<span class="tag">escape hatch</span></div>
+  <div class="step-body">
+    <h2>git stash &mdash; the &ldquo;save and step away&rdquo; button</h2>
+    <p class="why">You&rsquo;re mid-thought. Someone Slacks you to fix a typo on the live site. git stash exists for this exact moment.</p>
+
+    <p><code>stash</code> shoves your in-progress work into a hidden pocket so you can switch tasks without losing it. Then you pop it back out when you&rsquo;re done.</p>
+
+    <pre class="code" data-label="stash"><span class="prompt">$</span> git stash                       <span class="comment"># hide my mess</span>
+<span class="prompt">$</span> git switch main
+<span class="prompt">$</span> <span class="comment"># do the urgent thing, commit it</span>
+<span class="prompt">$</span> git switch my-feature-branch
+<span class="prompt">$</span> git stash pop                    <span class="comment"># bring my mess back</span></pre>
+
+    <div class="callout">
+      <span class="label">Real-world</span>
+      <p>I use <code>stash</code> almost every day. It&rsquo;s the closest git has to &ldquo;pause.&rdquo; If you remember nothing else from this guide, remember this one.</p>
+    </div>
+  </div>
+</article>
+
+<!-- 07 -->
+<article class="step" id="seven">
+  <div class="step-num">07<span class="tag">collaboration</span></div>
+  <div class="step-body">
+    <h2>Pull requests are conversations, not bureaucracy</h2>
+    <p class="why">A PR isn&rsquo;t a final exam. It&rsquo;s a draft you&rsquo;re showing a friend before it goes on the wall.</p>
+
+    <p>If you&rsquo;re the only person on your project, you&rsquo;ll still benefit from PRs. They give you a moment to read your own diff before merging. That moment catches more bugs than every linter combined.</p>
+
+    <p>The structure I use for every PR description:</p>
+
+    <pre class="code" data-label="pr template"><span class="kw">## What</span>
+One sentence. What does this change <span class="kw">do</span>.
+
+<span class="kw">## Why</span>
+Two sentences. Why does this change need to exist.
+
+<span class="kw">## How to test</span>
+- Open the homepage
+- Click the button
+- Confirm the thing happens
+
+<span class="kw">## Screenshots</span>
+(drag and drop &mdash; GitHub auto-uploads)</pre>
+
+    <p>Write it for someone who has never seen your project. Half the time, that someone is you in three months.</p>
+  </div>
+</article>
+
+<!-- 08 -->
+<article class="step" id="eight">
+  <div class="step-num">08<span class="tag">presentation</span></div>
+  <div class="step-body">
+    <h2>README is your storefront. Treat it that way.</h2>
+    <p class="why">Nobody scrolls. Your README has six seconds to explain what this is and why anyone should care.</p>
+
+    <p>The order I use, top to bottom, every time:</p>
+
+    <div class="field-grid">
+      <div class="field">
+        <h4>01 / one-liner</h4>
+        <p>What this is. No clever metaphors. Plain English.</p>
+      </div>
+      <div class="field">
+        <h4>02 / screenshot</h4>
+        <p>One image. Hero shot. Above the fold matters here too.</p>
+      </div>
+      <div class="field">
+        <h4>03 / quickstart</h4>
+        <p>Three commands. <code>install</code>, <code>run</code>, <code>open</code>.</p>
+      </div>
+      <div class="field">
+        <h4>04 / what&rsquo;s here</h4>
+        <p>Bullet list of features. Verbs first.</p>
+      </div>
+      <div class="field">
+        <h4>05 / how it works</h4>
+        <p>One paragraph. The architecture, if relevant.</p>
+      </div>
+      <div class="field">
+        <h4>06 / license</h4>
+        <p>Pick one. MIT is fine. Don&rsquo;t agonize.</p>
+      </div>
+    </div>
+
+    <div class="callout amber">
+      <span class="label">Pro move</span>
+      <p>Add badges (build status, license, version) only if they say something true. Decorative badges are the corporate trophies of open source &mdash; they impress nobody and make your repo look older than it is.</p>
+    </div>
+  </div>
+</article>
+
+<!-- 09 -->
+<article class="step" id="nine">
+  <div class="step-num">09<span class="tag">power tool</span></div>
+  <div class="step-body">
+    <h2>The gh CLI is criminally underrated</h2>
+    <p class="why">GitHub&rsquo;s website is fine. GitHub&rsquo;s command-line tool is a different planet. Install it on day one.</p>
+
+    <p><code>gh</code> is GitHub&rsquo;s official CLI. It runs PRs, issues, releases, gists, and more &mdash; without leaving the terminal. The five commands I run weekly:</p>
+
+    <pre class="code" data-label="gh cli"><span class="prompt">$</span> gh repo create my-thing --public   <span class="comment"># new repo from CLI</span>
+<span class="prompt">$</span> gh pr create                       <span class="comment"># PR from current branch</span>
+<span class="prompt">$</span> gh pr view --web                    <span class="comment"># open it in browser</span>
+<span class="prompt">$</span> gh issue list --label bug           <span class="comment"># scan open bugs</span>
+<span class="prompt">$</span> gh pr checkout 47                   <span class="comment"># pull down someone&rsquo;s PR</span></pre>
+
+    <p>The first one alone is worth it. Going from &ldquo;I have a folder&rdquo; to &ldquo;it&rsquo;s on GitHub&rdquo; is now a single command. No clicking through the new-repo wizard.</p>
+  </div>
+</article>
+
+<!-- 10 -->
+<article class="step" id="ten">
+  <div class="step-num">10<span class="tag">leverage</span></div>
+  <div class="step-body">
+    <h2>Let AI write your commit messages (mostly)</h2>
+    <p class="why">Commit messages are the perfect job for AI: short, repetitive, easy to verify. Hand it off.</p>
+
+    <p>I use Claude or <code>gh copilot suggest</code> to draft commit messages from the diff. The workflow:</p>
+
+    <pre class="code" data-label="ai commit flow"><span class="prompt">$</span> git diff --staged | claude <span class="flag">-p</span> <span class="str">"write a commit message"</span>
+<span class="comment"># Claude reads the diff, suggests a message</span>
+<span class="comment"># I edit it (usually shorten it), then commit</span>
+<span class="prompt">$</span> git commit -m <span class="str">"&lt;the message&gt;"</span></pre>
+
+    <p>The trick: <strong>always edit it</strong>. AI writes fine commits. AI writes <em>great</em> commits when you remove its hedging and tighten its verbs. You&rsquo;re the editor, not the typist.</p>
+
+    <div class="callout sage">
+      <span class="label">The bigger pattern</span>
+      <p>This is the AI sandwich. Humans on top and bottom &mdash; you choose what to commit and you ship the result. The model is the filling. Use it everywhere the task is mechanical and the judgment is yours.</p>
+    </div>
+
+    <p>Same pattern works for: PR descriptions, README sections, changelog entries, release notes. Anywhere structured prose lives, AI does the first draft. You do the second.</p>
+  </div>
+</article>
+
+<!-- CLOSER -->
+<section class="closer">
+  <div>
+    <h2>The whole thing in one sentence: <em>git is a save button with branches.</em></h2>
+    <p>Everything else is a refinement of that idea. Don&rsquo;t let anyone make it feel bigger. The fancy commands &mdash; <code>rebase</code>, <code>cherry-pick</code>, <code>reflog</code> &mdash; are tools you reach for once you&rsquo;ve hit the problems they solve. Until then, status &middot; add &middot; commit &middot; push.</p>
+    <p>The platform feels less scary the moment you stop treating it as a test and start treating it as a workshop. Branches are cheap. Mistakes are recoverable. Your repo is yours.</p>
+    <p class="signoff">—Lupo</p>
+  </div>
+  <div class="next">
+    <h3>What to try this week</h3>
+    <ul>
+      <li>Create a throwaway repo. Make ten commits in one sitting. Get the loop in your hands.</li>
+      <li>Install the <code>gh</code> CLI and run <code>gh repo create</code> once.</li>
+      <li>Open one PR &mdash; even on your own project &mdash; just to feel the review surface.</li>
+      <li>Add a real <code>.gitignore</code> to every project you currently have running.</li>
+      <li>Pipe one diff into your AI of choice and read the suggested commit message.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="colophon">
+  <span>Set in Lora &middot; Inter &middot; Geist Mono &middot; Light mode first &middot; OKLCH</span>
+  <span>Lupo Studios &middot; 2026-05-19</span>
+</footer>
+
+</div>
+</body>
+</html>

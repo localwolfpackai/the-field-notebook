@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Make It Feel Alive — Nine Moves for Streaming an AI Response Into a Real UI · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: the difference between an app that waits and an app that breathes. Stream Claude and Gemini token-by-token into a frontend — the contract, the reader loop, the typewriter, the graceful fail. Side by side." />
+  <meta property="og:title" content="Make It Feel Alive — Nine Moves for Streaming an AI Response Into a Real UI" />
+  <meta property="og:description" content="The spinner is a lie. Here's how to wire a model's tokens straight into the DOM so your app breathes — Claude and Gemini, compared move for move." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.backend  { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live demo panel (the breathing widget) ─────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+    .demo .demo-stage {
+      padding: 1.1rem 1.2rem 1.3rem;
+      min-height: 7.5rem;
+      font-size: 1.02rem;
+      line-height: 1.6;
+      color: var(--ink);
+    }
+    .demo .demo-stage .typed { white-space: pre-wrap; }
+    .demo .caret {
+      display: inline-block;
+      width: 0.55ch;
+      background: var(--accent);
+      color: transparent;
+      margin-left: 1px;
+      animation: blink 1s steps(1) infinite;
+      transform: translateY(2px);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.7rem 1.2rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo button {
+      font-family: 'Geist', sans-serif;
+      font-weight: 600;
+      font-size: 0.86rem;
+      color: oklch(0.99 0 0);
+      background: var(--accent);
+      border: none;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper);
+    }
+    .demo button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .demo button:active { transform: translateY(0); }
+    .demo button:disabled { opacity: 0.45; cursor: default; transform: none; filter: none; }
+    .demo button.ghost {
+      background: transparent;
+      color: var(--accent-ink);
+      border: 1px solid oklch(0.82 0.05 264);
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .caret, .demo .demo-bar .live i { animation: none; }
+    }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .versus {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9rem;
+    }
+    @media (max-width: 620px) { .versus { grid-template-columns: 1fr; } }
+    .vcard {
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem 1.1rem;
+      border: 1px solid oklch(0.86 0.03 80);
+      background: var(--paper-alt);
+      position: relative;
+    }
+    .vcard.claude { border-left: 3px solid var(--amber); }
+    .vcard.gemini { border-left: 3px solid var(--accent); }
+    .vcard h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.55rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .vcard.claude h4 { color: oklch(0.45 0.13 68); }
+    .vcard.gemini h4 { color: var(--accent-ink); }
+    .vcard h4 .dotc { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .vcard.claude h4 .dotc { background: var(--amber); }
+    .vcard.gemini h4 .dotc { background: var(--accent); }
+    .vcard p { font-size: 0.92rem; color: var(--ink-soft); }
+    .vcard code { font-size: 0.82rem; }
+    .vcard .note {
+      margin-top: 0.6rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.08rem;
+      color: var(--margin);
+    }
+
+    /* ── Feel-test rubric ────────────────────────────────── */
+    .rubric {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .rubric .row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.8rem;
+      align-items: baseline;
+      padding: 0.6rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .rubric .mark {
+      font-family: 'Caveat', cursive;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: var(--sage);
+      font-weight: 700;
+    }
+    .rubric .row.fail .mark { color: var(--margin); }
+    .rubric .what { font-size: 0.92rem; color: var(--ink-soft); }
+    .rubric .what b { color: var(--ink); }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it next to your editor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 22</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;23</span>
+        <span class="tag">build</span>
+        <span class="tag">streaming</span>
+      </div>
+
+      <h1>Make it <span class="accent">feel alive</span> &mdash; nine moves for streaming an AI response into a real UI.</h1>
+
+      <p class="deck">
+        The spinner is a lie. It tells the user "wait" while the model has been
+        talking for two seconds already. This notebook is the move that flips that
+        &mdash; tokens straight from Claude or Gemini into the DOM, character by
+        character, so your app stops <em>loading</em> and starts <em>breathing</em>.
+        One contract, one reader loop, one tasteful typewriter. Mostly frontend.
+        Both models, side by side.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~13 min</span>
+        <span><b>Surface</b> · a frontend + one API route</span>
+        <span><b>Assumes</b> · you've called a model once before</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the thing nobody tells you when you build your first AI feature:
+          the model already streams. The tokens come out one at a time, the moment
+          they're generated. The default tutorial throws all of that away &mdash;
+          it <code>await</code>s the whole answer, then drops a finished wall of text
+          in front of a spinner. You paid for a live performance and showed your
+          user a recording.
+        </p>
+        <p>
+          The fix is small. It's not a framework, it's not a library, it's a reader
+          loop and a few lines of state. But the <em>effect</em> is the single biggest
+          jump in perceived quality I know &mdash; the difference between a class
+          project and a product. People feel it before they can name it.
+        </p>
+        <p>
+          Below: each move gets a number, a one-line claim, the actual code, and a
+          try-it crumb. The reader at the top of this page is real &mdash; it's the
+          typewriter from move 04, running on a canned response so you can feel the
+          target before we build it.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The nine moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Kill the spinner — why streaming wins</a></li>
+          <li><a href="#h2">The stream contract (SSE, both models)</a></li>
+          <li><a href="#h3">The reader loop — the whole trick</a></li>
+          <li><a href="#h4">The typewriter, done with taste</a></li>
+          <li><a href="#h5">Claude vs Gemini — same idea, two SDKs</a></li>
+          <li><a href="#h6">Stop button &amp; abort, the right way</a></li>
+          <li><a href="#h7">Stream straight into Markdown</a></li>
+          <li><a href="#h8">The graceful fail (streams break)</a></li>
+          <li><a href="#h9">The feel test — does it breathe?</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="Live streaming demo">
+      <div class="demo-bar">
+        <span>the target · token-by-token render</span>
+        <span class="live"><i></i> streaming</span>
+      </div>
+      <div class="demo-stage">
+        <span class="typed" id="typed"></span><span class="caret" id="caret" aria-hidden="true">.</span>
+      </div>
+      <div class="demo-foot">
+        <button id="run">▶ Stream it</button>
+        <button class="ghost" id="reset">Reset</button>
+        <span class="hint">this is move 04, running live ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Kill the spinner &mdash; streaming isn't a feature, it's the default the model already gives you. <span class="pill model">model</span></h2>
+        <p>
+          When you call a chat model, the response is generated left to right, one
+          token at a time. A non-streaming call just <em>buffers</em> all of those
+          tokens server-side and hands you the finished string. You're not saving
+          work by waiting &mdash; you're <em>adding</em> a wait. The first token is
+          usually ready in a few hundred milliseconds; the full answer might take
+          eight seconds. Streaming shows the user something at 300ms. Buffering shows
+          them a spinner for eight seconds.
+        </p>
+
+        <div class="versus">
+          <div class="vcard gemini">
+            <h4><span class="dotc"></span> Buffered (the tutorial)</h4>
+            <p>User clicks → spinner → <b>8s of nothing</b> → wall of text appears. Feels broken even when it works.</p>
+            <p class="note">"is it frozen?"</p>
+          </div>
+          <div class="vcard claude">
+            <h4><span class="dotc"></span> Streamed (this notebook)</h4>
+            <p>User clicks → <b>first words at 300ms</b> → text grows as they read. Feels like a conversation.</p>
+            <p class="note">"oh, it's thinking out loud."</p>
+          </div>
+        </div>
+
+        <p>
+          That's the entire pitch. Same model, same prompt, same cost. The only
+          change is <em>when</em> you show the bytes. Everything below is how to wire
+          that up without it turning into a mess.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>The stream contract &mdash; one tiny server route both models can fill. <span class="pill backend">backend</span></h2>
+        <p>
+          You never call the model from the browser &mdash; your API key would be
+          sitting in the page source. So there's always one server route in the
+          middle. Its job is dead simple: take the prompt, open a stream to the model,
+          and forward each chunk to the browser as it arrives. The web has a built-in
+          format for exactly this: <b>Server-Sent Events</b>. It's just a long-lived
+          response where you write <code>data: ...\n\n</code> over and over.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">app/api/stream/route.ts · Next.js, runs on the server</span>
+          </div>
+<pre><span class="key">export</span> <span class="key">async</span> <span class="key">function</span> <span class="vio">POST</span>(req<span class="amb">:</span> Request) {
+  <span class="key">const</span> { prompt } <span class="amb">=</span> <span class="key">await</span> req.<span class="vio">json</span>()
+
+  <span class="cmt">// ask the model for a stream, not a string</span>
+  <span class="key">const</span> modelStream <span class="amb">=</span> <span class="key">await</span> <span class="vio">callModel</span>(prompt)   <span class="cmt">// move 05 fills this in</span>
+
+  <span class="cmt">// hand the browser a readable stream of SSE chunks</span>
+  <span class="key">const</span> stream <span class="amb">=</span> <span class="key">new</span> <span class="vio">ReadableStream</span>({
+    <span class="key">async</span> <span class="vio">start</span>(controller) {
+      <span class="key">const</span> enc <span class="amb">=</span> <span class="key">new</span> <span class="vio">TextEncoder</span>()
+      <span class="key">for</span> <span class="key">await</span> (<span class="key">const</span> token <span class="key">of</span> modelStream) {
+        controller.<span class="vio">enqueue</span>(enc.<span class="vio">encode</span>(<span class="str">`data: ${</span>JSON.<span class="vio">stringify</span>({ token })<span class="str">}\n\n`</span>))
+      }
+      controller.<span class="vio">enqueue</span>(enc.<span class="vio">encode</span>(<span class="str">"data: [DONE]\n\n"</span>))
+      controller.<span class="vio">close</span>()
+    },
+  })
+
+  <span class="key">return</span> <span class="key">new</span> <span class="vio">Response</span>(stream, {
+    headers<span class="amb">:</span> {
+      <span class="str">"Content-Type"</span><span class="amb">:</span> <span class="str">"text/event-stream"</span>,
+      <span class="str">"Cache-Control"</span><span class="amb">:</span> <span class="str">"no-cache"</span>,
+      <span class="str">"Connection"</span><span class="amb">:</span> <span class="str">"keep-alive"</span>,
+    },
+  })
+}</pre>
+        </div>
+
+        <p>
+          That's the whole server. Notice it doesn't care <em>which</em> model
+          <code>callModel</code> talks to &mdash; Claude, Gemini, whatever. The
+          contract is "for-await over tokens, write SSE lines." Keep that boundary
+          clean and you can swap models without touching the frontend.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            On Vercel, add <code>export const runtime = "edge"</code> for true
+            streaming &mdash; the default Node serverless runtime will sometimes
+            buffer the whole response before flushing, which silently undoes
+            everything you just built. Edge runtime streams for real.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>The reader loop &mdash; eleven lines that are the entire trick. <span class="pill frontend">frontend</span></h2>
+        <p>
+          This is the heart of it, and it's smaller than people expect. The browser
+          <code>fetch</code> gives you a <code>response.body</code> that is itself a
+          stream. You grab a reader, loop until it's done, decode each chunk, and
+          append the text to a piece of state. React (or anything reactive) re-renders
+          on each append &mdash; and that re-render <em>is</em> the live typing effect.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the reader loop · runs in the browser</span>
+          </div>
+<pre><span class="key">async</span> <span class="key">function</span> <span class="vio">streamPrompt</span>(prompt<span class="amb">:</span> <span class="vio">string</span>, onToken<span class="amb">:</span> (t<span class="amb">:</span> <span class="vio">string</span>) <span class="amb">=&gt;</span> <span class="vio">void</span>) {
+  <span class="key">const</span> res <span class="amb">=</span> <span class="key">await</span> <span class="vio">fetch</span>(<span class="str">"/api/stream"</span>, {
+    method<span class="amb">:</span> <span class="str">"POST"</span>,
+    body<span class="amb">:</span> JSON.<span class="vio">stringify</span>({ prompt }),
+  })
+
+  <span class="key">const</span> reader <span class="amb">=</span> res.body.<span class="vio">getReader</span>()
+  <span class="key">const</span> dec <span class="amb">=</span> <span class="key">new</span> <span class="vio">TextDecoder</span>()
+
+  <span class="key">while</span> (<span class="key">true</span>) {
+    <span class="key">const</span> { value, done } <span class="amb">=</span> <span class="key">await</span> reader.<span class="vio">read</span>()
+    <span class="key">if</span> (done) <span class="key">break</span>
+    <span class="key">for</span> (<span class="key">const</span> line <span class="key">of</span> dec.<span class="vio">decode</span>(value).<span class="vio">split</span>(<span class="str">"\n\n"</span>)) {
+      <span class="key">if</span> (!line.<span class="vio">startsWith</span>(<span class="str">"data: "</span>)) <span class="key">continue</span>
+      <span class="key">const</span> payload <span class="amb">=</span> line.<span class="vio">slice</span>(<span class="amb">6</span>)
+      <span class="key">if</span> (payload <span class="amb">===</span> <span class="str">"[DONE]"</span>) <span class="key">return</span>
+      <span class="vio">onToken</span>(JSON.<span class="vio">parse</span>(payload).token)   <span class="cmt">// ← append &amp; re-render</span>
+    }
+  }
+}</pre>
+        </div>
+
+        <p>
+          Wire it to state and you're done. In React:
+          <code>streamPrompt(p, (t) =&gt; setText((prev) =&gt; prev + t))</code>.
+          Every token that arrives bumps the state, every bump paints. That's the
+          whole reactive loop &mdash; no websocket library, no polling, no magic.
+        </p>
+
+        <div class="scribble">the model is the engine. this loop is the throttle cable.</div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>The typewriter, done with taste &mdash; tokens arrive in bursts; smooth them out. <span class="pill polish">polish</span></h2>
+        <p>
+          Raw token streams are lumpy. The model sends three words, pauses, sends a
+          whole sentence, pauses again. If you paint each chunk the instant it lands,
+          the text <em>stutters</em> &mdash; it looks janky, not alive. The fix is a
+          tiny render queue: buffer incoming tokens, and drain them to the screen at
+          a steady, slightly-faster-than-reading pace. That's the demo at the top of
+          this page.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">smooth-drain typewriter · the trick behind the live demo</span>
+          </div>
+<pre><span class="cmt">// incoming tokens pile into a queue; a timer drains chars evenly</span>
+<span class="key">function</span> <span class="vio">makeTypewriter</span>(paint<span class="amb">:</span> (s<span class="amb">:</span> <span class="vio">string</span>) <span class="amb">=&gt;</span> <span class="vio">void</span>, cps <span class="amb">=</span> <span class="amb">90</span>) {
+  <span class="key">let</span> queue <span class="amb">=</span> <span class="str">""</span>, shown <span class="amb">=</span> <span class="str">""</span>, timer<span class="amb">:</span> <span class="vio">any</span>
+
+  <span class="key">function</span> <span class="vio">tick</span>() {
+    <span class="key">if</span> (!queue) { timer <span class="amb">=</span> <span class="key">null</span>; <span class="key">return</span> }
+    shown <span class="amb">+=</span> queue[<span class="amb">0</span>]
+    queue <span class="amb">=</span> queue.<span class="vio">slice</span>(<span class="amb">1</span>)
+    <span class="vio">paint</span>(shown)
+    timer <span class="amb">=</span> <span class="vio">setTimeout</span>(tick, <span class="amb">1000</span> <span class="amb">/</span> cps)   <span class="cmt">// even cadence</span>
+  }
+
+  <span class="key">return</span> {
+    <span class="vio">push</span>(token<span class="amb">:</span> <span class="vio">string</span>) {
+      queue <span class="amb">+=</span> token
+      <span class="key">if</span> (!timer) <span class="vio">tick</span>()
+    },
+  }
+}</pre>
+        </div>
+
+        <p>
+          Now the buffer absorbs the lumps. When the model dumps a sentence, it goes
+          into <code>queue</code> and drains out at a calm ~90 characters a second.
+          When the model stalls, the queue empties and the caret just blinks &mdash;
+          which reads as "thinking," not "frozen." Tune <code>cps</code> to taste:
+          slower feels deliberate, faster feels snappy.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Scroll back up and hit <b>▶ Stream it</b> on the live panel, then watch
+            the caret during the pauses. That blinking-during-a-stall moment is the
+            whole illusion &mdash; remove it and the thing feels dead.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Claude vs Gemini &mdash; same idea, two SDKs, one swappable function. <span class="pill model">model</span></h2>
+        <p>
+          Remember <code>callModel</code> from move 02? Here's both versions. They're
+          almost identical &mdash; both expose an async iterable of text deltas. Pick
+          one, drop it into the route, and the rest of the stack never knows the
+          difference. This is the move the design-blog crowd loves to compare, so
+          here they are honestly, next to each other.
+        </p>
+
+        <div class="versus">
+          <div class="vcard claude">
+            <h4><span class="dotc"></span> Claude · @anthropic-ai/sdk</h4>
+            <div class="term" style="font-size:0.8rem;margin-top:0.2rem;">
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">"@anthropic-ai/sdk"</span>
+<span class="key">const</span> a <span class="amb">=</span> <span class="key">new</span> <span class="vio">Anthropic</span>()
+
+<span class="key">async</span> <span class="key">function*</span> <span class="vio">callModel</span>(p) {
+  <span class="key">const</span> s <span class="amb">=</span> a.messages.<span class="vio">stream</span>({
+    model<span class="amb">:</span> <span class="str">"claude-opus-4-8"</span>,
+    max_tokens<span class="amb">:</span> <span class="amb">1024</span>,
+    messages<span class="amb">:</span> [{ role<span class="amb">:</span> <span class="str">"user"</span>, content<span class="amb">:</span> p }],
+  })
+  <span class="key">for</span> <span class="key">await</span> (<span class="key">const</span> e <span class="key">of</span> s) {
+    <span class="key">if</span> (e.type <span class="amb">===</span> <span class="str">"content_block_delta"</span>)
+      <span class="key">yield</span> e.delta.text
+  }
+}</pre>
+            </div>
+            <p class="note">warm prose, holds structure under long answers</p>
+          </div>
+
+          <div class="vcard gemini">
+            <h4><span class="dotc"></span> Gemini · @google/generative-ai</h4>
+            <div class="term" style="font-size:0.8rem;margin-top:0.2rem;">
+<pre><span class="key">import</span> { GoogleGenerativeAI } <span class="key">from</span> <span class="str">"@google/generative-ai"</span>
+<span class="key">const</span> g <span class="amb">=</span> <span class="key">new</span> <span class="vio">GoogleGenerativeAI</span>(key)
+
+<span class="key">async</span> <span class="key">function*</span> <span class="vio">callModel</span>(p) {
+  <span class="key">const</span> m <span class="amb">=</span> g.<span class="vio">getGenerativeModel</span>({
+    model<span class="amb">:</span> <span class="str">"gemini-2.5-flash"</span>,
+  })
+  <span class="key">const</span> r <span class="amb">=</span> <span class="key">await</span> m.<span class="vio">generateContentStream</span>(p)
+  <span class="key">for</span> <span class="key">await</span> (<span class="key">const</span> c <span class="key">of</span> r.stream) {
+    <span class="key">yield</span> c.<span class="vio">text</span>()
+  }
+}</pre>
+            </div>
+            <p class="note">fast first-token, great for data-shaped output</p>
+          </div>
+        </div>
+
+        <p>
+          Both are generator functions (<code>function*</code>) that <code>yield</code>
+          strings. The route's <code>for await</code> loop doesn't care which one it
+          got. That's the payoff of keeping the contract thin in move 02 &mdash;
+          model choice becomes a one-import decision, not a rewrite.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Default to the latest, most capable model for the job and check the SDK's
+            current model IDs before you ship &mdash; they rev often. The
+            <b>shape</b> of the streaming API (an async iterable of text deltas) is the
+            stable part; the exact id string is not.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>The stop button &mdash; let users cancel, and actually stop billing. <span class="pill frontend">frontend</span></h2>
+        <p>
+          A streaming UI without a stop button is a trap. The user asks a question,
+          realizes it was wrong, and has to sit through 800 tokens they don't want
+          &mdash; tokens you're <em>paying for</em>. An <code>AbortController</code>
+          fixes both: it kills the fetch <em>and</em> propagates upstream so the model
+          call winds down too.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">abortable stream</span>
+          </div>
+<pre><span class="key">const</span> ctrl <span class="amb">=</span> <span class="key">new</span> <span class="vio">AbortController</span>()
+
+<span class="cmt">// pass the signal into fetch...</span>
+<span class="key">const</span> res <span class="amb">=</span> <span class="key">await</span> <span class="vio">fetch</span>(<span class="str">"/api/stream"</span>, {
+  method<span class="amb">:</span> <span class="str">"POST"</span>,
+  body<span class="amb">:</span> JSON.<span class="vio">stringify</span>({ prompt }),
+  signal<span class="amb">:</span> ctrl.signal,   <span class="cmt">// ← this line is the whole feature</span>
+})
+
+<span class="cmt">// ...and the Stop button just calls:</span>
+<span class="vio">onClick</span><span class="amb">=</span>{() <span class="amb">=&gt;</span> ctrl.<span class="vio">abort</span>()}
+
+<span class="cmt">// wrap the read loop so an abort exits cleanly, not as a crash</span>
+<span class="key">try</span> { <span class="cmt">/* reader loop from move 03 */</span> }
+<span class="key">catch</span> (e) {
+  <span class="key">if</span> (e.name <span class="amb">!==</span> <span class="str">"AbortError"</span>) <span class="key">throw</span> e   <span class="cmt">// expected on stop</span>
+}</pre>
+        </div>
+
+        <p>
+          One controller per request. New prompt &rarr; new controller. Keep a ref to
+          the current one so the Stop button always aborts the <em>live</em> stream,
+          not a stale one. Small detail, huge "this feels like a real app" payoff.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Stream straight into Markdown &mdash; render as it arrives, not after. <span class="pill design">design</span></h2>
+        <p>
+          Models love Markdown &mdash; headings, bold, lists, code fences. If you wait
+          for the stream to finish before parsing it, you've reintroduced the buffer
+          you worked to kill. Instead, re-parse the accumulated text on every token
+          and render the partial Markdown live. It handles half-finished syntax
+          gracefully &mdash; a <code>**bold</code> with no closing stars just renders
+          as plain text until the second <code>**</code> lands, then snaps bold.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">live markdown · React + a streaming-md renderer</span>
+          </div>
+<pre><span class="key">import</span> Markdown <span class="key">from</span> <span class="str">"react-markdown"</span>
+
+<span class="key">function</span> <span class="vio">Answer</span>({ text }) {
+  <span class="cmt">// `text` grows every token; react-markdown re-parses</span>
+  <span class="cmt">// the partial string and renders what's valid so far.</span>
+  <span class="key">return</span> (
+    <span class="amb">&lt;</span><span class="vio">div</span> className<span class="amb">=</span><span class="str">"prose"</span><span class="amb">&gt;</span>
+      <span class="amb">&lt;</span><span class="vio">Markdown</span><span class="amb">&gt;</span>{text}<span class="amb">&lt;/</span><span class="vio">Markdown</span><span class="amb">&gt;</span>
+      {streaming <span class="amb">&amp;&amp;</span> <span class="amb">&lt;</span><span class="vio">span</span> className<span class="amb">=</span><span class="str">"caret"</span> <span class="amb">/&gt;</span>}
+    <span class="amb">&lt;/</span><span class="vio">div</span><span class="amb">&gt;</span>
+  )
+}</pre>
+        </div>
+
+        <p>
+          One catch worth knowing: re-parsing the full string every token is fine for
+          chat-length answers but gets expensive for very long ones. If you're
+          streaming a 5,000-word document, memoize the parse or only re-render on
+          sentence boundaries. For 99% of features, naive re-parse is perfectly fast.
+        </p>
+
+        <div class="scribble">this is the move that makes code blocks appear with real syntax highlighting, live.</div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>The graceful fail &mdash; streams break mid-sentence; plan for it. <span class="pill backend">backend</span></h2>
+        <p>
+          A buffered call fails cleanly: you get an error, you show a message, done.
+          A <em>stream</em> can die <em>halfway</em> &mdash; the user is watching the
+          answer type out and the connection drops on word forty. If you don't handle
+          it, the text just... stops, mid-thought, with no signal. That's worse than a
+          plain error because it looks like a real (bad) answer.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">fail without lying to the user</span>
+          </div>
+<pre><span class="key">let</span> got <span class="amb">=</span> <span class="amb">0</span>
+<span class="key">try</span> {
+  <span class="key">while</span> (<span class="key">true</span>) {
+    <span class="key">const</span> { value, done } <span class="amb">=</span> <span class="key">await</span> reader.<span class="vio">read</span>()
+    <span class="key">if</span> (done) <span class="key">break</span>
+    got<span class="amb">++</span>
+    <span class="cmt">/* ...append token... */</span>
+  }
+} <span class="key">catch</span> (e) {
+  <span class="key">if</span> (e.name <span class="amb">===</span> <span class="str">"AbortError"</span>) <span class="key">return</span>          <span class="cmt">// user hit stop, fine</span>
+  <span class="vio">setError</span>(got <span class="amb">&gt;</span> <span class="amb">0</span>
+    <span class="amb">?</span> <span class="str">"Connection dropped mid-answer — retry?"</span>   <span class="cmt">// partial</span>
+    <span class="amb">:</span> <span class="str">"Couldn't reach the model — retry?"</span>)      <span class="cmt">// never started</span>
+} <span class="key">finally</span> {
+  <span class="vio">setStreaming</span>(<span class="key">false</span>)   <span class="cmt">// always stop the caret blinking</span>
+}</pre>
+        </div>
+
+        <p>
+          Two things make this feel handled instead of broken: the
+          <code>finally</code> that always clears the streaming flag (so the caret
+          stops, signalling "this is over"), and an error message that distinguishes
+          <em>"never started"</em> from <em>"died partway."</em> A retry button on a
+          partial answer is the difference between "buggy" and "robust."
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Keep the partial text on screen when a stream drops &mdash; don't blank it.
+            A half-answer plus a retry button is useful. An answer that vanishes the
+            moment it fails just makes the user re-type their prompt.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>The feel test &mdash; nine checks that separate "alive" from "almost." <span class="pill polish">polish</span></h2>
+        <p>
+          Streaming is one of those things that's either <em>right</em> or
+          <em>uncanny</em>, and the gap is all small stuff. Before you call a streaming
+          UI done, run it past this. If any row fails, the user won't be able to name
+          why it feels off &mdash; but they'll feel it.
+        </p>
+
+        <div class="rubric">
+          <div class="row"><span class="mark">✓</span><span class="what"><b>First token under ~500ms.</b> If the spinner is up longer than that, your route is buffering. Check the edge runtime.</span></div>
+          <div class="row"><span class="mark">✓</span><span class="what"><b>The caret blinks during stalls.</b> A pause with a blinking caret reads as thinking. A pause with nothing reads as frozen.</span></div>
+          <div class="row"><span class="mark">✓</span><span class="what"><b>Cadence is steady, not bursty.</b> The typewriter queue (move 04) absorbs lumpy chunks into a calm, readable pace.</span></div>
+          <div class="row"><span class="mark">✓</span><span class="what"><b>Auto-scroll follows the text</b> &mdash; but stops the moment the user scrolls up. Hijacking their scroll is rage-inducing.</span></div>
+          <div class="row"><span class="mark">✓</span><span class="what"><b>The stop button works instantly</b> and leaves the partial answer on screen.</span></div>
+          <div class="row fail"><span class="mark">✕</span><span class="what"><b>Don't</b> re-layout on every token (no jumping heights). Reserve space or animate height; never let the page jolt.</span></div>
+          <div class="row fail"><span class="mark">✕</span><span class="what"><b>Don't</b> show raw <code>**markdown**</code> asterisks while it types. Render live (move 07) or strip until done.</span></div>
+          <div class="row fail"><span class="mark">✕</span><span class="what"><b>Don't</b> let a dropped stream vanish the text. Partial + retry beats blank every time.</span></div>
+          <div class="row"><span class="mark">✓</span><span class="what"><b>Respects <code>prefers-reduced-motion</code>.</b> Some users want the text to just appear. Honor it &mdash; it's two lines of CSS.</span></div>
+        </div>
+
+        <p>
+          Pass all nine and you've got the thing the polished AI apps have and the
+          weekend projects don't. It's not one big feature &mdash; it's nine small
+          ones stacked, and the user reads the stack as <em>"this feels real."</em>
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Open any AI app you admire, ask it something long, and watch <b>only the
+            caret and the cadence.</b> You'll start seeing these nine moves everywhere
+            &mdash; and noticing exactly which ones the bad ones skipped.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The pipeline</h4>
+          <ul>
+            <li><code>1</code><span>stream &gt; buffer — same cost, better feel</span></li>
+            <li><code>2</code><span>SSE route: <code>data: …\n\n</code></span></li>
+            <li><code>3</code><span><code>getReader()</code> + while loop</span></li>
+            <li><code>4</code><span>queue tokens, drain at steady cps</span></li>
+            <li><code>5</code><span><code>function*</code> yields text deltas</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Make it robust</h4>
+          <ul>
+            <li><code>6</code><span><code>AbortController</code> → stop button</span></li>
+            <li><code>7</code><span>live Markdown, re-parse per token</span></li>
+            <li><code>8</code><span><code>finally</code> clears the caret</span></li>
+            <li><code>8</code><span>partial + retry, never blank</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The two SDKs</h4>
+          <ul>
+            <li><code>claude</code><span><code>messages.stream()</code> → delta.text</span></li>
+            <li><code>gemini</code><span><code>generateContentStream()</code> → .text()</span></li>
+            <li><code>both</code><span>async iterable of strings</span></li>
+            <li><code>swap</code><span>one import, frontend untouched</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The feel test</h4>
+          <ul>
+            <li><code>&lt;500ms</code><span>to first token</span></li>
+            <li><code>caret</code><span>blinks through stalls</span></li>
+            <li><code>cadence</code><span>steady, not bursty</span></li>
+            <li><code>scroll</code><span>follows, yields to user</span></li>
+            <li><code>motion</code><span>respect reduced-motion</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-23</small>
+      </div>
+      <div class="end">
+        next entry · <code>tool calls, streamed: showing the agent's hands move</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live typewriter demo (move 04, running for real) ──────────────
+    (function () {
+      var typed = document.getElementById("typed");
+      var caret = document.getElementById("caret");
+      var runBtn = document.getElementById("run");
+      var resetBtn = document.getElementById("reset");
+      if (!typed || !runBtn) return;
+
+      // Canned "model response" delivered in lumpy bursts, the way a real
+      // stream arrives — so the smoothing in the typewriter has something to do.
+      var BURSTS = [
+        "Here's the thing about ",
+        "streaming",
+        ": you're not adding speed, ",
+        "you're removing the wait. ",
+        "",            // a stall — caret blinks here
+        "The model already ",
+        "generates left to right, one token at a time. ",
+        "",            // another stall
+        "All you do is forward each token the moment it lands — ",
+        "and suddenly the app stops loading ",
+        "and starts breathing.",
+      ];
+
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var CPS = 92;                 // chars per second drained to screen
+      var queue = "", shown = "", drainTimer = null, feedTimer = null, idx = 0;
+
+      function paint(s) { typed.textContent = s; }
+
+      function tick() {
+        if (!queue.length) { drainTimer = null; return; }
+        shown += queue[0];
+        queue = queue.slice(1);
+        paint(shown);
+        drainTimer = setTimeout(tick, 1000 / CPS);
+      }
+      function push(token) {
+        queue += token;
+        if (!drainTimer) tick();
+      }
+
+      // Feed bursts at uneven intervals to simulate a real model stream.
+      function feed() {
+        if (idx >= BURSTS.length) {
+          feedTimer = null;
+          // re-enable once the drain finishes
+          var wait = setInterval(function () {
+            if (!queue.length) { clearInterval(wait); runBtn.disabled = false; runBtn.textContent = "▶ Stream again"; }
+          }, 120);
+          return;
+        }
+        var burst = BURSTS[idx++];
+        if (burst === "") {
+          // a stall: feed nothing, let the caret blink, then continue
+          feedTimer = setTimeout(feed, 720);
+        } else {
+          push(burst);
+          feedTimer = setTimeout(feed, 240 + Math.min(burst.length * 14, 520));
+        }
+      }
+
+      function start() {
+        stopTimers();
+        queue = ""; shown = ""; idx = 0;
+        paint("");
+        runBtn.disabled = true;
+        runBtn.textContent = "streaming…";
+        caret.style.display = "inline-block";
+        if (reduce) {
+          // reduced-motion: just show the whole thing, no typewriter
+          paint(BURSTS.join(""));
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Stream again";
+          return;
+        }
+        feed();
+      }
+
+      function stopTimers() {
+        if (drainTimer) { clearTimeout(drainTimer); drainTimer = null; }
+        if (feedTimer) { clearTimeout(feedTimer); feedTimer = null; }
+      }
+
+      function reset() {
+        stopTimers();
+        queue = ""; shown = ""; idx = 0;
+        paint("");
+        runBtn.disabled = false;
+        runBtn.textContent = "▶ Stream it";
+      }
+
+      runBtn.addEventListener("click", start);
+      resetBtn.addEventListener("click", reset);
+    })();
+  </script>
+</body>
+</html>

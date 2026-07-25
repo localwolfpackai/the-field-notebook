@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fan Out the Fleet — Stop Running One Agent at a Time · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: how I went from one chat thread to a fleet of parallel sub-agents — and the rule that keeps it from turning into theater." />
+  <meta property="og:title" content="Fan Out the Fleet — Stop Running One Agent at a Time" />
+  <meta property="og:description" content="The leap from operating one AI to directing many. Parallel sub-agents, the orchestrator pattern, and how to earn the complexity instead of cosplaying it." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* Fleet diagram (replaces TOC card position) */
+    .fleet {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .fleet::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .fleet h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+    .fleet .director {
+      text-align: center;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      border: 1px solid oklch(0.82 0.05 264);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem;
+      font-weight: 600;
+    }
+    .fleet .stem {
+      width: 1px; height: 14px;
+      background: oklch(0.78 0.02 80);
+      margin: 0 auto;
+    }
+    .fleet .workers {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem;
+    }
+    .fleet .worker {
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.55rem;
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+    }
+    .fleet .worker b {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.03em;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+    .fleet .worker:nth-child(2) { border-left-color: var(--amber); }
+    .fleet .worker:nth-child(3) { border-left-color: var(--accent); }
+    .fleet .worker:nth-child(4) { border-left-color: var(--margin); }
+    .fleet .note {
+      margin-top: 0.85rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1.25;
+    }
+
+    /* MOVE BLOCKS ------------------------------------------- */
+    .move {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .move { grid-template-columns: 1fr; } }
+
+    .move .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .move .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .move h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .move h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .move h2 .pill.mindset  { background: var(--paper-deep); color: var(--ink-soft); }
+    .move h2 .pill.pattern  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .move h2 .pill.guardrail{ background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .move > .body > p { max-width: var(--measure); }
+    .move > .body > p + p { margin-top: 0.7rem; }
+    .move > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Decision grid (good fit vs bad fit) */
+    .pick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.7rem;
+    }
+    .pick {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.9rem;
+    }
+    .pick code {
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      display: inline-block;
+      margin-bottom: 0.35rem;
+    }
+    .pick .when { font-size: 0.88rem; color: var(--ink-soft); }
+    .pick .when b { color: var(--ink); }
+    .pick.yes { border-left: 3px solid var(--sage); }
+    .pick.no  { border-left: 3px solid var(--margin); }
+
+    /* Ladder (the authority stack) */
+    .ladder { display: grid; gap: 0.45rem; }
+    .rung {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: baseline;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .rung .lv {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .rung .what { font-size: 0.92rem; color: var(--ink-soft); }
+    .rung .what b { color: var(--ink); }
+    .rung.peak { background: var(--accent-wash); border-color: oklch(0.82 0.05 264); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 16</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;08</span>
+        <span class="tag">ai</span>
+        <span class="tag">agents</span>
+      </div>
+
+      <h1>Fan out the <span class="accent">fleet</span> &mdash; stop running one agent at a time.</h1>
+
+      <p class="deck">
+        For months I ran AI the way everyone starts: one chat, one task, wait,
+        repeat. Then I watched my own usage report and saw the leap I'd missed
+        &mdash; the month I stopped <em>operating</em> a single agent and started
+        <em>directing</em> a fleet of them. This is that shift, broken into the
+        moves that actually made it work, plus the one rule that keeps it from
+        turning into expensive theater.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · Claude Code + sub-agents</span>
+        <span><b>Assumes</b> · you've run a few solo agent sessions</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the number that reframed everything for me. Three usage reports,
+          stacked: Phase 1 was 39 sessions of survival &mdash; long, interrupted,
+          one thing at a time. Phase 2 was system-building. Phase 3 was 100
+          sessions, 979 messages, and a daily volume that doubled. What changed
+          wasn't the model. It was that I'd quietly stopped being the one doing the
+          work and become the one handing it out.
+        </p>
+        <p>
+          The official name for this is "sub-agents" or "multi-agent
+          orchestration," which sounds like something you need a platform team for.
+          It isn't. The core idea is small: instead of asking one agent to do six
+          things in a row, you spawn six agents that each do one thing
+          <em>at the same time</em>, and you read the conclusions instead of the
+          work. The slow loop &mdash; ask, wait, ask, wait &mdash; is where my hours
+          used to die.
+        </p>
+        <p>
+          Below: the mental model, the pattern that makes it concrete, and an
+          honest section on when <em>not</em> to do this &mdash; because the failure
+          mode here isn't "it breaks," it's "it feels impressive and produces
+          nothing." Each move gets a claim, a real example, and a try-it crumb.
+        </p>
+      </div>
+
+      <aside class="fleet" aria-label="The orchestrator shape">
+        <h3>The shape ↓</h3>
+        <div class="director">YOU — the director (one context)</div>
+        <div class="stem" aria-hidden="true"></div>
+        <div class="workers">
+          <div class="worker"><b>agent 1</b>audit repo&nbsp;A</div>
+          <div class="worker"><b>agent 2</b>audit repo&nbsp;B</div>
+          <div class="worker"><b>agent 3</b>draft README</div>
+          <div class="worker"><b>agent 4</b>find dead links</div>
+        </div>
+        <p class="note">
+          They run in parallel. Each returns a conclusion, not a transcript.
+          You keep the summary, not the noise.
+        </p>
+      </aside>
+    </section>
+
+    <!-- MOVE 1 -->
+    <article class="move" id="m1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Notice which loop you're stuck in. <span class="pill mindset">mindset</span></h2>
+        <p>
+          Before any tooling, the diagnosis. The single-agent loop has a tell:
+          you're sitting there waiting. You ask, it works, you read, you ask the
+          next thing. Each step is fine on its own. The waste is the gaps between
+          them &mdash; you idling while one agent grinds through work that has nothing
+          to do with the next thing you'll ask.
+        </p>
+        <p>
+          The reframe is dumb-simple: <b>are these steps actually dependent, or
+          did I just line them up because that's how I think?</b> "Audit these four
+          folders" is four independent jobs wearing a trench coat. "Fix the bug,
+          then write the test for the fix" is genuinely sequential. The first one
+          should fan out. The second one shouldn't.
+        </p>
+
+        <div class="pick-grid">
+          <div class="pick yes">
+            <code>fan out ✓</code>
+            <div class="when"><b>Independent + repeated.</b> Same job across many targets — audit 40 repos, summarize 12 docs, check links on 8 pages.</div>
+          </div>
+          <div class="pick yes">
+            <code>fan out ✓</code>
+            <div class="when"><b>Different angles, one thing.</b> Three agents review the same PR for bugs / security / clarity, then you merge their verdicts.</div>
+          </div>
+          <div class="pick no">
+            <code>keep serial ✗</code>
+            <div class="when"><b>Each step needs the last one's output.</b> Design → build → test on the same file. A fleet here just collides with itself.</div>
+          </div>
+        </div>
+
+        <p class="scribble">if you're waiting more than you're reading, you're in the wrong loop.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="move" id="m2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Spawn workers that hand back a conclusion, not a diary. <span class="pill pattern">pattern</span></h2>
+        <p>
+          The thing that makes a fleet worth running is what comes <em>back</em>.
+          A sub-agent gets its own fresh context window, does its job in private,
+          and returns one message to you. That return is the whole point: you want
+          the verdict, not the forty tool calls it took to get there. Done right,
+          the director's context stays clean while the messy work happens
+          off-screen.
+        </p>
+        <p>
+          In practice you describe the fleet in one breath and let the orchestrator
+          dispatch it. The trick is writing each task so the agent knows exactly
+          what to report &mdash; "tell me the conclusion" beats "go look around."
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">one prompt → four workers</span>
+          </div>
+<pre><span class="cmt"># the director prompt — note the shape:</span>
+<span class="cmt"># N independent jobs, each told what to RETURN</span>
+
+<span class="prompt">&gt;</span> Spin up four agents in parallel, one per folder in
+  <span class="str">~/Agents/{brand,tools,ai-insights,audit}</span>.
+  Each one: scan for broken internal links and stale dates.
+  Return ONLY a short list: <span class="amb">file · issue · fix</span>.
+  Don&#39;t edit anything. I&#39;ll decide what to touch.
+
+<span class="out">agent-1 (brand)      → 2 stale dates, 0 broken links</span>
+<span class="out">agent-2 (tools)      → clean</span>
+<span class="out">agent-3 (ai-insights)→ 1 dead path in synthesis-map.md</span>
+<span class="out">agent-4 (audit)      → 3 broken links in map.md</span>
+
+<span class="cmt"># four reports. one context. zero waiting between them.</span></pre>
+        </div>
+
+        <p>
+          The phrase doing the heavy lifting is <code>return ONLY</code>. Without
+          it, each agent dumps its full reasoning back into your window and you've
+          recreated the exact noise problem the fleet was supposed to solve. Tell
+          them what to bring home.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Pick any folder with 3+ sub-projects. Ask for one agent per
+            sub-project to <b>summarize what it does in two sentences</b> and return
+            only that. You'll get a map of your own work in the time it used to take
+            to read one folder.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="move" id="m3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Use the panel trick — same target, different lenses. <span class="pill pattern">pattern</span></h2>
+        <p>
+          Fan-out isn't only for "many targets." The sharper move is <b>one target,
+          many perspectives</b>. Instead of asking a single agent "is this PR good?"
+          &mdash; a question so broad it gets a mushy answer &mdash; you run a small
+          panel. One agent hunts correctness bugs. One reads it for security. One
+          asks "would a tired teammate understand this at 5pm?" Then you read three
+          focused verdicts instead of one averaged shrug.
+        </p>
+        <p>
+          This works because narrow questions get sharp answers. A reviewer told to
+          <em>only</em> find security holes finds more of them than a generalist
+          trying to cover everything at once. The same logic powers the
+          "adversarial verify" pattern &mdash; spawn skeptics whose entire job is to
+          try to <em>refute</em> a finding before you trust it.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the review panel</span>
+          </div>
+<pre><span class="prompt">&gt;</span> Review this diff with three agents, each one lens only:
+    <span class="key">1.</span> correctness — logic bugs, edge cases, off-by-ones
+    <span class="key">2.</span> security    — input handling, secrets, auth gaps
+    <span class="key">3.</span> clarity     — naming, would a teammate follow it
+  Return one verdict each: <span class="amb">SHIP / FIX / BLOCK</span> + why.
+
+<span class="out">correctness → FIX  · null case in line 42 unhandled</span>
+<span class="out">security    → SHIP · no untrusted input reaches the query</span>
+<span class="out">clarity     → FIX  · &quot;data2&quot; / &quot;tmp&quot; — rename before merge</span>
+
+<span class="cmt"># 2× FIX, 0× BLOCK → you know exactly what to do next</span></pre>
+        </div>
+
+        <p class="scribble">a vague question gets averaged. a narrow one gets answered.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="move" id="m4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Give parallel writers their own room. <span class="pill guardrail">guardrail</span></h2>
+        <p>
+          Reading in parallel is free. <em>Writing</em> in parallel is where people
+          get burned. If four agents all edit files in the same folder at the same
+          time, they trample each other &mdash; two of them "fix" the same line,
+          a third reverts a change it never saw. The result looks like work and is
+          actually a merge conflict you have to untangle by hand.
+        </p>
+        <p>
+          The fix is isolation. When agents mutate files concurrently, each one
+          gets its own working copy (a git worktree) so their edits can't collide.
+          They do their thing in separate rooms; you review the diffs and decide
+          what comes back. It's a little more setup, so I only reach for it when
+          agents are genuinely writing &mdash; not when they're just reading and
+          reporting.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            The rule I burned myself on: <b>read-only fleets can be big and casual;
+            write fleets must be isolated and small.</b> A dozen agents auditing in
+            parallel is fine. A dozen agents editing the same repo in parallel is
+            a Saturday you won't get back.
+          </div>
+        </div>
+
+        <p>
+          Same energy as the old "archive, never delete" lesson &mdash; the cost of
+          a wrong parallel write is way higher than the cost of one extra setup
+          step. Default to read-heavy fleets that <em>propose</em>, and let yourself
+          be the one who applies.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="move" id="m5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Earn the complexity — don't cosplay it. <span class="pill mindset">mindset</span></h2>
+        <p>
+          Now the honest part, because my own notes argue with each other on this
+          one and the argument is the lesson. One side of my strategy docs says
+          build the big stack: multi-agent orchestration, layered memory, the whole
+          authority ladder. The other side warns against "speculative
+          infrastructure" and "building before observing" &mdash; <em>earn complexity
+          gradually.</em>
+        </p>
+        <p>
+          Both are right, and the way to hold them together is a ladder. Start at
+          the bottom. Only climb a rung when the friction you're actually hitting
+          justifies it. A fleet of twelve agents is genuinely impressive and
+          genuinely useless if the job was a five-minute single-agent ask. The tell
+          that you've over-built: it <em>feels</em> like a lot is happening and the
+          output is thin.
+        </p>
+
+        <div class="ladder">
+          <div class="rung">
+            <span class="lv">rung 1</span>
+            <div class="what"><b>Just ask.</b> One agent, one question. Most days end here.</div>
+          </div>
+          <div class="rung">
+            <span class="lv">rung 2</span>
+            <div class="what"><b>A saved skill.</b> The same ask, twice — encode it so you stop retyping.</div>
+          </div>
+          <div class="rung">
+            <span class="lv">rung 3</span>
+            <div class="what"><b>Fan out.</b> Independent work × many targets — the move this whole notebook is about.</div>
+          </div>
+          <div class="rung">
+            <span class="lv">rung 4</span>
+            <div class="what"><b>A real workflow.</b> Fan-out + verify + synthesize, run as one repeatable pipeline.</div>
+          </div>
+          <div class="rung peak">
+            <span class="lv">rung 5</span>
+            <div class="what"><b>Full architecture.</b> Memory, hooks, orchestration as a system — <em>only</em> when observed friction demands it.</div>
+          </div>
+        </div>
+
+        <p>
+          I live on rungs 1&ndash;3 most weeks and visit 4 when a task is big enough
+          to repeat. Rung 5 is a destination you arrive at by being forced there,
+          not a place you start. The harness compounds &mdash; but only the parts of
+          it you actually had a reason to build.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Next time you reach for a fleet, say the rung out loud first.
+            "This is a rung 3 because it's four independent audits." If you can't
+            name why it's not a rung 1, it's probably a rung 1.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>When to fan out</h4>
+          <ul>
+            <li><code>✓</code><span>same job, many targets</span></li>
+            <li><code>✓</code><span>one target, many lenses</span></li>
+            <li><code>✓</code><span>find / audit / summarize at scale</span></li>
+            <li><code>✗</code><span>each step needs the last</span></li>
+            <li><code>✗</code><span>a five-minute single ask</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The prompt shape</h4>
+          <ul>
+            <li><code>N×</code><span>one agent per target</span></li>
+            <li><code>job</code><span>narrow, single-purpose each</span></li>
+            <li><code>return ONLY</code><span>verdict, not transcript</span></li>
+            <li><code>format</code><span>tell them the exact shape</span></li>
+            <li><code>read-first</code><span>propose, don't auto-edit</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Guardrails</h4>
+          <ul>
+            <li><code>read</code><span>big fleets fine</span></li>
+            <li><code>write</code><span>isolate (worktrees), keep small</span></li>
+            <li><code>panel</code><span>narrow lens = sharp answer</span></li>
+            <li><code>verify</code><span>spawn skeptics to refute</span></li>
+            <li><code>you</code><span>apply the changes yourself</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The ladder</h4>
+          <ul>
+            <li><code>1</code><span>just ask</span></li>
+            <li><code>2</code><span>saved skill</span></li>
+            <li><code>3</code><span>fan out</span></li>
+            <li><code>4</code><span>real workflow</span></li>
+            <li><code>5</code><span>full architecture (earned)</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-08</small>
+      </div>
+      <div class="end">
+        next entry · <code>mcp — wiring tools into the model</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

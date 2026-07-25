@@ -1,0 +1,1467 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Show Your Work — Ten Moves for Extended Thinking, the Scratchpad You Can Finally See · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: flip one switch and the model stops guessing out loud and starts reasoning on a scratchpad first. Ten moves to turn on extended thinking, set a budget that doesn't bankrupt you, stream the thoughts, keep the blocks across tool calls, and know when NOT to use it." />
+  <meta property="og:title" content="Show Your Work — Extended Thinking, the Scratchpad You Can Finally See" />
+  <meta property="og:description" content="One switch turns Claude's silent reasoning into a visible scratchpad. Ten moves: enable it, budget it, stream it, preserve it across tools, and decide when it's worth the tokens." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      /* feature identity — thinking violet, answer sage */
+      --think:      oklch(0.55 0.16 300);
+      --think-wash: oklch(0.94 0.05 300);
+      --think-ink:  oklch(0.42 0.16 300);
+      --answer:     oklch(0.55 0.10 145);
+      --answer-wash:oklch(0.93 0.06 145);
+      --answer-ink: oklch(0.36 0.10 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--violet-wash) 62%, var(--violet-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.62 0.14 300 / 0.45);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.budget   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.think    { background: var(--think-wash); color: var(--think-ink); }
+    .hack h2 .pill.tools    { background: var(--sage-wash); color: var(--answer-ink); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "thinking budget" demo ─────────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .knob-wrap { padding: 1.1rem 1.15rem 0.4rem; }
+    .knob-row {
+      display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
+      margin-bottom: 0.9rem;
+    }
+    .knob-row .lab {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+    }
+    .knob-row input[type="range"] {
+      flex: 1; min-width: 140px;
+      accent-color: var(--think);
+      height: 4px;
+    }
+    .knob-row .end {
+      font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.78rem;
+    }
+    .knob-row .end.lo  { color: var(--answer-ink); }
+    .knob-row .end.hi  { color: var(--think-ink); }
+
+    /* the budget readout card */
+    .render {
+      margin: 0 1.15rem 0.4rem;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid oklch(0.88 0.02 80);
+      background: var(--paper);
+    }
+    .render .r-head {
+      padding: 1rem 1.2rem 0.7rem;
+      background: linear-gradient(135deg, var(--think) 0%, var(--accent) 130%);
+      color: oklch(0.99 0 0);
+    }
+    .render .r-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .render .r-head .t {
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600; font-size: 1.5rem;
+      margin-top: 0.2rem; line-height: 1.1;
+    }
+    .render .r-body { padding: 1.1rem 1.2rem; display: grid; gap: 0.9rem; }
+    /* the budget bar */
+    .bbar {
+      height: 26px; border-radius: 7px; overflow: hidden;
+      display: flex; background: var(--paper-deep);
+      border: 1px solid oklch(0.9 0.015 80);
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+    }
+    .bbar .seg { display: flex; align-items: center; justify-content: center; color: oklch(0.99 0 0); transition: flex-basis 0.35s var(--ease-paper); white-space: nowrap; overflow: hidden; letter-spacing: 0.04em; }
+    .bbar .seg.think { background: var(--think); }
+    .bbar .seg.ans   { background: var(--answer); }
+    .render .r-stat {
+      display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;
+      align-items: baseline;
+      padding-bottom: 0.7rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+    }
+    .render .r-stat:last-child { border-bottom: none; padding-bottom: 0; }
+    .render .r-stat .nm { font-size: 0.92rem; color: var(--ink-soft); }
+    .render .r-stat .v {
+      font-family: 'Geist Mono', monospace; font-weight: 600;
+      font-size: 0.95rem; color: var(--ink);
+    }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .bbar .seg { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: a response with thinking blocks ─────────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.thinking { border-left-color: var(--think); background: var(--think-wash); }
+    .anat .blk.text     { border-left-color: var(--answer); background: var(--answer-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.thinking .tag { color: var(--think-ink); }
+    .anat .blk.text .tag { color: var(--answer-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.thinking .tag .dot { background: var(--think); }
+    .anat .blk.text .tag .dot { background: var(--answer); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: var(--answer-ink); }
+    .ptable td.no { color: var(--margin); }
+
+    /* ── Budget-by-task chips ─────────────────────── */
+    .bank { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .bank { grid-template-columns: 1fr; } }
+    .bank .set { background: var(--paper); border: 1px solid oklch(0.88 0.02 80); border-radius: var(--radius-md); padding: 0.85rem 0.95rem; }
+    .bank .set h5 {
+      font-family: 'Geist Mono', monospace; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.55rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .bank .set.lo h5 { color: var(--answer-ink); }
+    .bank .set.hi h5 { color: var(--think-ink); }
+    .bank .set h5 .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .bank .set.lo h5 .dot { background: var(--answer); }
+    .bank .set.hi h5 .dot { background: var(--think); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+      padding: 0.22em 0.6em; border-radius: 999px;
+      background: var(--paper-deep); color: var(--ink-soft);
+    }
+    .bank .set.lo .chip { background: var(--answer-wash); color: var(--answer-ink); }
+    .bank .set.hi .chip { background: var(--think-wash); color: var(--think-ink); }
+
+    /* ── Mobile mock (phone with thinking drawer) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 300 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--think) 0%, var(--accent) 130%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.7rem; }
+    /* the collapsible thinking drawer */
+    .phone .drawer {
+      border: 1px solid oklch(0.86 0.05 300);
+      background: var(--think-wash);
+      border-radius: 9px;
+      overflow: hidden;
+    }
+    .phone .drawer .dh {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.6rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.55rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--think-ink);
+    }
+    .phone .drawer .dh .chev { margin-left: auto; }
+    .phone .drawer .dh .spin {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--think);
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    .phone .drawer .dbody {
+      padding: 0 0.6rem 0.55rem;
+      font-size: 0.56rem; line-height: 1.5; color: var(--think-ink);
+      font-family: 'Geist Mono', monospace;
+    }
+    .phone .answer {
+      border-left: 3px solid var(--answer);
+      background: var(--answer-wash);
+      border-radius: 7px;
+      padding: 0.55rem 0.6rem;
+    }
+    .phone .answer .al { font-family: 'Geist Mono', monospace; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--answer-ink); }
+    .phone .answer .av { font-family: 'Geist', serif; font-weight: 700; font-size: 0.95rem; color: var(--ink); margin-top: 0.15rem; }
+    .phone .answer .as { font-size: 0.56rem; color: var(--ink-soft); margin-top: 0.2rem; }
+    @media (prefers-reduced-motion: reduce) { .phone .drawer .dh .spin { animation: none; } }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.14 300 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.62 0.14 300 / 0.4); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 28</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;27</span>
+        <span class="tag">reasoning</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Show your <span class="accent">work</span> &mdash; extended thinking, the scratchpad you can finally see.</h1>
+
+      <p class="deck">
+        Flip one field in the request and the model stops blurting an answer and starts
+        <strong>reasoning on a scratchpad first</strong> &mdash; a visible <code>thinking</code> block
+        before the real reply. Ten moves to turn it on, hand it a budget that doesn't bankrupt you,
+        stream the thoughts live, keep them across tool calls, and know the times you should leave it off.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Extended_Thinking-8250DF?style=flat-square&logo=anthropic&logoColor=white" alt="Claude extended thinking" />
+        <img src="https://img.shields.io/badge/budget__tokens-1024_min-D97757?style=flat-square&logo=tokei&logoColor=white" alt="budget tokens minimum 1024" />
+        <img src="https://img.shields.io/badge/SDK-anthropic-2EA043?style=flat-square&logo=python&logoColor=white" alt="anthropic python SDK" />
+        <img src="https://img.shields.io/badge/billed_as-output_tokens-4285F4?style=flat-square&logo=cashapp&logoColor=white" alt="billed as output tokens" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~10 min</span>
+        <span><b>Surface</b> · one API field, before-and-after the answer</span>
+        <span><b>Assumes</b> · you can make a basic <code>messages.create</code> call</span>
+        <span><b>Pairs with</b> · Vol. 25 (cost &amp; latency) · Vol. 24 (evals)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          For a year I treated the model like a vending machine: prompt in, answer out, and if the
+          answer was wrong I just shook the machine harder. Extended thinking changed that. It's one
+          field &mdash; <code>thinking: { type: "enabled", budget_tokens: N }</code> &mdash; and it
+          tells the model to <em>think before it speaks</em>, on a scratchpad you actually get to read.
+        </p>
+        <p>
+          What comes back isn't one block of text anymore. It's two: a <strong>thinking</strong> block
+          where the model works the problem out in the open, then the normal <strong>answer</strong>
+          block built on top of that work. On a gnarly puzzle the difference is night and day &mdash;
+          the same model that confidently flubbed it cold gets it right when it's allowed to show its
+          steps first.
+        </p>
+        <p>
+          But it isn't free and it isn't always right. Those thinking tokens are billed as output, they
+          eat your context window, and on a "what's the capital of France" they're pure waste. Ten moves
+          below: enable it, budget it, stream it, preserve it across tools, and &mdash; the move most
+          guides skip &mdash; turn it <em>off</em> when the task doesn't earn it. The panel under this
+          intro is live: drag the budget and watch where your tokens go.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Flip the one switch — enable thinking</a></li>
+          <li><a href="#h2">Read the new shape — two blocks, not one</a></li>
+          <li><a href="#h3">Set a budget that fits the task</a></li>
+          <li><a href="#h4">Watch it work — stream the thinking</a></li>
+          <li><a href="#h5">Count the tokens — it's billed as output</a></li>
+          <li><a href="#h6">Drop the knobs it can't use anymore</a></li>
+          <li><a href="#h7">Keep the blocks alive across tool calls</a></li>
+          <li><a href="#h8">Don't panic at a redacted block</a></li>
+          <li><a href="#h9">Know when NOT to think</a></li>
+          <li><a href="#h10">Pair it with an eval — prove it earned the tokens</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="thinking budget allocation demo">
+      <div class="demo-bar">
+        <span>one request · drag the thinking budget</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-row">
+          <span class="end lo">◀ lean · quick</span>
+          <input id="knob" type="range" min="1024" max="16000" step="256" value="2000" aria-label="thinking budget in tokens" />
+          <span class="end hi">deep · slow ▶</span>
+        </div>
+      </div>
+
+      <div class="render" id="render">
+        <div class="r-head">
+          <div class="k">budget_tokens</div>
+          <div class="t" id="r-t">2,000</div>
+        </div>
+        <div class="r-body">
+          <div class="bbar" aria-hidden="true">
+            <div class="seg think" id="seg-think">think</div>
+            <div class="seg ans" id="seg-ans">answer</div>
+          </div>
+          <div class="r-stat"><span class="nm">Reasoning depth</span><span class="v" id="r-depth">moderate</span></div>
+          <div class="r-stat"><span class="nm">Est. added latency</span><span class="v" id="r-lat">~3–5s</span></div>
+          <div class="r-stat"><span class="nm">Est. added cost / call</span><span class="v" id="r-cost">~$0.03</span></div>
+          <div class="r-stat"><span class="nm">Good for</span><span class="v" id="r-good">multi-step logic</span></div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>2,000 tokens — a sensible default.</b> Room to work a multi-step problem without burning your budget. Start here, raise only if answers stay shallow.</span>
+        <span class="hint">drag me ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Flip the one switch &mdash; it's a single field on the request. <span class="pill setup">setup</span></h2>
+        <p>
+          There's no new endpoint, no special model name, no SDK upgrade dance. You take the
+          <code>messages.create</code> call you already make and add one object: <code>thinking</code>.
+          Set its type to <code>enabled</code> and give it a <code>budget_tokens</code> ceiling. That's
+          the whole on-ramp. The model now reasons on a private scratchpad and hands you the work back
+          alongside the answer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">basic.py &mdash; the entire diff is the thinking block</span></div>
+<pre><span class="key">import</span> anthropic
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model=<span class="str">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="amb">4000</span>,
+    <span class="vio">thinking</span>={                       <span class="cmt"># &lt;-- the only new thing</span>
+        <span class="str">"type"</span>: <span class="str">"enabled"</span>,
+        <span class="str">"budget_tokens"</span>: <span class="amb">2000</span>,
+    },
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>:
+        <span class="str">"Three guests pay $30 for a $25 room. The bellboy "</span>
+        <span class="str">"pockets $2 and returns $1 each. Where's the missing $1?"</span>}],
+)</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Run that classic missing-dollar riddle twice &mdash; once with the <code>thinking</code>
+          block, once without it. Cold, the model often parrots the trick's wrong framing. With a
+          scratchpad, it catches that you're <b>adding</b> the $2 when you should be subtracting it. Same
+          model, one field, a correct answer.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Read the new shape &mdash; the response is two blocks now, not one. <span class="pill read">read</span></h2>
+        <p>
+          Before, <code>response.content</code> was basically one text block. Turn on thinking and it
+          becomes a <em>list</em>: a <code>thinking</code> block first, then the <code>text</code> block
+          with the actual answer. If your code grabbed <code>content[0].text</code> and called it a day,
+          it will now reach into the scratchpad by mistake. Loop the blocks and branch on
+          <code>block.type</code> &mdash; show the thinking in a collapsible drawer, render the text as
+          the reply.
+        </p>
+        <div class="anat" aria-label="anatomy of a response with thinking">
+          <div class="blk thinking">
+            <div class="tag"><span class="dot"></span>block.type == "thinking"</div>
+            <p><em>Let me reframe.</em> The guests paid $27 total. Of that, $25 is the room and $2 is
+            the bellboy. Adding the $2 to the $27 double-counts it &mdash; the right move is $27 − $2 = $25.
+            There is no missing dollar; the question mis-groups the math.</p>
+          </div>
+          <div class="blk text">
+            <div class="tag"><span class="dot"></span>block.type == "text"</div>
+            <p>There's no missing dollar. The $27 the guests paid already includes the bellboy's $2;
+            the question wrongly <em>adds</em> it again instead of subtracting. $27 − $2 = $25, the room.</p>
+          </div>
+        </div>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">render.py &mdash; branch on the block type</span></div>
+<pre><span class="key">for</span> block <span class="key">in</span> response.content:
+    <span class="key">if</span> block.type == <span class="str">"thinking"</span>:
+        show_drawer(block.thinking)   <span class="cmt"># the visible scratchpad</span>
+    <span class="key">elif</span> block.type == <span class="str">"text"</span>:
+        render_answer(block.text)     <span class="cmt"># the reply users see</span></pre>
+        </div>
+        <p class="scribble">the thinking block carries a `signature` too — you'll need it in move 07.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Set a budget that fits the task &mdash; start at the floor, climb on purpose. <span class="pill budget">budget</span></h2>
+        <p>
+          <code>budget_tokens</code> is a ceiling on how much the model may think before it must answer.
+          The floor is <strong>1,024</strong>; ask for less and the API rejects it. The official advice is
+          the disciplined one: <em>start at the minimum and raise incrementally</em> until answers stop
+          improving. Don't open with 16k "to be safe" &mdash; you'll pay for reasoning the task never
+          needed. Match the dial to the job.
+        </p>
+        <div class="bank">
+          <div class="set lo">
+            <h5><span class="dot"></span>lean budgets — 1k–2k</h5>
+            <div class="chips">
+              <span class="chip">logic checks</span>
+              <span class="chip">classification</span>
+              <span class="chip">safety gates</span>
+              <span class="chip">tool picking</span>
+              <span class="chip">quick math</span>
+            </div>
+          </div>
+          <div class="set hi">
+            <h5><span class="dot"></span>deep budgets — 8k–16k+</h5>
+            <div class="chips">
+              <span class="chip">multi-step proofs</span>
+              <span class="chip">debugging</span>
+              <span class="chip">agent planning</span>
+              <span class="chip">untangle constraints</span>
+              <span class="chip">long-form reasoning</span>
+            </div>
+          </div>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div><code>budget_tokens</code> must be <b>less than</b> <code>max_tokens</code> &mdash; thinking
+          and the answer share that ceiling. If you set a 16k budget under a 4k <code>max_tokens</code>,
+          the model has no room left to answer. Raise <code>max_tokens</code> above the budget, always.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Watch it work &mdash; stream the thinking token by token. <span class="pill think">think</span></h2>
+        <p>
+          Deep thinking adds latency, and a frozen UI for ten seconds feels broken (that's the whole point
+          of Vol. 22). The fix is the same here: <strong>stream</strong>. With thinking on, the stream
+          emits the scratchpad first &mdash; <code>thinking_delta</code> events &mdash; then switches to
+          <code>text_delta</code> for the answer. Pipe the thinking into a live "thinking…" drawer so the
+          user watches the model reason instead of staring at a spinner.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">stream.py &mdash; route deltas by their event type</span></div>
+<pre><span class="key">with</span> client.messages.stream(
+    model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">4000</span>,
+    thinking={<span class="str">"type"</span>: <span class="str">"enabled"</span>, <span class="str">"budget_tokens"</span>: <span class="amb">2000</span>},
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}],
+) <span class="key">as</span> stream:
+    <span class="key">for</span> event <span class="key">in</span> stream:
+        <span class="key">if</span> event.type == <span class="str">"content_block_delta"</span>:
+            d = event.delta
+            <span class="key">if</span> d.type == <span class="str">"thinking_delta"</span>:
+                drawer.write(d.thinking)   <span class="cmt"># scratchpad, live</span>
+            <span class="key">elif</span> d.type == <span class="str">"text_delta"</span>:
+                answer.write(d.text)       <span class="cmt"># the reply, live</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Render the thinking drawer in a dimmer, smaller, monospace style and the answer in your
+          normal body type. The visual demotion reads exactly right: <b>"here's me working, here's my
+          answer."</b> Users trust the answer more <em>because</em> they saw the work.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Count the tokens &mdash; thinking is billed as output, and it adds up. <span class="pill budget">budget</span></h2>
+        <p>
+          Here's the part that surprises people: thinking tokens are <strong>output tokens</strong>. They
+          bill at the output rate, they count against your rate limits, and they sit inside the context
+          window right alongside the answer. A 16k thinking budget on every call is a real line item, not
+          a rounding error. Read <code>response.usage</code> after a few representative calls and you'll
+          see precisely what your reasoning costs.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">usage.py &mdash; what the scratchpad actually cost</span></div>
+<pre>print(response.usage)
+<span class="out"># Usage(</span>
+<span class="out">#   input_tokens=84,</span>
+<span class="out">#   output_tokens=1736,   <span class="cmt"># &lt;-- thinking + answer, together</span></span>
+<span class="out"># )</span>
+
+<span class="cmt"># thinking lives *inside* output. budget it like you budget</span>
+<span class="cmt"># max_tokens — every call, multiplied by your traffic.</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>This is the through-line back to <a href="cost-and-latency-two-dials-2026-06-25.html">Vol. 25</a>:
+          extended thinking trades <b>tokens and latency for quality</b>. That's a great trade on a hard
+          problem and a terrible one on an easy lookup. Measure the trade per task type &mdash; don't leave
+          a fat budget on globally and call it a day.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Drop the knobs it can't use anymore &mdash; thinking changes the rules. <span class="pill gotcha">gotcha</span></h2>
+        <p>
+          Turning thinking on quietly disables a few things you may be used to reaching for. You
+          <strong>can't</strong> set <code>temperature</code>, <code>top_p</code>, or <code>top_k</code>
+          while thinking is enabled, and you <strong>can't</strong> pre-fill the assistant's response.
+          The reasoning process needs its own sampling, so those levers go away. Leave them out and the
+          call is clean; leave them in and you'll get an error that reads like a mystery until you know
+          this rule.
+        </p>
+        <table class="ptable" aria-label="what works with thinking enabled">
+          <thead>
+            <tr><th>Lever</th><th>With thinking on?</th><th>Do this instead</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">temperature</td><td class="no">not allowed</td><td>omit it — the model self-samples</td></tr>
+            <tr><td class="trait">top_p / top_k</td><td class="no">not allowed</td><td>omit them</td></tr>
+            <tr><td class="trait">response pre-fill</td><td class="no">not allowed</td><td>steer via the prompt, not a primer</td></tr>
+            <tr><td class="trait">budget &lt; 1,024</td><td class="no">rejected</td><td>1,024 is the floor — start there</td></tr>
+            <tr><td class="trait">budget ≥ max_tokens</td><td class="no">no room to answer</td><td>raise max_tokens above the budget</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">most "thinking won't enable" bugs are just one of these five. check them first.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Keep the blocks alive across tool calls &mdash; pass them back untouched. <span class="pill tools">tools</span></h2>
+        <p>
+          This is the move people get wrong when they wire thinking into an agent. When the model thinks,
+          then calls a tool, you run the tool and send the result back &mdash; and you <strong>must</strong>
+          send the original <code>thinking</code> block back with it, signature and all. That block is the
+          model's memory of <em>why</em> it reached for the tool. Strip it out and the model loses the
+          thread; pass it back verbatim and it picks up exactly where it left off. It won't emit a fresh
+          thinking block until the next non-<code>tool_result</code> turn.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">agent_loop.py &mdash; thinking block rides along with the tool result</span></div>
+<pre><span class="cmt"># 1. model thinks, then asks for a tool. keep its WHOLE turn:</span>
+messages.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: response.content})
+<span class="cmt">#   ^ response.content still holds the thinking block + signature</span>
+
+<span class="cmt"># 2. hand back the tool result as the next user turn:</span>
+messages.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: [{
+    <span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+    <span class="str">"tool_use_id"</span>: tool_use.id,
+    <span class="str">"content"</span>: run_tool(tool_use),
+}]})
+
+<span class="cmt"># 3. continue — the model resumes with its reasoning intact</span>
+response = client.messages.create(model=MODEL, max_tokens=<span class="amb">4000</span>,
+    thinking={<span class="str">"type"</span>: <span class="str">"enabled"</span>, <span class="str">"budget_tokens"</span>: <span class="amb">2000</span>},
+    tools=tools, messages=messages)</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Don't hand-edit or "clean up" the thinking block before sending it back. The
+          <code>signature</code> is how the API verifies the block is genuine and unaltered. Mutate the
+          text and you'll break the signature &mdash; pass the object through <b>exactly</b> as you got it.
+          Pairs cleanly with the agent loop in <a href="give-the-agent-hands-mcp-2026-06-19.html">Vol. 19</a>.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Don't panic at a redacted block &mdash; it's still load-bearing. <span class="pill gotcha">gotcha</span></h2>
+        <p>
+          Once in a while a thinking block comes back as <code>redacted_thinking</code> instead of plain
+          text &mdash; the internal reasoning got flagged by safety systems and returned encrypted. Your
+          instinct will be to drop it. <strong>Don't.</strong> Pass it back exactly like a normal thinking
+          block; the API decrypts it on its side so the model keeps its context. You just can't read that
+          one. Handle it by type, render a neutral placeholder, move on.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">redacted.py &mdash; treat it as opaque, keep it in the history</span></div>
+<pre><span class="key">for</span> block <span class="key">in</span> response.content:
+    <span class="key">if</span> block.type == <span class="str">"thinking"</span>:
+        drawer.write(block.thinking)
+    <span class="key">elif</span> block.type == <span class="str">"redacted_thinking"</span>:
+        drawer.write(<span class="str">"[reasoning hidden — kept for context]"</span>)
+        <span class="cmt"># still append it to messages on the next turn!</span>
+    <span class="key">elif</span> block.type == <span class="str">"text"</span>:
+        render_answer(block.text)</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>You don't have to wait for one in the wild to test your handling. The docs ship a magic
+          trigger string that deterministically returns a redacted block &mdash; send it once, confirm your
+          UI shows the placeholder and your agent still threads the block through. <b>Test the rare path on
+          purpose</b> so it never surprises you in production.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Know when NOT to think &mdash; the move every hype post skips. <span class="pill read">read</span></h2>
+        <p>
+          Extended thinking is a power tool, and power tools are wrong for most jobs. If the task is a
+          lookup, a format conversion, a short rewrite, or anything the model nails cold, thinking just
+          adds latency and cost for no quality gain. Reserve it for problems with <strong>real steps</strong>
+          &mdash; logic, math, debugging, planning, untangling constraints &mdash; where reasoning in the
+          open is what flips a wrong answer to a right one. The honest default is <em>off</em>, switched on
+          deliberately.
+        </p>
+        <table class="ptable" aria-label="when to use extended thinking">
+          <thead>
+            <tr><th>Task</th><th>Think?</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">"Capital of France?"</td><td class="no">no</td><td>known cold — pure waste</td></tr>
+            <tr><td class="trait">Reformat JSON → CSV</td><td class="no">no</td><td>mechanical, no reasoning</td></tr>
+            <tr><td class="trait">Summarize a paragraph</td><td class="no">no</td><td>one-pass, low stakes</td></tr>
+            <tr><td class="trait">Multi-step word problem</td><td class="yes">yes</td><td>steps are the whole game</td></tr>
+            <tr><td class="trait">Debug from a stack trace</td><td class="yes">yes</td><td>needs to reason about cause</td></tr>
+            <tr><td class="trait">Plan an agent's next 5 moves</td><td class="yes">yes</td><td>tradeoffs worth thinking through</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">route it: cheap fast model with no thinking for easy calls, thinking on only for the hard ones.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Pair it with an eval &mdash; prove the budget actually bought you accuracy. <span class="pill think">think</span></h2>
+        <p>
+          Don't trust the vibe that "thinking makes it smarter." <em>Measure</em> it. Take the golden test
+          set from <a href="grade-it-before-they-do-evals-2026-06-24.html">Vol. 24</a> and run it three ways:
+          thinking off, a lean budget, a deep budget. Now you have a number, not a hunch &mdash; the exact
+          accuracy each setting buys and the exact tokens each one costs. Often a 2k budget captures most of
+          the win and a 16k budget barely moves the needle. The eval tells you where to stop paying.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">sweep.py &mdash; grade accuracy against budget, pick the knee</span></div>
+<pre><span class="key">for</span> budget <span class="key">in</span> [<span class="amb">None</span>, <span class="amb">2000</span>, <span class="amb">8000</span>, <span class="amb">16000</span>]:
+    cfg = {} <span class="key">if</span> budget <span class="key">is</span> <span class="amb">None</span> \
+          <span class="key">else</span> {<span class="str">"type"</span>: <span class="str">"enabled"</span>, <span class="str">"budget_tokens"</span>: budget}
+    score, out_tokens = run_eval(golden_set, thinking=cfg)
+    print(f<span class="str">"budget={budget}: {score:.0%} acc, {out_tokens} out-tok"</span>)
+
+<span class="out"># budget=None:  71% acc,   180 out-tok   <span class="cmt"># fast, cheap, weakest</span></span>
+<span class="out"># budget=2000:  94% acc,  1900 out-tok   <span class="cmt"># &lt;-- the knee. ship this.</span></span>
+<span class="out"># budget=8000:  95% acc,  6400 out-tok   <span class="cmt"># +1% for 3x the tokens</span></span>
+<span class="out"># budget=16000: 95% acc, 12800 out-tok   <span class="cmt"># pure waste past the knee</span></span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Plot accuracy vs. budget and look for the <b>knee</b> &mdash; the point where the curve flattens.
+          That's your production setting: the smallest budget that captures the accuracy. Re-run the sweep
+          whenever the task changes. <b>The eval, not the hype, picks your number.</b></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a thinking drawer">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">claude · thinking on</div>
+            <div class="t">Where's the missing dollar?</div>
+          </div>
+          <div class="s-body">
+            <div class="drawer">
+              <div class="dh"><span class="spin" aria-hidden="true"></span> thinking… <span class="chev">▾</span></div>
+              <div class="dbody">guests paid $27 total → $25 room + $2 bellboy. adding the $2 to $27 double-counts. correct: $27 − $2 = $25. no dollar is missing.</div>
+            </div>
+            <div class="answer">
+              <div class="al">answer</div>
+              <div class="av">Nothing's missing.</div>
+              <div class="as">The $27 already includes the bellboy's $2 — the riddle wrongly adds it again instead of subtracting.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>The pattern that ships everywhere: a <strong>collapsible thinking drawer</strong> above the
+        answer. Dimmed, monospace, auto-collapsing once the reply lands &mdash; the work is there if you
+        want it, out of the way if you don't.</p>
+        <p class="scribble">stream into the drawer, then collapse it when the text block starts.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Turn it on</h4>
+          <ul>
+            <li><code>thinking</code><span>the one field to add</span></li>
+            <li><code>type:"enabled"</code><span>switches it on</span></li>
+            <li><code>budget_tokens</code><span>ceiling on reasoning</span></li>
+            <li><code>1024</code><span>the minimum budget</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Read the result</h4>
+          <ul>
+            <li><code>thinking</code><span>the scratchpad block</span></li>
+            <li><code>text</code><span>the actual answer</span></li>
+            <li><code>signature</code><span>keep it — verifies the block</span></li>
+            <li><code>usage</code><span>thinking bills as output</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Don't do</h4>
+          <ul>
+            <li><code>temperature</code><span>not allowed with thinking</span></li>
+            <li><code>top_p / top_k</code><span>not allowed either</span></li>
+            <li><code>pre-fill</code><span>can't prime the reply</span></li>
+            <li><code>strip blocks</code><span>breaks tool-loop context</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Decide</h4>
+          <ul>
+            <li><code>lookup</code><span>off — it's waste</span></li>
+            <li><code>multi-step</code><span>on — it's the win</span></li>
+            <li><code>redacted</code><span>keep &amp; pass back</span></li>
+            <li><code>eval-sweep</code><span>find the budget knee</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 28 · extended thinking</small>
+      </div>
+      <div class="end">
+        built from the <code>extended_thinking</code> cookbook<br />
+        one switch · show your work<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var knob = document.getElementById('knob');
+      if (!knob) return;
+      var rt = document.getElementById('r-t');
+      var segT = document.getElementById('seg-think');
+      var segA = document.getElementById('seg-ans');
+      var depth = document.getElementById('r-depth');
+      var lat = document.getElementById('r-lat');
+      var cost = document.getElementById('r-cost');
+      var good = document.getElementById('r-good');
+      var verdict = document.getElementById('verdict');
+
+      function fmt(n) { return n.toLocaleString('en-US'); }
+
+      function update() {
+        var b = parseInt(knob.value, 10);
+        rt.textContent = fmt(b);
+
+        // thinking share of the bar grows with budget (answer ~ fixed 600 tok slice)
+        var answerTok = 600;
+        var pctThink = Math.round((b / (b + answerTok)) * 100);
+        segT.style.flexBasis = pctThink + '%';
+        segA.style.flexBasis = (100 - pctThink) + '%';
+        segT.textContent = pctThink > 16 ? 'think · ' + fmt(b) : '';
+        segA.textContent = (100 - pctThink) > 14 ? 'answer' : '';
+
+        // rough, illustrative estimates (output @ ~$15/Mtok-ish, ~1.6ms/tok)
+        var estCost = ((b + answerTok) / 1e6) * 15;
+        cost.textContent = '~$' + estCost.toFixed(estCost < 0.1 ? 3 : 2);
+        var estLat = (b / 1000) * 1.4 + 1.5;
+        lat.textContent = '~' + Math.round(estLat) + '–' + Math.round(estLat + 3) + 's';
+
+        var msg;
+        if (b <= 1536) {
+          depth.textContent = 'shallow';
+          good.textContent = 'quick logic / gating';
+          msg = '<b>' + fmt(b) + ' tokens — the floor.</b> Enough for a short logical check or a classify-with-reason. Below 1,024 the API rejects it; this is as lean as it gets.';
+        } else if (b <= 4000) {
+          depth.textContent = 'moderate';
+          good.textContent = 'multi-step logic';
+          msg = '<b>' + fmt(b) + ' tokens — a sensible default.</b> Room to work a multi-step problem without burning your budget. Start here, raise only if answers stay shallow.';
+        } else if (b <= 9000) {
+          depth.textContent = 'deep';
+          good.textContent = 'debugging / planning';
+          msg = '<b>' + fmt(b) + ' tokens — going deep.</b> Good for debugging, planning, or untangling constraints. Watch the cost line — you\'re paying real output tokens for this.';
+        } else {
+          depth.textContent = 'very deep';
+          good.textContent = 'hard proofs only';
+          msg = '<b>' + fmt(b) + ' tokens — the heavy end.</b> Reserve for genuinely hard reasoning. Run the eval sweep (Move 10) first — most tasks hit their knee long before here.';
+        }
+        verdict.innerHTML = msg;
+      }
+
+      knob.addEventListener('input', update);
+      update();
+    })();
+  </script>
+</body>
+</html>

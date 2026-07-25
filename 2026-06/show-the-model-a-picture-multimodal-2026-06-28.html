@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Show the Model a Picture — Ten Moves for Multimodal, the Day You Give the Model Eyes · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: stop describing the screenshot and just hand it over. Ten moves to send an image to Claude or Gemini, ask for a typed critique instead of a paragraph, point at one region, control resolution and cost, and turn a picture of a UI into a spec you can build from." />
+  <meta property="og:title" content="Show the Model a Picture — Multimodal, the Day You Give the Model Eyes" />
+  <meta property="og:description" content="A screenshot is worth a thousand tokens of bad description. Ten moves: attach an image, ask for structured findings, point at a region, tune resolution, and turn a picture of a UI into a build spec." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      /* feature identity — vision teal, finding amber */
+      --eye:        oklch(0.58 0.12 200);
+      --eye-wash:   oklch(0.94 0.05 200);
+      --eye-ink:    oklch(0.42 0.12 200);
+      --find:       oklch(0.65 0.14 68);
+      --find-wash:  oklch(0.96 0.07 85);
+      --find-ink:   oklch(0.42 0.13 68);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--eye-wash) 62%, var(--eye-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.58 0.12 200 / 0.45);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.see      { background: var(--eye-wash); color: var(--eye-ink); }
+    .hack h2 .pill.cost     { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.ship     { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "what the model sees" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .scan {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 620px) { .scan { grid-template-columns: 1fr; } }
+
+    /* the fake "screenshot" the model is looking at */
+    .shot {
+      position: relative;
+      margin: 1rem;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid oklch(0.88 0.02 80);
+      background: var(--paper);
+      box-shadow: 0 10px 26px -22px oklch(0.40 0.10 200 / 0.6);
+      cursor: crosshair;
+      min-height: 13rem;
+      user-select: none;
+    }
+    .shot .ui-hero {
+      height: 4.4rem;
+      background: linear-gradient(135deg, var(--violet) 0%, var(--accent) 120%);
+      display: flex; align-items: center; padding: 0 1rem;
+    }
+    .shot .ui-hero b { color: oklch(0.99 0 0); font-family: 'Geist', serif; font-size: 1.1rem; }
+    .shot .ui-body { padding: 0.85rem 1rem 1.1rem; display: grid; gap: 0.6rem; }
+    .shot .ui-line { height: 0.6rem; border-radius: 4px; background: var(--paper-deep); }
+    .shot .ui-line.s { width: 60%; }
+    .shot .ui-btn {
+      width: 7rem; height: 2rem; border-radius: 7px;
+      background: var(--amber); color: oklch(0.99 0 0);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.8rem;
+      margin-top: 0.3rem;
+    }
+    /* the box the model "found" — moves with the active region */
+    .shot .bbox {
+      position: absolute;
+      border: 2px solid var(--eye);
+      border-radius: 6px;
+      background: oklch(0.58 0.12 200 / 0.14);
+      box-shadow: 0 0 0 9999px oklch(0.20 0.01 60 / 0.04);
+      transition: all 0.3s var(--ease-paper);
+      pointer-events: none;
+    }
+    .shot .bbox::after {
+      content: attr(data-l);
+      position: absolute;
+      top: -1.35rem; left: -2px;
+      background: var(--eye); color: oklch(0.99 0 0);
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.1em 0.45em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* the structured findings side */
+    .findings { padding: 1rem 1rem 1rem 0; display: grid; align-content: start; gap: 0.55rem; }
+    @media (max-width: 620px) { .findings { padding: 0 1rem 1rem; } }
+    .findings .fh {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+    .finding {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.6rem;
+      align-items: start;
+      background: var(--paper); border: 1px solid oklch(0.9 0.015 80);
+      border-radius: var(--radius-sm); padding: 0.55rem 0.7rem;
+      font-size: 0.84rem; cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s var(--ease-paper);
+    }
+    .finding:hover, .finding.on { border-color: var(--eye); transform: translateX(2px); }
+    .finding .sev {
+      width: 9px; height: 9px; border-radius: 50%; margin-top: 0.35rem; flex-shrink: 0;
+    }
+    .finding .sev.hi  { background: var(--margin); }
+    .finding .sev.med { background: var(--amber); }
+    .finding .sev.lo  { background: var(--sage); }
+    .finding .ft { font-weight: 600; color: var(--ink); }
+    .finding .fd { color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.1rem; }
+    .finding .reg {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      color: var(--eye-ink); margin-top: 0.18rem;
+    }
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .shot .bbox, .finding { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: a multimodal message ─────────────────────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.image { border-left-color: var(--eye); background: var(--eye-wash); }
+    .anat .blk.text  { border-left-color: var(--find); background: var(--find-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.image .tag { color: var(--eye-ink); }
+    .anat .blk.text .tag { color: var(--find-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.image .tag .dot { background: var(--eye); }
+    .anat .blk.text .tag .dot { background: var(--find); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: oklch(0.36 0.10 145); }
+    .ptable td.no { color: var(--margin); }
+
+    /* ── ask-for chips ─────────────────────── */
+    .bank { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .bank { grid-template-columns: 1fr; } }
+    .bank .set { background: var(--paper); border: 1px solid oklch(0.88 0.02 80); border-radius: var(--radius-md); padding: 0.85rem 0.95rem; }
+    .bank .set h5 {
+      font-family: 'Geist Mono', monospace; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.55rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .bank .set.lo h5 { color: var(--margin); }
+    .bank .set.hi h5 { color: var(--eye-ink); }
+    .bank .set h5 .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .bank .set.lo h5 .dot { background: var(--margin); }
+    .bank .set.hi h5 .dot { background: var(--eye); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+      padding: 0.22em 0.6em; border-radius: 999px;
+      background: var(--paper-deep); color: var(--ink-soft);
+    }
+    .bank .set.lo .chip { background: var(--margin-soft); color: var(--margin); }
+    .bank .set.hi .chip { background: var(--eye-wash); color: var(--eye-ink); }
+
+    /* ── Mobile mock (phone snapping a screenshot) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 200 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--eye) 0%, var(--accent) 130%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.7rem; }
+    /* the snapped thumbnail */
+    .phone .snap {
+      border: 1px solid oklch(0.86 0.05 200);
+      background: var(--eye-wash);
+      border-radius: 9px;
+      overflow: hidden;
+    }
+    .phone .snap .sh {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.6rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.55rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--eye-ink);
+    }
+    .phone .snap .sh .cam { margin-left: auto; }
+    .phone .snap .thumb {
+      height: 4.4rem; margin: 0 0.5rem 0.5rem;
+      border-radius: 6px; overflow: hidden;
+      background: linear-gradient(135deg, var(--violet) 0%, var(--accent) 120%);
+      position: relative;
+    }
+    .phone .snap .thumb .mini-box {
+      position: absolute; top: 1.2rem; left: 0.7rem;
+      width: 3.4rem; height: 1.3rem; border-radius: 4px;
+      border: 1.5px solid oklch(0.99 0 0); background: oklch(0.99 0 0 / 0.16);
+    }
+    /* findings list under the snap */
+    .phone .res { display: grid; gap: 0.4rem; }
+    .phone .rrow {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.4rem; align-items: start;
+      border-left: 3px solid var(--find); background: var(--find-wash);
+      border-radius: 6px; padding: 0.4rem 0.5rem;
+    }
+    .phone .rrow .d { width: 7px; height: 7px; border-radius: 50%; background: var(--find); margin-top: 0.2rem; }
+    .phone .rrow .rt { font-size: 0.56rem; line-height: 1.4; color: var(--ink); }
+    .phone .rrow .rt b { font-weight: 700; }
+    @media (prefers-reduced-motion: reduce) { .phone .snap .sh .cam { animation: none; } }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.58 0.12 200 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.58 0.12 200 / 0.4); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 29</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;28</span>
+        <span class="tag">vision</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Show the model a <span class="accent">picture</span> &mdash; the day you stop describing the screenshot and just hand it over.</h1>
+
+      <p class="deck">
+        You've been typing paragraphs to explain a UI the model could <strong>see</strong> in one
+        attachment. Multimodal is the move: drop an image into the same <code>messages</code> call you
+        already make, then &mdash; the part most people miss &mdash; ask for a <em>typed list of findings</em>
+        instead of a wall of prose. Ten moves to attach it, point at one region, control the cost, and turn
+        a picture of a screen into a spec you can build from. The panel below is live: hover a finding and
+        watch the model's box land on the pixels.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Vision-58A6B4?style=flat-square&logo=anthropic&logoColor=white" alt="Claude vision" />
+        <img src="https://img.shields.io/badge/Gemini-Multimodal-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini multimodal" />
+        <img src="https://img.shields.io/badge/input-base64_or_url-D97757?style=flat-square&logo=files&logoColor=white" alt="image input base64 or url" />
+        <img src="https://img.shields.io/badge/pairs_with-structured_output-2EA043?style=flat-square&logo=json&logoColor=white" alt="pairs with structured output" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~10 min</span>
+        <span><b>Surface</b> · one new content block on the message</span>
+        <span><b>Assumes</b> · you can make a basic <code>messages.create</code> call</span>
+        <span><b>Pairs with</b> · Vol. 23 (typed output) · Vol. 11 (Claude Design)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          For the longest time I narrated screens to the model like a radio play: "there's a hero, the CTA
+          is amber, the spacing feels off in the third card." It was slow and it was lossy &mdash; I was
+          re-encoding pixels into prose and hoping the model decoded them back. Then I just attached the
+          screenshot. The narration disappeared and the answers got sharper, because the model was finally
+          looking at the same thing I was.
+        </p>
+        <p>
+          Multimodal isn't a different API. It's one new kind of <strong>content block</strong> on the
+          message you already send &mdash; an <code>image</code> sitting right next to your <code>text</code>.
+          Send a screenshot, a photo, a chart, a receipt, a whiteboard. The model reads it and answers in
+          the same turn.
+        </p>
+        <p>
+          The unlock isn't the attachment, though &mdash; it's <em>what you ask for</em>. A vague "what's
+          wrong with this?" gets you a vague paragraph. Ask for a <strong>schema-shaped list of findings</strong>
+          (this is Vol. 23 wearing sunglasses) and you get back something your code can render, sort, and act
+          on. Ten moves below: attach it, shape the answer, point at a region, tune resolution for cost, and
+          turn a picture of a UI into a build spec.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Attach the image — one new content block</a></li>
+          <li><a href="#h2">Read the shape — image in, text out</a></li>
+          <li><a href="#h3">Ask for findings, not a paragraph</a></li>
+          <li><a href="#h4">Point at one region — crop the question</a></li>
+          <li><a href="#h5">Send many images — and label them</a></li>
+          <li><a href="#h6">Tune resolution — pixels are tokens</a></li>
+          <li><a href="#h7">URL or base64 — pick the right intake</a></li>
+          <li><a href="#h8">Know what it can't see — the honest limits</a></li>
+          <li><a href="#h9">Turn a screen into a build spec</a></li>
+          <li><a href="#h10">Verify with the same eval harness</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="what the model sees demo">
+      <div class="demo-bar">
+        <span>one screenshot · hover a finding to see where it landed</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="scan">
+        <div class="shot" id="shot" aria-hidden="true">
+          <div class="ui-hero"><b>Acme — get started free</b></div>
+          <div class="ui-body">
+            <div class="ui-line"></div>
+            <div class="ui-line s"></div>
+            <div class="ui-line"></div>
+            <div class="ui-btn">Sign up</div>
+          </div>
+          <div class="bbox" id="bbox" data-l="finding" style="left:62%;top:6%;width:34%;height:30%;"></div>
+        </div>
+
+        <div class="findings">
+          <div class="fh">model output · findings[]</div>
+          <button class="finding on" data-x="62" data-y="6" data-w="34" data-h="30" data-l="contrast">
+            <span class="sev hi"></span>
+            <span><span class="ft">Hero text contrast is low</span><span class="fd">white on the violet→blue gradient dips below 4.5:1 on the right.</span><span class="reg">region · hero / right</span></span>
+          </button>
+          <button class="finding" data-x="6" data-y="74" data-w="40" data-h="16" data-l="cta label">
+            <span class="sev med"></span>
+            <span><span class="ft">CTA label is generic</span><span class="fd">"Sign up" repeats the hero's "get started free" — pick one verb.</span><span class="reg">region · primary button</span></span>
+          </button>
+          <button class="finding" data-x="6" data-y="40" data-w="88" data-h="26" data-l="rhythm">
+            <span class="sev lo"></span>
+            <span><span class="ft">Body rhythm is even but flat</span><span class="fd">three equal lines read as filler — vary length or add hierarchy.</span><span class="reg">region · body copy</span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Three findings, each with a region.</b> Same prompt asked for prose would've buried the contrast bug in a friendly paragraph. Typed output puts it first, severity-ranked, and pinned to pixels.</span>
+        <span class="hint">hover me ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Attach the image &mdash; it's one new block on the message you already send. <span class="pill setup">setup</span></h2>
+        <p>
+          No new endpoint, no special model. The <code>content</code> of a message can be a <em>list</em> of
+          blocks instead of a plain string &mdash; so you put an <code>image</code> block and a
+          <code>text</code> block side by side in the same user turn. The image carries the pixels; the text
+          carries the question. The model reads both together.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">see.py &mdash; an image block next to a text block</span></div>
+<pre><span class="key">import</span> anthropic, base64, pathlib
+client = anthropic.Anthropic()
+
+img = base64.standard_b64encode(
+    pathlib.Path(<span class="str">"screenshot.png"</span>).read_bytes()
+).decode()
+
+response = client.messages.create(
+    model=<span class="str">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="amb">1024</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: [
+        {<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: {   <span class="cmt"># &lt;-- the new block</span>
+            <span class="str">"type"</span>: <span class="str">"base64"</span>,
+            <span class="str">"media_type"</span>: <span class="str">"image/png"</span>,
+            <span class="str">"data"</span>: img,
+        }},
+        {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>:
+            <span class="str">"What's the single biggest UX problem on this screen?"</span>},
+    ]}],
+)</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Screenshot any app you use daily &mdash; <kbd>⌘</kbd><kbd>⇧</kbd><kbd>4</kbd> on a Mac &mdash;
+          and run exactly that. Then do the thing you used to do: write a paragraph describing the same screen
+          and ask cold. The attached-image answer is more specific <b>every time</b>, because it isn't guessing
+          at your description.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Read the shape &mdash; image goes in, ordinary text comes out. <span class="pill read">read</span></h2>
+        <p>
+          The request got a new block type, but the <em>response</em> doesn't. Vision is input-only: the
+          model can't draw you a picture back, it answers in words (or, if you ask, in JSON). So
+          <code>response.content</code> is the same text you're used to &mdash; the image just made that text
+          smarter. Order matters a little: put the image <strong>before</strong> the question so the model has
+          looked before it's asked.
+        </p>
+        <div class="anat" aria-label="anatomy of a multimodal message">
+          <div class="blk image">
+            <div class="tag"><span class="dot"></span>content[0].type == "image"</div>
+            <p><em>The pixels.</em> A base64 PNG or a URL. The model sees the layout, the colors, the text
+            rendered in the screenshot, the spacing &mdash; everything you'd see glancing at it.</p>
+          </div>
+          <div class="blk text">
+            <div class="tag"><span class="dot"></span>content[1].type == "text"</div>
+            <p><em>The question.</em> "What's wrong here?" / "Extract the line items." / "Return findings as
+            JSON." This is the steering &mdash; the same image answers very differently depending on the ask.</p>
+          </div>
+        </div>
+        <p class="scribble">image first, then the text. it reads top-to-bottom like you do.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Ask for findings, not a paragraph &mdash; this is the whole game. <span class="pill see">see</span></h2>
+        <p>
+          A bare "what do you think?" gets you a polite essay where the real bug is sentence four of paragraph
+          two. Don't accept prose. Hand the model a <strong>schema</strong> and demand a list &mdash; each item
+          a title, a severity, a region, a fix. Now the answer is sortable, renderable, and rankable. This is
+          <a href="make-the-model-hand-you-json-2026-06-23.html">Vol. 23</a> pointed at an image: structured
+          output is what turns "looks fine to me" into a punch-list.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">findings.py &mdash; a tool schema turns the critique into data</span></div>
+<pre>tools = [{
+    <span class="str">"name"</span>: <span class="str">"report_findings"</span>,
+    <span class="str">"description"</span>: <span class="str">"Structured UX review of the screenshot."</span>,
+    <span class="str">"input_schema"</span>: {<span class="str">"type"</span>: <span class="str">"object"</span>, <span class="str">"properties"</span>: {
+        <span class="str">"findings"</span>: {<span class="str">"type"</span>: <span class="str">"array"</span>, <span class="str">"items"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>, <span class="str">"properties"</span>: {
+                <span class="str">"title"</span>:    {<span class="str">"type"</span>: <span class="str">"string"</span>},
+                <span class="str">"severity"</span>: {<span class="str">"enum"</span>: [<span class="str">"high"</span>,<span class="str">"med"</span>,<span class="str">"low"</span>]},
+                <span class="str">"region"</span>:   {<span class="str">"type"</span>: <span class="str">"string"</span>},   <span class="cmt"># "hero / right"</span>
+                <span class="str">"fix"</span>:      {<span class="str">"type"</span>: <span class="str">"string"</span>},
+            }, <span class="str">"required"</span>: [<span class="str">"title"</span>,<span class="str">"severity"</span>,<span class="str">"fix"</span>]},
+        }},
+    }, <span class="str">"required"</span>: [<span class="str">"findings"</span>]},
+}]
+<span class="cmt"># force the schema: tool_choice = report_findings</span>
+<span class="cmt"># -> response.content[0].input["findings"] is now sortable data</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Sort the returned list by <code>severity</code> and render the high ones in red at the top &mdash;
+          exactly like the live panel above. A reviewer who sees a <b>ranked punch-list</b> trusts it more than
+          a paragraph, and your code can act on it: open a ticket per finding, diff two screens, gate a deploy.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Point at one region &mdash; crop the question before you ask it. <span class="pill see">see</span></h2>
+        <p>
+          When you only care about the nav bar, don't send the whole 4K page and write "look at the top." Two
+          better moves: <strong>crop the image to the region</strong> before you attach it, or annotate it &mdash;
+          draw a red box, add a number &mdash; and reference the marker in your prompt. Less to look at means a
+          tighter, cheaper, more accurate answer. Models read marked-up images well; a literal red arrow is a
+          legitimate prompt.
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Don't ask for <b>pixel-perfect coordinates</b> — "the bug is at x=412, y=88." Vision models
+          reason about <em>regions and relationships</em> ("the right half of the hero"), not exact pixel math.
+          Ask for a named region or a crop, not a bounding box you'll trust to the pixel. Crop first; let the
+          frame <em>be</em> the coordinate.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Send many images &mdash; and label which is which. <span class="pill see">see</span></h2>
+        <p>
+          You can stack several image blocks in one turn &mdash; perfect for before/after diffs, a flow across
+          three screens, or "which of these mockups is strongest?" The catch: the model can't read your
+          variable names. Put a <strong>text label before each image</strong> so it can refer back to them, then
+          ask the comparison question last.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">compare.py &mdash; label each image so the answer can cite it</span></div>
+<pre>content = [
+    {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>: <span class="str">"Image A — current design:"</span>},
+    {<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: a_src},
+    {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>: <span class="str">"Image B — proposed redesign:"</span>},
+    {<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: b_src},
+    {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>:
+        <span class="str">"What did B improve, and what did it quietly break?"</span>},
+]
+<span class="cmt"># the model can now answer "in Image B, the CTA..." by name</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>This is the <a href="same-prompt-two-souls-claude-vs-gemini-design-2026-06-27.html">Vol. 27</a>
+          trick made literal: generate the same screen with Claude and with Gemini, screenshot both, send them
+          labeled A and B, and ask the model to <b>critique its own and its rival's output</b>. The self-review
+          is often where the best fix hides.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Tune resolution &mdash; remember that pixels are tokens. <span class="pill cost">cost</span></h2>
+        <p>
+          An image isn't free; it's billed as input tokens, and the count scales with the image's
+          <strong>area</strong>. A giant retina screenshot can quietly cost more than the prompt around it. The
+          providers resize very large images down anyway, so you gain nothing by sending a monster &mdash; you
+          just pay for pixels they throw away. Resize to roughly what the model needs to read the content, and
+          your bill drops without hurting the answer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">resize.py &mdash; cap the long edge before you send</span></div>
+<pre><span class="key">from</span> PIL <span class="key">import</span> Image
+
+im = Image.open(<span class="str">"screenshot.png"</span>)
+im.thumbnail((<span class="amb">1568</span>, <span class="amb">1568</span>))   <span class="cmt"># cap the long edge ~1568px</span>
+im.save(<span class="str">"small.png"</span>)        <span class="cmt"># readable, far fewer tokens</span>
+
+<span class="cmt"># rough rule of thumb for token cost:</span>
+<span class="cmt">#   tokens ≈ (width_px × height_px) / 750</span>
+<span class="cmt"># a 1568×1568 image ≈ ~1,600 input tokens. budget per image.</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>This is the through-line to <a href="cost-and-latency-two-dials-2026-06-25.html">Vol. 25</a>:
+          every image is a recurring line item. One screenshot in a chat is nothing; <b>a screenshot per frame
+          of a video, or per item in a batch,</b> adds up fast. Resize at the edge, send the smallest image
+          that still reads, and measure it like you measure tokens.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>URL or base64 &mdash; pick the intake that fits where the image lives. <span class="pill setup">setup</span></h2>
+        <p>
+          Two ways to hand over the pixels. <strong>Base64</strong> inlines the bytes right in the request &mdash;
+          best for a local file or something you generated on the fly. A <strong>URL source</strong> lets the
+          provider fetch a publicly reachable image &mdash; best when it already lives on the web and you don't
+          want to ship the bytes yourself. Same <code>image</code> block, different <code>source.type</code>.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">intake.py &mdash; same block, two source types</span></div>
+<pre><span class="cmt"># A) local / generated bytes → base64</span>
+{<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: {
+    <span class="str">"type"</span>: <span class="str">"base64"</span>,
+    <span class="str">"media_type"</span>: <span class="str">"image/png"</span>,
+    <span class="str">"data"</span>: b64_string,
+}}
+
+<span class="cmt"># B) already on the public web → url</span>
+{<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: {
+    <span class="str">"type"</span>: <span class="str">"url"</span>,
+    <span class="str">"url"</span>: <span class="str">"https://example.com/hero.png"</span>,
+}}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Stick to the common formats &mdash; <code>PNG</code>, <code>JPEG</code>, <code>GIF</code>,
+          <code>WebP</code>. Set the <code>media_type</code> to <b>match the actual bytes</b>; mislabel a JPEG as
+          PNG and you'll get a decode error that reads like a mystery. The URL path needs a link the provider can
+          actually reach &mdash; a localhost or auth-walled URL won't work.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Know what it can't see &mdash; the honest limits beat a confident wrong answer. <span class="pill gotcha">gotcha</span></h2>
+        <p>
+          Vision is strong, not magic. It reads UI, charts, diagrams, documents, and handwriting well. It gets
+          <strong>shaky</strong> on tiny text, exact pixel measurements, precise counts in a crowded image,
+          rotated or low-contrast scans, and anything where a small visual detail flips the meaning. The failure
+          mode is the dangerous one: it answers confidently anyway. So build the escape hatch into your prompt.
+        </p>
+        <table class="ptable" aria-label="what vision is good and shaky at">
+          <thead>
+            <tr><th>Ask</th><th>Vision?</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">Read the text on this screen</td><td class="yes">strong</td><td>OCR-grade on legible type</td></tr>
+            <tr><td class="trait">Critique this layout</td><td class="yes">strong</td><td>reasons about hierarchy &amp; balance</td></tr>
+            <tr><td class="trait">Extract a table / receipt</td><td class="yes">strong</td><td>structure + values together</td></tr>
+            <tr><td class="trait">"Exactly how many pixels…?"</td><td class="no">shaky</td><td>no precise pixel math</td></tr>
+            <tr><td class="trait">Count 80 dots in a chart</td><td class="no">shaky</td><td>dense counting drifts</td></tr>
+            <tr><td class="trait">Read 6px greeked text</td><td class="no">shaky</td><td>below legibility — it'll guess</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">add "say 'unclear' if you can't read it" — calibrated beats confident-wrong.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Turn a screen into a build spec &mdash; the move that closes the design loop. <span class="pill ship">ship</span></h2>
+        <p>
+          Here's where it pays off. Screenshot a design you admire (or your own mockup) and ask the model to
+          return a <strong>PageConfig</strong> &mdash; the same structured layout JSON from
+          <a href="model-driven-frontend-2026-06-03.html">Vol. 12</a> &mdash; describing what it sees: sections,
+          hierarchy, the rough token palette. Now you've gone <em>pixels → spec → code</em> without typing a
+          word of description. The image is the brief.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">spec.py &mdash; a screenshot becomes a layout config</span></div>
+<pre>prompt = (
+    <span class="str">"Describe this screen as a PageConfig: an ordered list of "</span>
+    <span class="str">"sections, each with a type, the key copy, and the dominant "</span>
+    <span class="str">"colors as hex. Don't invent content you can't see."</span>
+)
+<span class="cmt"># content = [ image_block, {"type":"text","text": prompt} ]</span>
+
+<span class="out"># -> {"sections": [</span>
+<span class="out">#      {"type":"hero","headline":"...","bg":["#7C5CFC","#3B6BF4"]},</span>
+<span class="out">#      {"type":"feature_grid","cols":3, ...},</span>
+<span class="out">#      {"type":"cta","label":"Sign up","style":"amber"} ]}</span>
+
+<span class="cmt"># feed that config into your renderer from Vol. 12 → live UI</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Add the guardrail <b>"don't invent content you can't see"</b> to the prompt &mdash; it's the
+          single most useful line. Without it the model helpfully hallucinates a pricing section that was never
+          in the screenshot. With it, the spec stays honest to the pixels, and honest specs build the right thing.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Verify with the same eval harness &mdash; pictures get graded too. <span class="pill ship">ship</span></h2>
+        <p>
+          Don't trust a vision feature on vibes any more than a text one. The harness from
+          <a href="grade-it-before-they-do-evals-2026-06-24.html">Vol. 24</a> works unchanged: a golden set of
+          images, each with the answer you expect, and a judge that scores the model's output against it. This
+          is how you catch the silent regressions &mdash; the resize that made small text unreadable, the model
+          update that changed how it ranks severity. The image is just another input to grade.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">eval_vision.py &mdash; golden images, expected findings</span></div>
+<pre>golden = [
+    {<span class="str">"img"</span>: <span class="str">"low_contrast_hero.png"</span>,
+     <span class="str">"must_flag"</span>: <span class="str">"contrast"</span>},
+    {<span class="str">"img"</span>: <span class="str">"clean_layout.png"</span>,
+     <span class="str">"must_flag"</span>: <span class="amb">None</span>},   <span class="cmt"># should find nothing — no false alarms</span>
+]
+<span class="key">for</span> case <span class="key">in</span> golden:
+    out = review(case[<span class="str">"img"</span>])             <span class="cmt"># the move-3 findings call</span>
+    ok = flagged(out, case[<span class="str">"must_flag"</span>])
+    print(case[<span class="str">"img"</span>], <span class="str">"✓"</span> <span class="key">if</span> ok <span class="key">else</span> <span class="str">"✗"</span>)
+
+<span class="out"># low_contrast_hero.png ✓   # caught the real bug</span>
+<span class="out"># clean_layout.png       ✓   # didn't cry wolf on a fine screen</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Put a <b>clean screenshot with nothing wrong</b> in your golden set. A vision reviewer that
+          invents problems on a perfect screen is worse than useless &mdash; testing the no-findings case keeps
+          it from crying wolf. Grade both the catches <em>and</em> the restraint.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a snap-and-review flow">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">vision · snap → review</div>
+            <div class="t">Reviewing your screen…</div>
+          </div>
+          <div class="s-body">
+            <div class="snap">
+              <div class="sh">attached <span class="cam">📷</span></div>
+              <div class="thumb"><span class="mini-box"></span></div>
+            </div>
+            <div class="res">
+              <div class="rrow"><span class="d"></span><span class="rt"><b>Hero contrast low</b> — white text on gradient dips below AA.</span></div>
+              <div class="rrow"><span class="d"></span><span class="rt"><b>CTA label generic</b> — "Sign up" echoes the hero.</span></div>
+              <div class="rrow"><span class="d"></span><span class="rt"><b>Body flat</b> — three equal lines, add hierarchy.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>The pattern that ships everywhere: <strong>snap → attach → typed findings</strong>. The user grabs a
+        screenshot, the model returns a ranked punch-list pinned to regions, and the UI renders it as tappable
+        rows &mdash; not a paragraph anyone has to parse.</p>
+        <p class="scribble">the image is the input; the findings list is the product.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Attach it</h4>
+          <ul>
+            <li><code>content:[]</code><span>a list, not a string</span></li>
+            <li><code>type:"image"</code><span>the new block</span></li>
+            <li><code>source.base64</code><span>local / generated bytes</span></li>
+            <li><code>source.url</code><span>already on the web</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Shape the ask</h4>
+          <ul>
+            <li><code>image first</code><span>then the text</span></li>
+            <li><code>findings[]</code><span>schema, not prose</span></li>
+            <li><code>severity</code><span>so you can sort</span></li>
+            <li><code>region</code><span>named, not pixel coords</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Mind the cost</h4>
+          <ul>
+            <li><code>~px²/750</code><span>tokens scale with area</span></li>
+            <li><code>≤1568px</code><span>cap the long edge</span></li>
+            <li><code>resize@edge</code><span>before you send</span></li>
+            <li><code>per-image</code><span>budget it like tokens</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Stay honest</h4>
+          <ul>
+            <li><code>"unclear"</code><span>let it abstain</span></li>
+            <li><code>no pixel math</code><span>regions, not coords</span></li>
+            <li><code>don't invent</code><span>only what it sees</span></li>
+            <li><code>eval-it</code><span>golden images + no-flag case</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 29 · multimodal vision</small>
+      </div>
+      <div class="end">
+        built from the <code>vision</code> cookbook<br />
+        one image block · stop describing<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var shot = document.getElementById('shot');
+      var bbox = document.getElementById('bbox');
+      if (!shot || !bbox) return;
+      var findings = Array.prototype.slice.call(document.querySelectorAll('.finding'));
+      var verdict = document.getElementById('verdict');
+
+      var copy = {
+        'contrast': '<b>High severity, pinned to the hero.</b> The model put the contrast bug first because you asked for severity — a paragraph would have softened it into "you might consider…".',
+        'cta label': '<b>Medium — caught a duplicate verb.</b> Two CTAs saying the same thing is the kind of thing you skim past but the model reads cold, every time.',
+        'rhythm': '<b>Low — a taste note, not a bug.</b> Severity lets you keep these without drowning the real issues. Sort high→low and the punch-list runs itself.'
+      };
+
+      function activate(el) {
+        findings.forEach(function (f) { f.classList.remove('on'); });
+        el.classList.add('on');
+        bbox.style.left   = el.dataset.x + '%';
+        bbox.style.top    = el.dataset.y + '%';
+        bbox.style.width  = el.dataset.w + '%';
+        bbox.style.height = el.dataset.h + '%';
+        bbox.setAttribute('data-l', el.dataset.l);
+        var key = el.dataset.l;
+        if (verdict && copy[key]) verdict.innerHTML = copy[key];
+      }
+
+      findings.forEach(function (el) {
+        el.addEventListener('mouseenter', function () { activate(el); });
+        el.addEventListener('focus', function () { activate(el); });
+        el.addEventListener('click', function () { activate(el); });
+      });
+    })();
+  </script>
+</body>
+</html>

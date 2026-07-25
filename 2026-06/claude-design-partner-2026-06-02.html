@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Designed, Not Generated — Twelve Moves for Directing Claude Like a Design Partner · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: how to direct Claude Artifacts so the UI looks made, not auto-generated. The design vocabulary, the knobs, the AI tells to kill, and where Gemini fits." />
+  <meta property="og:title" content="Designed, Not Generated — Twelve Moves for Directing Claude Like a Design Partner" />
+  <meta property="og:description" content="The design vocabulary, the visual knobs, the AI tells to kill, and the Claude-vs-Gemini split — for getting interfaces that look made instead of generated." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --plum:       oklch(0.52 0.15 320);
+      --plum-wash:  oklch(0.94 0.04 320);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-plum:  oklch(0.80 0.10 320);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MOVE BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.prompt   { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.design   { background: var(--plum-wash); color: oklch(0.42 0.14 320); }
+    .hack h2 .pill.canvas   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.workflow { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .plm { color: var(--code-plum); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Prompt-card (a written prompt, not a terminal) */
+    .promptcard {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 0.95rem 1.1rem;
+      font-size: 0.95rem;
+    }
+    .promptcard .lbl {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+      margin-bottom: 0.4rem;
+    }
+    .promptcard p { max-width: none; color: var(--ink); }
+    .promptcard p + p { margin-top: 0.5rem; }
+    .promptcard em { color: var(--ink-soft); font-style: italic; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Claude-vs-Gemini compare card */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col {
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1rem;
+      background: var(--paper-alt);
+    }
+    .compare .col.claude { border-top: 3px solid var(--amber); }
+    .compare .col.gemini { border-top: 3px solid var(--accent); }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .compare .col.claude h4 { color: oklch(0.50 0.13 68); }
+    .compare .col.gemini h4 { color: var(--accent-ink); }
+    .compare .col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+    .compare .col li {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      padding-left: 1rem;
+      position: relative;
+    }
+    .compare .col li::before {
+      content: '–';
+      position: absolute; left: 0;
+      color: var(--ink-mute);
+    }
+    .compare .col li b { color: var(--ink); }
+
+    /* Design-knob panel */
+    .knobs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.7rem;
+    }
+    .knob {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.9rem;
+    }
+    .knob .name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--ink);
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .knob .name .dial {
+      width: 0.7rem; height: 0.7rem; border-radius: 50%;
+      background: var(--plum); flex: 0 0 auto;
+    }
+    .knob .say {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--accent-ink);
+      margin-top: 0.35rem;
+      line-height: 1.4;
+    }
+    .knob .why { font-size: 0.84rem; color: var(--ink-soft); margin-top: 0.3rem; }
+
+    /* AI-tells list */
+    .tells { display: grid; gap: 0.5rem; }
+    .tell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      gap: 0.85rem;
+      align-items: baseline;
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .tell .bad { font-size: 0.9rem; color: oklch(0.50 0.14 27); }
+    .tell .bad b { color: oklch(0.42 0.16 27); }
+    .tell .fix { font-size: 0.9rem; color: var(--ink-soft); }
+    .tell .fix b { color: oklch(0.40 0.11 145); }
+    @media (max-width: 560px) { .tell { grid-template-columns: 1fr; gap: 0.3rem; } }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 42ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it above your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 10</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;02</span>
+        <span class="tag">claude</span>
+        <span class="tag">design</span>
+      </div>
+
+      <h1>Designed, not <span class="accent">generated</span> &mdash; twelve moves for directing Claude like a design partner.</h1>
+
+      <p class="deck">
+        Last notebook covered <em>building</em> the app. This one is narrower and
+        harder: making it look like a person made it. Claude can output a real
+        interface from one sentence &mdash; but the default sentence gets you the
+        default look. These are the moves I use to push past that: the design
+        vocabulary, the visual knobs, the AI tells worth killing, and where
+        Gemini still earns a seat. Mostly Artifacts. All learned by iterating
+        in the panel until it stopped looking auto-generated.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~13 min</span>
+        <span><b>Surface</b> · Claude Artifacts + a little Gemini</span>
+        <span><b>Assumes</b> · you've prompted one UI before</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The model writes the markup. You direct the taste. That split is the
+          whole job now, and almost nobody talks about the second half. A blank
+          prompt gets you the house style &mdash; centered everything, a purple
+          gradient, system fonts, padding that's either zero or a mile. Fine for
+          a sketch. Embarrassing for a portfolio.
+        </p>
+        <p>
+          I'm not a developer by trade. I supply direction, the model supplies
+          the floor, and the gap between "generated" and "designed" turns out to
+          be vocabulary &mdash; knowing the words for what you can already see is
+          off. Say "more editorial," "tighter rhythm," "warmer paper," and Claude
+          moves in a specific, repeatable direction.
+        </p>
+        <p>
+          Format below: each move gets a number, a one-line claim, a real prompt
+          or comparison, and a try-it crumb. The closer to the top, the more I
+          reach for it. Steal what fits how you work.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#m1">Pick your partner — warmth vs. density</a></li>
+          <li><a href="#m2">Prompt the design, not the feature</a></li>
+          <li><a href="#m3">Artifacts as a live canvas</a></li>
+          <li><a href="#m4">The five design knobs</a></li>
+          <li><a href="#m5">Kill the AI tells</a></li>
+          <li><a href="#m6">Let type carry the layout</a></li>
+          <li><a href="#m7">Warmth is a recipe, not a vibe</a></li>
+          <li><a href="#m8">Ask for the grid out loud</a></li>
+          <li><a href="#m9">The PageConfig move</a></li>
+          <li><a href="#m10">Iterate by screenshot</a></li>
+          <li><a href="#m11">Light by default, dark on purpose</a></li>
+          <li><a href="#m12">Lift it out of the panel</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="m1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Pick your partner &mdash; warmth vs. density. <span class="pill design">design</span></h2>
+        <p>
+          First decision before you type anything: who's the better fit for this
+          screen? After enough side-by-sides, the split is consistent enough to
+          plan around. Claude reaches for warmth &mdash; off-white paper, generous
+          padding, editorial type, a real type scale. Gemini reaches for density
+          &mdash; data-forward, compact, tables and panels that pack a lot in a small
+          box. Neither is "better." They're tuned for different jobs.
+        </p>
+
+        <div class="compare">
+          <div class="col claude">
+            <h4>Claude leans</h4>
+            <ul>
+              <li><b>Editorial</b> — type as the design, breathing room</li>
+              <li><b>Warm</b> — off-white grounds, soft shadows, oklch color</li>
+              <li><b>Opinionated</b> — picks a hierarchy and commits</li>
+              <li>Best for: <b>landing pages, articles, portfolios, brand surfaces</b></li>
+            </ul>
+          </div>
+          <div class="col gemini">
+            <h4>Gemini leans</h4>
+            <ul>
+              <li><b>Structural</b> — grids, panels, multi-column dashboards</li>
+              <li><b>Dense</b> — fits more per screen, table-friendly</li>
+              <li><b>Literal</b> — does what you said, fewer surprises</li>
+              <li>Best for: <b>dashboards, admin tools, data UIs, internal apps</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="scribble">if you can't decide, start in Claude for taste, then port the structure to Gemini if it gets data-heavy.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="m2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Prompt the design, not the feature. <span class="pill prompt">prompt</span></h2>
+        <p>
+          The single biggest jump in quality came when I stopped describing
+          <em>what the page does</em> and started describing <em>how it should
+          feel</em>. "Build a pricing page" gets you the house style. The same
+          request with three feel-words and one reference gets you something with
+          a point of view. Treat the prompt like a creative brief, not a ticket.
+        </p>
+
+        <div class="promptcard">
+          <div class="lbl">the wish (don't)</div>
+          <p>Build a pricing page with three tiers and a FAQ.</p>
+        </div>
+
+        <div class="promptcard">
+          <div class="lbl">the brief (do)</div>
+          <p>
+            Build a pricing page, three tiers. <em>Feel:</em> calm, editorial,
+            premium &mdash; think a print magazine, not a SaaS dashboard. Off-white
+            background, one accent color, lots of negative space, a real type
+            scale with a serif display face. Left-align everything; no centered
+            hero. The middle tier is the hero &mdash; make it obviously the choice
+            without a loud "POPULAR" badge.
+          </p>
+        </div>
+
+        <p>
+          Five extra sentences. Completely different output. The model had the
+          ability the whole time &mdash; I just wasn't telling it which direction to
+          point the ability.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Take any UI you've prompted before and re-run it with three feel-words
+            (<code>calm</code>, <code>editorial</code>, <code>premium</code>) and
+            one reference (<em>"like a print magazine"</em>) bolted on. Watch the
+            floor jump.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="m3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Artifacts as a live canvas &mdash; iterate in the panel. <span class="pill canvas">canvas</span></h2>
+        <p>
+          The Artifact panel is the design surface, not a preview. The page
+          renders on the right while you talk on the left, and every follow-up
+          edits the <em>same</em> file instead of starting over. That's the
+          actual loop: don't re-prompt the whole thing, nudge one thing at a time
+          and watch it land. Diary-style. Small steps, visible each step.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the iteration loop</span>
+          </div>
+<pre><span class="cmt"># 1. first pass — get the bones on screen</span>
+<span class="prompt">›</span> <span class="str">pricing page, 3 tiers, editorial + warm, left-aligned</span>
+
+<span class="cmt"># 2. then nudge, one knob per turn — it edits in place</span>
+<span class="prompt">›</span> <span class="str">tighten the vertical rhythm, ~30% less padding between rows</span>
+<span class="prompt">›</span> <span class="str">middle tier: warmer card bg, the others stay flat</span>
+<span class="prompt">›</span> <span class="str">bump the price numbers two steps up the type scale</span>
+<span class="prompt">›</span> <span class="str">the accent is too candy — desaturate it one notch</span>
+
+<span class="cmt"># each line lands in seconds. no re-render from zero.</span></pre>
+        </div>
+
+        <p>
+          The mistake I made early was treating a near-miss as a failure and
+          re-prompting the whole page. Don't. A near-miss is 90% done &mdash; name
+          the 10% and let it patch. You keep all the good decisions and only move
+          the one that's off.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="m4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>The five design knobs &mdash; the words that actually move it. <span class="pill design">design</span></h2>
+        <p>
+          You don't need a design degree, you need five dials and the phrase that
+          turns each one. These are the levers I reach for in basically every
+          session. Say the phrase, the model moves the dial in a predictable
+          direction. That predictability is the whole game.
+        </p>
+
+        <div class="knobs">
+          <div class="knob">
+            <div class="name"><span class="dial"></span>Density</div>
+            <div class="say">"tighten the rhythm" / "more breathing room"</div>
+            <div class="why">Controls padding + line-height + gap together. The fastest fix for "feels generated."</div>
+          </div>
+          <div class="knob">
+            <div class="name"><span class="dial"></span>Type scale</div>
+            <div class="say">"more dramatic scale" / "bigger jump h1→body"</div>
+            <div class="why">Widens the ratio between sizes. Flat scale reads cheap; dramatic scale reads designed.</div>
+          </div>
+          <div class="knob">
+            <div class="name"><span class="dial"></span>Color temp</div>
+            <div class="say">"warmer paper" / "desaturate the accent one notch"</div>
+            <div class="why">Pulls off pure-white and pure-saturation. Warmth is what makes Claude output feel human.</div>
+          </div>
+          <div class="knob">
+            <div class="name"><span class="dial"></span>Alignment</div>
+            <div class="say">"left-align everything, no centered hero"</div>
+            <div class="why">Centered-everything is the #1 AI tell. Editorial layouts anchor left.</div>
+          </div>
+          <div class="knob">
+            <div class="name"><span class="dial"></span>Depth</div>
+            <div class="say">"flatten the shadows" / "softer, lower elevation"</div>
+            <div class="why">Heavy drop-shadows scream template. Soft, low shadows read intentional.</div>
+          </div>
+        </div>
+
+        <p class="scribble">memorize these five phrases and you can re-direct any AI layout without touching a line of CSS.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="m5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Kill the AI tells. <span class="pill design">design</span></h2>
+        <p>
+          Generated UI has a tell, the same way generated prose has "delve." Once
+          you can name the tells, you can ask for them out before they ship. Here
+          are the ones I catch most often, and the one-line fix for each.
+        </p>
+
+        <div class="tells">
+          <div class="tell">
+            <div class="bad"><b>Purple-to-blue gradient</b> on the hero</div>
+            <div class="fix"><b>Fix:</b> "one flat accent color, no gradients" — or name a real palette</div>
+          </div>
+          <div class="tell">
+            <div class="bad"><b>Everything centered</b>, max-width 600, dead middle</div>
+            <div class="fix"><b>Fix:</b> "left-align, asymmetric layout, let content set the width"</div>
+          </div>
+          <div class="tell">
+            <div class="bad"><b>Emoji in every heading</b> 🚀 ✨ 🎯</div>
+            <div class="fix"><b>Fix:</b> "no emoji; use type weight + size for emphasis instead"</div>
+          </div>
+          <div class="tell">
+            <div class="bad"><b>System font stack</b>, flat type scale</div>
+            <div class="fix"><b>Fix:</b> name two fonts — a display face + a body face — and a scale ratio</div>
+          </div>
+          <div class="tell">
+            <div class="bad"><b>Three identical cards</b> with a heavy drop-shadow</div>
+            <div class="fix"><b>Fix:</b> "vary the cards; soft shadows; one card is the hero, not all three"</div>
+          </div>
+          <div class="tell">
+            <div class="bad"><b>"Lorem ipsum" energy</b> — generic copy in real slots</div>
+            <div class="fix"><b>Fix:</b> hand it the real copy; bad copy makes good layout look bad</div>
+          </div>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            You can fold all of these into one reusable line at the top of a
+            prompt: <em>"avoid the generated look &mdash; no purple gradients, no
+            centered hero, no emoji headers, name real fonts, soft shadows."</em>
+            I keep it as a saved snippet and paste it into every design session.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="m6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Let type carry the layout. <span class="pill design">design</span></h2>
+        <p>
+          Claude's real strength is typography, so lean on it. Half of what reads
+          as "designed" is just a confident type system: one display face, one
+          body face, and a scale with real jumps between steps. When you're stuck,
+          the fix is usually <em>more contrast in the type</em>, not more
+          decoration around it.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">a type brief that lands</span>
+          </div>
+<pre><span class="cmt"># name the faces — don't leave it to the system stack</span>
+<span class="plm">Display</span>: a tight, modern sans — <span class="str">Geist</span> or <span class="str">Inter Tight</span>, weight 700–800
+<span class="plm">Body</span>:    <span class="str">Inter</span>, weight 400, line-height ~1.6
+<span class="plm">Accent</span>:  a handwritten face for margin notes — <span class="str">Caveat</span>
+
+<span class="cmt"># name the scale — flat scales read cheap</span>
+<span class="key">h1</span> clamp(2.2rem → 4rem)   <span class="cmt">// big, confident</span>
+<span class="key">h2</span> ~1.6rem
+<span class="key">body</span> ~1.05rem
+<span class="cmt"># the JUMP from h1 to body is the design. make it dramatic.</span></pre>
+        </div>
+
+        <p>
+          One more: ask for <code>text-wrap: balance</code> on headings and
+          <code>text-wrap: pretty</code> on paragraphs. Tiny CSS, but it's the
+          difference between "typeset" and "dumped into a div." Claude knows these
+          &mdash; you just have to ask.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="m7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Warmth is a recipe, not a vibe. <span class="pill design">design</span></h2>
+        <p>
+          "Make it warmer" works, but you get more control if you know what warmth
+          is actually made of. It's four ingredients, and you can dial each. This
+          is the recipe I hand the model when I want the page to feel human instead
+          of clinical.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the warmth recipe</span>
+          </div>
+<pre><span class="cmt">// 1. never pure white — ground it in oklch, a hair of hue</span>
+<span class="key">--paper</span>: <span class="amb">oklch(0.985 0.012 85)</span>;  <span class="cmt">// off-white, warm</span>
+
+<span class="cmt">// 2. never pure black text — soften the ink</span>
+<span class="key">--ink</span>:   <span class="amb">oklch(0.20 0.01 60)</span>;
+
+<span class="cmt">// 3. soft, low shadows — not heavy drop-shadows</span>
+<span class="key">box-shadow</span>: <span class="str">0 12px 28px -20px oklch(0.4 0.06 80 / 0.4)</span>;
+
+<span class="cmt">// 4. one accent, desaturated a notch from "candy"</span>
+<span class="key">--accent</span>: <span class="amb">oklch(0.49 0.19 264)</span>;</pre>
+        </div>
+
+        <p>
+          The oklch part matters more than it looks. Off-white and soft-black give
+          the whole page a temperature; pure <code>#fff</code> on pure
+          <code>#000</code> is the clinical default that makes generated UI feel
+          cold. I ask for oklch by name now &mdash; the model is fluent in it.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            On your next artifact, add one line: <em>"use oklch color, off-white
+            paper, soft-black ink, no pure white or pure black anywhere."</em>
+            It's the cheapest warmth upgrade there is.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="m8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Ask for the grid out loud. <span class="pill design">design</span></h2>
+        <p>
+          Left to itself, a model stacks everything in one column &mdash; safe,
+          boring, and the reason a lot of AI pages feel flat. If you want
+          structure, say the structure. Name the columns, name the asymmetry,
+          name what spans full-width. This is where you borrow Gemini's instinct
+          even while building in Claude.
+        </p>
+
+        <div class="promptcard">
+          <div class="lbl">naming the grid</div>
+          <p>
+            Layout: a 12-column grid. The intro is two columns &mdash; copy on the
+            left at 7 cols, a sticky table-of-contents card on the right at 5,
+            rotated a hair off-axis like it's taped on. Below that, content
+            returns to a single 8-column measure, left-anchored. Section dividers
+            span full bleed. <em>Asymmetric, not centered.</em>
+          </p>
+        </div>
+
+        <p>
+          The phrase "asymmetric, not centered" does a lot of work on its own.
+          Centered symmetry is the safe default; asymmetry with a clear anchor
+          is what editorial design actually does. You're giving the model
+          permission to be less safe.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="m9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>The PageConfig move &mdash; structure first, style second. <span class="pill prompt">prompt</span></h2>
+        <p>
+          For anything with repeating parts &mdash; a feature grid, a changelog, a
+          team page &mdash; describe the <em>content as data</em> first, then ask for
+          the styling pass. You hand over a JSON-ish config, the model maps it to
+          a layout, and you've cleanly split "what's on the page" from "how it
+          looks." Change the data without touching the design; restyle without
+          touching the data.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">config → layout</span>
+          </div>
+<pre><span class="cmt">// step 1: hand it the shape</span>
+<span class="key">const</span> page = {
+  hero: { title: <span class="str">"Designed, not generated"</span>, accent: <span class="str">"generated"</span> },
+  features: [
+    { name: <span class="str">"Density knob"</span>, blurb: <span class="str">"padding + rhythm in one phrase"</span> },
+    { name: <span class="str">"Type scale"</span>,  blurb: <span class="str">"dramatic jumps read designed"</span> },
+    { name: <span class="str">"Warmth recipe"</span>, blurb: <span class="str">"oklch, off-white, soft shadows"</span> },
+  ],
+}
+
+<span class="cmt">// step 2: the ask</span>
+<span class="prompt">›</span> <span class="str">render this config as an editorial feature grid —
+   left-anchored, warm, dramatic type scale. style only,
+   keep the data exactly as given.</span></pre>
+        </div>
+
+        <p>
+          This is the trick frontend folks use to get clean, repeatable layouts
+          out of a model: the config is the contract. It also makes a second pass
+          trivial &mdash; "same data, now as a vertical timeline" reuses everything
+          you already wrote.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="m10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Iterate by screenshot &mdash; the diary-style pass. <span class="pill canvas">canvas</span></h2>
+        <p>
+          The fastest design feedback loop isn't words &mdash; it's a picture. When
+          something's off but I can't name it, I screenshot the artifact, paste it
+          back, and point at the part. The model reads its own output as an image
+          and fixes what it sees. This closes the gap between "I know it's wrong"
+          and "I know the word for what's wrong."
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">screenshot → critique → patch</span>
+          </div>
+<pre><span class="cmt"># paste the screenshot, then point</span>
+<span class="prompt">›</span> <span class="str">[screenshot] the hero feels top-heavy and the cards
+   are fighting the headline for attention. calm it down.</span>
+
+<span class="cmt"># or ask it to critique its own work first</span>
+<span class="prompt">›</span> <span class="str">[screenshot] critique this like a design lead —
+   three things that read as "generated," then fix them.</span></pre>
+        </div>
+
+        <p>
+          The self-critique prompt is the sleeper. Asking the model to <em>name</em>
+          its own AI tells before fixing them gets better results than asking for
+          the fix directly &mdash; it has to diagnose before it patches, same as a
+          person would. Diary-style design: shoot it, mark it up, run it back.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Next time an artifact is <em>almost</em> right, don't describe the
+            problem &mdash; screenshot it and say <em>"critique this like a design
+            lead, then fix the top three."</em> The diagnosis it writes is half
+            the value.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 11 -->
+    <article class="hack" id="m11">
+      <div class="nbr">11</div>
+      <div class="body">
+        <h2>Light by default, dark on purpose. <span class="pill design">design</span></h2>
+        <p>
+          Dark mode is the reflexive "make it look cool" move, and it's usually
+          the wrong reflex for the kind of work that needs to read as crafted.
+          Light, warm, editorial surfaces feel premium and considered; dark
+          surfaces feel like a dev tool. Both are right sometimes &mdash; just pick
+          on purpose, not by default.
+        </p>
+
+        <div class="compare">
+          <div class="col claude">
+            <h4>Reach for light when</h4>
+            <ul>
+              <li>It's a <b>brand or marketing</b> surface</li>
+              <li>The content is <b>long-form / editorial</b></li>
+              <li>You want <b>warmth and trust</b></li>
+              <li>It'll be <b>printed or screenshotted</b> for a portfolio</li>
+            </ul>
+          </div>
+          <div class="col gemini">
+            <h4>Reach for dark when</h4>
+            <ul>
+              <li>It's a <b>tool, dashboard, or code surface</b></li>
+              <li>There's <b>media or charts</b> that pop on dark</li>
+              <li>It runs <b>at night / long sessions</b></li>
+              <li>The mood is <b>technical, focused, heads-down</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="scribble">a single dark terminal block on a light page gives you the "cool" hit without going full dark mode. best of both.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 12 -->
+    <article class="hack" id="m12">
+      <div class="nbr">12</div>
+      <div class="body">
+        <h2>Lift it out of the panel &mdash; the last mile is short now. <span class="pill workflow">workflow</span></h2>
+        <p>
+          The artifact isn't the destination, it's the design comp that happens to
+          run. Once it looks right, get it into a real project. For a self-contained
+          HTML artifact that's a copy-paste; for a React one it's a component and
+          its tokens. The model that designed it can also do the port &mdash; ask.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">artifact → repo</span>
+          </div>
+<pre><span class="cmt"># ask for the port explicitly — don't hand-translate</span>
+<span class="prompt">›</span> <span class="str">extract the color + type tokens into a :root block
+   I can drop into my design system. keep the oklch values.</span>
+
+<span class="prompt">›</span> <span class="str">split this into a Next.js component + a tokens file.
+   Tailwind v4, no inline styles, mobile-first.</span>
+
+<span class="cmt"># then it's a normal commit</span>
+<span class="prompt">$</span> git add . &amp;&amp; git commit -m <span class="str">"feat: pricing page from artifact"</span></pre>
+        </div>
+
+        <p>
+          The thing that changed isn't that the model can design &mdash; it's that
+          the distance from "looks right in the panel" to "lives in the repo"
+          collapsed to a couple of prompts. The bottleneck moved all the way back
+          up to taste and direction. Which is exactly where you want it.
+        </p>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The five knobs</h4>
+          <ul>
+            <li><code>density</code><span>"tighten the rhythm"</span></li>
+            <li><code>type scale</code><span>"more dramatic jump h1→body"</span></li>
+            <li><code>color temp</code><span>"warmer paper, desaturate accent"</span></li>
+            <li><code>alignment</code><span>"left-align, no centered hero"</span></li>
+            <li><code>depth</code><span>"softer, lower shadows"</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Kill the AI tells</h4>
+          <ul>
+            <li><code>no</code><span>purple→blue gradient</span></li>
+            <li><code>no</code><span>everything centered</span></li>
+            <li><code>no</code><span>emoji headers</span></li>
+            <li><code>no</code><span>system font, flat scale</span></li>
+            <li><code>no</code><span>three identical heavy-shadow cards</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The warmth recipe</h4>
+          <ul>
+            <li><code>oklch</code><span>off-white paper, soft-black ink</span></li>
+            <li><code>shadow</code><span>soft + low, not heavy</span></li>
+            <li><code>accent</code><span>one color, desaturated a notch</span></li>
+            <li><code>wrap</code><span>balance headings, pretty paragraphs</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The loop</h4>
+          <ul>
+            <li><code>brief</code><span>feel-words + a reference, not a ticket</span></li>
+            <li><code>nudge</code><span>one knob per turn, edits in place</span></li>
+            <li><code>screenshot</code><span>"critique like a design lead, then fix"</span></li>
+            <li><code>config</code><span>data first, style second</span></li>
+            <li><code>lift</code><span>ask for the tokens + component port</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-02</small>
+      </div>
+      <div class="end">
+        next entry · <code>tokens before components</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

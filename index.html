@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Field Notebook — Building With AI, One Move at a Time · Lupo · The Mess is the Method</title>
+  <meta name="description" content="An open-notebook collection: step-by-step field guides on building with Claude and Gemini — GitHub for AI-era operators, frontends wired to models, Claude Design, agents, MCP, structured output, evals, cost & latency, retrieval, extended thinking, multimodal vision, prompt caching, design-system tokens, shipping to production, defending a live app from prompt injection, watching it in the wild with observability, versioning the prompt that runs it all like code, and finally giving the model real verbs with tool use — read/write split, human-approved writes, every call logged. Casual, visual, practical. Thirty-four entries and counting." />
+  <meta property="og:title" content="The Field Notebook — Building With AI, One Move at a Time" />
+  <meta property="og:description" content="Thirty-four open-notebook field guides on building with AI. From GitHub basics to streaming, MCP, typed model output, grading your AI on a rubric, tuning cost & latency, retrieval, vision, prompt caching, authoring a design system before the model writes a component, shipping to production, keeping a live app on-task when a stranger tries to jailbreak it, seeing what it says to everyone who isn't you, versioning the prompt that runs it all like code, and giving the model real verbs it can act with — safely — via tool use. Casual, visual, and built to actually use." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--rule-soft) 31px, var(--rule-soft) 32px),
+        linear-gradient(to right, transparent 0, transparent calc(max(2rem, 7vw) - 1px), var(--margin-soft) calc(max(2rem, 7vw) - 1px), var(--margin-soft) calc(max(2rem, 7vw) + 1px), transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 { font-family: 'Geist', 'Times New Roman', serif; font-weight: 700; letter-spacing: -0.018em; line-height: 1.15; text-wrap: balance; margin: 0; color: var(--ink); }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: none; }
+    code { font-family: 'Geist Mono', ui-monospace, monospace; }
+
+    .page { max-width: 1180px; margin: 0 auto; padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem); position: relative; }
+    .holes { position: absolute; top: 0; left: 0; right: 0; height: 32px; display: flex; justify-content: space-around; align-items: center; padding: 0 8%; pointer-events: none; opacity: 0.55; }
+    .holes span { width: 14px; height: 14px; border-radius: 50%; background: var(--paper-deep); box-shadow: inset 0 1px 1px oklch(0.78 0.02 80); }
+
+    /* HEADER */
+    header.masthead { padding-top: 2.75rem; margin-bottom: 2.5rem; }
+    .crumbs { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); letter-spacing: 0.04em; text-transform: uppercase; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag { background: var(--margin-soft); color: var(--margin); padding: 0.15em 0.55em; border-radius: 999px; font-size: 0.7rem; letter-spacing: 0.06em; }
+    h1 { font-size: clamp(2.4rem, 1.4rem + 4.2vw, 4.6rem); font-weight: 800; letter-spacing: -0.03em; margin-top: 1rem; }
+    h1 .accent { background: linear-gradient(180deg, transparent 60%, var(--amber-wash) 60%, var(--amber-wash) 92%, transparent 92%); padding: 0 0.1em; }
+    .deck { font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.3rem); color: var(--ink-soft); max-width: 62ch; margin-top: 0.9rem; }
+    .byline { display: flex; gap: 0.75rem; align-items: center; font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink); margin-top: 0.9rem; }
+    .byline .motto { font-weight: 400; color: var(--ink-mute); }
+    .byline .swatch { width: 22px; height: 22px; background: var(--margin); border-radius: 50%; position: relative; }
+    .byline .swatch::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--paper); }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 1.25rem; font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); padding-top: 1.1rem; border-top: 1px dashed oklch(0.82 0.02 80); margin-top: 1.4rem; letter-spacing: 0.02em; }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* FEATURE (latest) */
+    .feature { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(1.25rem, 3vw, 2.5rem); align-items: stretch; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem); margin-bottom: 3rem; position: relative; overflow: hidden; }
+    .feature::before { content: ''; position: absolute; top: -10px; left: 2rem; width: 72px; height: 20px; background: oklch(0.78 0.13 68 / 0.5); border-radius: 2px; transform: rotate(-2deg); }
+    @media (max-width: 760px) { .feature { grid-template-columns: 1fr; } }
+    .feature .kicker { font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--margin); }
+    .feature h2 { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.3rem); font-weight: 800; letter-spacing: -0.02em; margin: 0.3rem 0 0.7rem; }
+    .feature p { color: var(--ink-soft); max-width: 50ch; }
+    .feature .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+    .feature .go { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem; font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.92rem; color: oklch(0.99 0 0); background: var(--accent); padding: 0.55rem 1.2rem; border-radius: 999px; transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper); }
+    .feature .go:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .feature .preview { border-radius: var(--radius-md); overflow: hidden; border: 1px solid oklch(0.86 0.03 80); background:
+        radial-gradient(120% 120% at 100% 0%, var(--violet-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--accent-wash), transparent 55%),
+        var(--paper); display: flex; align-items: center; justify-content: center; min-height: 14rem; padding: 1.2rem; }
+    .mini-card { width: 100%; max-width: 19rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.6); }
+    .mini-card .mc-top { height: 4.5rem; background: linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%); display: flex; align-items: flex-start; gap: 0.4rem; padding: 0.55rem 0.6rem; }
+    .mini-card .mc-tag { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; background: oklch(1 0 0 / 0.9); color: var(--accent-ink); padding: 0.2em 0.6em; border-radius: 999px; }
+    .mini-card .mc-body { padding: 0.75rem 0.85rem 0.9rem; }
+    .mini-card .mc-title { font-family: 'Geist', serif; font-weight: 700; font-size: 1.02rem; }
+    .mini-card .mc-sub { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
+    .mini-card .mc-row { display: flex; gap: 0.9rem; margin-top: 0.6rem; font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink); }
+    .mini-json { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--ink-mute); margin-top: 0.7rem; line-height: 1.45; }
+    .mini-json .k { color: var(--violet); } .mini-json .s { color: var(--sage); }
+
+    /* MONTH SECTIONS */
+    .month { margin-bottom: 2.75rem; scroll-margin-top: 1.5rem; }
+    .month-head { display: flex; align-items: baseline; gap: 0.8rem; border-bottom: 2px solid var(--ink); padding-bottom: 0.5rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+    .month-head h3 { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); }
+    .month-head .count { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--margin); letter-spacing: 0.04em; }
+    .month-head .note { font-family: 'Caveat', cursive; font-size: 1.25rem; color: var(--ink-mute); margin-left: auto; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .entry { display: flex; flex-direction: column; background: var(--paper); border: 1px solid oklch(0.84 0.03 80); border-radius: var(--radius-md); padding: 1.35rem 1.4rem; box-shadow: 0 1px 0 oklch(0.90 0.02 80); transition: transform 0.18s var(--ease-paper), box-shadow 0.18s var(--ease-paper), border-color 0.18s; position: relative; }
+    .entry:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -26px oklch(0.40 0.06 264 / 0.55); border-color: oklch(0.78 0.06 264); }
+    .entry .top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.55rem; }
+    .entry .vol { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--margin); }
+    .entry .date { font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: var(--ink-mute); }
+    .entry h4 { font-size: 1.12rem; letter-spacing: -0.01em; line-height: 1.22; }
+    .entry h4 a { color: var(--ink); }
+    .entry:hover h4 a { color: var(--accent-ink); }
+    .entry p { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; flex: 1; }
+    .entry .pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
+    .pill { font-family: 'Geist Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.22em 0.65em; border-radius: 999px; background: var(--paper-deep); color: var(--ink-soft); }
+    .pill.build { background: var(--accent-wash); color: var(--accent-ink); }
+    .pill.design { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .pill.agent { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .pill.github { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .pill.new { background: var(--margin-soft); color: var(--margin); }
+
+    footer.sig { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-end; border-top: 2px solid var(--ink); padding-top: 1.2rem; margin-top: 2rem; }
+    footer.sig .name { font-family: 'Geist', sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: 1.25rem; color: var(--ink); line-height: 1.1; }
+    footer.sig .name small { display: block; font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--ink-mute); letter-spacing: 0.04em; margin-top: 0.2rem; }
+    footer.sig .end { font-family: 'Geist Mono', monospace; font-size: 0.8rem; color: var(--ink-mute); text-align: right; }
+    footer.sig .end a { color: var(--accent-ink); border-bottom: 1px dotted; }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+    @media (prefers-reduced-motion: reduce) { .entry { transition: none; } .feature .go { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Lupo Studios</span>
+        <span class="dot">•</span>
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>The Index</span>
+        <span class="tag">34 entries</span>
+      </div>
+
+      <h1>The <span class="accent">Field Notebook</span> — building with AI, one move at a time.</h1>
+
+      <p class="deck">
+        An open-notebook collection of step-by-step guides for people who learned to
+        <em>build</em> with AI before they learned the plumbing under it. Casual, visual,
+        and written to actually use — GitHub for AI-era operators, frontends wired to
+        Claude and Gemini, Claude Design, agents, MCP, and getting a model to hand you
+        clean typed output. Numbered moves, real code, honest commentary.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo <span class="motto">· The Mess is the Method</span></span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Span</b> · 2026-05-19 → 2026-07-08</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+        <span><b>Models</b> · Claude · Gemini</span>
+        <span><b>Format</b> · self-contained HTML, mobile-first</span>
+      </div>
+    </header>
+
+    <!-- FEATURE: latest -->
+    <section class="feature" aria-label="Latest entry">
+      <div>
+        <div class="kicker">Latest ↓</div>
+        <h2>When the model gets a verb</h2>
+        <p>
+          Your app can talk — now let it <em>do things</em>: look something up, book a table, issue a refund.
+          Tool use hands the model a menu of actions while you keep a hand on the risky ones.
+          Ten moves — five to wire it up, five to keep it safe — and a live demo where a $340 refund waits for your tap.
+        </p>
+        <div class="tags">
+          <span class="pill build">tool use</span>
+          <span class="pill new">verbs</span>
+          <span class="pill agent">supervised</span>
+        </div>
+        <a class="go" href="2026-07/when-the-model-gets-a-verb-tool-use-2026-07-08.html">Read Vol. 36 →</a>
+      </div>
+      <div class="preview" aria-hidden="true">
+        <div class="mini-card">
+          <div class="mc-top"><span class="mc-tag">agent</span> <span class="mc-tag">supervised</span></div>
+          <div class="mc-body">
+            <div class="mc-title">Handy on top, supervised underneath</div>
+            <div class="mc-sub">the model asks; a human owns the moment money moves.</div>
+            <div class="mc-row"><span>🔎 read</span><span>↩ write</span><span>1 tap</span></div>
+            <div class="mc-sub" style="margin-top:0.6rem;">Look-ups run on their own. Refunds wait for your OK. Every step is logged.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- JULY 2026 -->
+    <section class="month" id="2026-07">
+      <div class="month-head">
+        <h3>July 2026</h3>
+        <span class="count">5 entries</span>
+        <span class="note">ship · hold · watch · version · now give it a verb ↗</span>
+      </div>
+      <div class="grid">
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 36</span><span class="date">07 · 08</span></div>
+          <h4><a href="2026-07/when-the-model-gets-a-verb-tool-use-2026-07-08.html">When the Model Gets a Verb</a></h4>
+          <p>Tool use lets your app act — look something up, book a table, issue a refund — while you keep a hand on the risky moves. Inside: a live demo where a $340 refund waits for your tap.</p>
+          <div class="pills"><span class="pill build">tool use</span><span class="pill new">verbs</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 35</span><span class="date">07 · 07</span></div>
+          <h4><a href="2026-07/the-prompt-is-the-product-version-your-prompt-2026-07-07.html">The Prompt Is the Product</a></h4>
+          <p>The prompt that runs your whole app deserves version numbers, tests, and an undo — just like code. Inside: a live bench that scores a challenger against the champion before any user sees it.</p>
+          <div class="pills"><span class="pill build">version</span><span class="pill new">prompts</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 34</span><span class="date">07 · 06</span></div>
+          <h4><a href="2026-07/the-answer-you-never-see-observability-2026-07-06.html">The Answer You Never See</a></h4>
+          <p>A live app with no feedback loop looks fine even when it's wrong. Ten moves to see what it's really telling people — and make sure a bad answer never ships twice.</p>
+          <div class="pills"><span class="pill agent">observe</span><span class="pill new">feedback loop</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 33</span><span class="date">07 · 05</span></div>
+          <h4><a href="2026-07/the-first-weird-input-prompt-injection-2026-07-05.html">The First Weird Input</a></h4>
+          <p>Within a day of going live, someone will type "ignore your instructions." Ten moves to keep the app on-task — plus a sandbox where you get to play the attacker.</p>
+          <div class="pills"><span class="pill agent">defend</span><span class="pill new">injection</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 32</span><span class="date">07 · 01</span></div>
+          <h4><a href="2026-07/ship-it-to-the-world-deploy-your-ai-app-2026-07-01.html">Ship It to the World</a></h4>
+          <p>Take the app off your laptop and put it on the internet — without leaking your key or waking up to a $900 bill. Ten moves and a readiness gate that flips green.</p>
+          <div class="pills"><span class="pill build">deploy</span><span class="pill new">live</span></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- JUNE 2026 -->
+    <section class="month" id="2026-06">
+      <div class="month-head">
+        <h3>June 2026</h3>
+        <span class="count">23 entries</span>
+        <span class="note">prompt → config → UI, and beyond ↗</span>
+      </div>
+      <div class="grid">
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 31</span><span class="date">06 · 30</span></div>
+          <h4><a href="2026-06/ship-the-tokens-first-design-systems-2026-06-30.html">Ship the Tokens First</a></h4>
+          <p>Stop asking for a "nice landing page" and getting AI slop. Ten moves: make the model author the design tokens first — one JSON contract of color scale, type ramp, 8pt spacing, radius, motion — then build every component against it. A live token knob that repaints the whole card as one.</p>
+          <div class="pills"><span class="pill design">design system</span><span class="pill new">tokens</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 30</span><span class="date">06 · 29</span></div>
+          <h4><a href="2026-06/the-90-percent-off-dial-prompt-caching-2026-06-29.html">The 90%-Off Dial</a></h4>
+          <p>Stop re-paying full price to make the model re-read the same system prompt every call. Ten moves: mark the stable prefix with one cache marker, order stable-first / volatile-last, read the hit counters, and cut a repetitive bill ~90%. A live cold→warm ledger you can flip.</p>
+          <div class="pills"><span class="pill build">caching</span><span class="pill new">−90% bill</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 29</span><span class="date">06 · 28</span></div>
+          <h4><a href="2026-06/show-the-model-a-picture-multimodal-2026-06-28.html">Show the Model a Picture</a></h4>
+          <p>Stop describing the screenshot and just attach it. Ten moves: send an image block, ask for typed findings instead of prose, point at one region, tune resolution for cost, and turn a picture of a UI into a build spec. A live "what the model sees" panel.</p>
+          <div class="pills"><span class="pill design">vision</span><span class="pill new">images</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 28</span><span class="date">06 · 27</span></div>
+          <h4><a href="2026-06/show-your-work-extended-thinking-2026-06-27.html">Show Your Work</a></h4>
+          <p>One field turns the model's silent reasoning into a visible scratchpad. Ten moves: enable extended thinking, budget it, stream it, preserve the blocks across tool calls, and know when NOT to think. A live budget slider you can drag.</p>
+          <div class="pills"><span class="pill agent">reasoning</span><span class="pill new">thinking</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 27</span><span class="date">06 · 27</span></div>
+          <h4><a href="2026-06/same-prompt-two-souls-claude-vs-gemini-design-2026-06-27.html">Same Prompt, Two Souls</a></h4>
+          <p>One identical prompt, two different-looking apps. Read the warmth-vs-density split between Claude and Gemini, learn the words that steer each, and remix the best of both. Ten moves, a live knob you can drag.</p>
+          <div class="pills"><span class="pill design">design</span><span class="pill new">two models</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 26</span><span class="date">06 · 26</span></div>
+          <h4><a href="2026-06/retrieval-without-the-hype-2026-06-26.html">Retrieval Without the Hype</a></h4>
+          <p>"RAG" without the acronym soup — let your AI look something up before it answers. Nine moves: chunk, embed, search by meaning, stuff the prompt, cite the source, stay fresh.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill new">retrieval</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 25</span><span class="date">06 · 25</span></div>
+          <h4><a href="2026-06/cost-and-latency-two-dials-2026-06-25.html">The Two Dials</a></h4>
+          <p>Every AI feature ships with two hidden dials — cost and latency. Ten moves to read them and turn them down: model tiers, routing, caching, token caps, streaming, a real budget.</p>
+          <div class="pills"><span class="pill build">cost</span><span class="pill new">latency</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 24</span><span class="date">06 · 24</span></div>
+          <h4><a href="2026-06/grade-it-before-they-do-evals-2026-06-24.html">Grade It Before They Do</a></h4>
+          <p>Stop shipping AI output on vibes. Build the smallest eval harness — golden cases, a judge, a pass bar, a CI gate — that grades the model before your users do.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill new">evals</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 23</span><span class="date">06 · 23</span></div>
+          <h4><a href="2026-06/make-the-model-hand-you-json-2026-06-23.html">Make the Model Hand You JSON</a></h4>
+          <p>Stop string-wrangling output. Ask for a schema-shaped object, validate it, render it straight into typed UI. Both models.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill new">json</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 22</span><span class="date">06 · 23</span></div>
+          <h4><a href="2026-06/make-it-feel-alive-streaming-2026-06-23.html">Make It Feel Alive — Streaming</a></h4>
+          <p>The spinner is a lie. Stream Claude and Gemini token-by-token into the DOM so your app stops loading and starts breathing.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill design">frontend</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 21</span><span class="date">06 · 22</span></div>
+          <h4><a href="2026-06/steal-a-sites-soul-2026-06-22.html">Steal a Site's Soul</a></h4>
+          <p>Point an agent at a live site and get a clean, legal, on-brand clone — tokens first, components second, pages last.</p>
+          <div class="pills"><span class="pill design">design</span><span class="pill agent">agent</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 20</span><span class="date">06 · 21</span></div>
+          <h4><a href="2026-06/texture-layer-2026-06-21.html">The Texture Layer</a></h4>
+          <p>Seven paste-in CSS effects — progressive blur, gradient borders, scroll-fade, edge masks, liquid glass — that kill the generated look.</p>
+          <div class="pills"><span class="pill design">design</span><span class="pill build">css</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 19</span><span class="date">06 · 19</span></div>
+          <h4><a href="2026-06/give-the-agent-hands-mcp-2026-06-19.html">Give the Agent Hands — MCP</a></h4>
+          <p>MCP is the layer that lets an agent reach into Gmail, GitHub, Figma, Vercel, and your Mac instead of just talking. Eleven moves.</p>
+          <div class="pills"><span class="pill agent">agent</span><span class="pill build">mcp</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 18</span><span class="date">06 · 18</span></div>
+          <h4><a href="2026-06/the-prompt-that-stops-guessing-2026-06-18.html">The Prompt That Stops Guessing</a></h4>
+          <p>Constraint-first prompting — front-loaded constraints, the plan-execution lock, negative rules — so coding agents stop improvising.</p>
+          <div class="pills"><span class="pill agent">prompting</span><span class="pill build">build</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 17</span><span class="date">06 · 17</span></div>
+          <h4><a href="2026-06/build-an-ai-app-2026-06-17.html">Build an AI App in an Afternoon</a></h4>
+          <p>Nine steps wiring a real frontend to a real model — prompt to PageConfig to a styled, streaming app. The non-dev way.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill design">frontend</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 16</span><span class="date">06 · 09</span></div>
+          <h4><a href="2026-06/devtools-context-extractor-2026-06-09.html">The Console Is a Context Machine</a></h4>
+          <p>Paste-once DevTools snippets that strip a live page to a clean, low-token payload your agent can actually act on.</p>
+          <div class="pills"><span class="pill agent">context</span><span class="pill build">devtools</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 15</span><span class="date">06 · 08</span></div>
+          <h4><a href="2026-06/fan-out-fleet-2026-06-08.html">Fan Out the Fleet</a></h4>
+          <p>From one chat thread to a fleet of parallel sub-agents — and the rule that keeps it from turning into theater.</p>
+          <div class="pills"><span class="pill agent">agent</span><span class="pill build">parallel</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 14</span><span class="date">06 · 07</span></div>
+          <h4><a href="2026-06/token-trap-2026-06-07.html">The Token Trap</a></h4>
+          <p>Why dumping a whole page at a model makes it dumber — and three browser snippets that compress 50k tokens down to the part that matters.</p>
+          <div class="pills"><span class="pill agent">context</span><span class="pill build">build</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 13</span><span class="date">06 · 05</span></div>
+          <h4><a href="2026-06/context-driven-development-2026-06-05.html">Context Before Code</a></h4>
+          <p>The context-driven workflow that gets AI to build the right thing the first time. Nine moves, real files, the one rule that holds it together.</p>
+          <div class="pills"><span class="pill agent">workflow</span><span class="pill build">build</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 12</span><span class="date">06 · 03</span></div>
+          <h4><a href="2026-06/model-driven-frontend-2026-06-03.html">Prompt → Config → UI</a></h4>
+          <p>Wire a model into a real React frontend by having it return a structured PageConfig JSON that renders into components.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill design">frontend</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 11</span><span class="date">06 · 02</span></div>
+          <h4><a href="2026-06/claude-design-partner-2026-06-02.html">Designed, Not Generated</a></h4>
+          <p>Twelve moves for directing Claude Artifacts so the UI looks made, not auto-spat — the design vocabulary, the knobs, the AI tells to kill.</p>
+          <div class="pills"><span class="pill design">claude design</span><span class="pill build">artifacts</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 10</span><span class="date">06 · 01</span></div>
+          <h4><a href="2026-06/the-agent-loop-2026-06-01.html">The Agent Loop</a></h4>
+          <p>An AI agent is just a while loop with tools. Build one from a single API call up to a streaming CLI — in plain developer language.</p>
+          <div class="pills"><span class="pill agent">agent</span><span class="pill build">from scratch</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 09</span><span class="date">06 · 01</span></div>
+          <h4><a href="2026-06/building-with-ai-field-notes-2026-06-01.html">Prompt to Product</a></h4>
+          <p>Ten moves from a one-line prompt to a designed, working AI frontend — Artifacts, the design knobs, PageConfig JSON, streaming.</p>
+          <div class="pills"><span class="pill build">build</span><span class="pill design">frontend</span></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- MAY 2026 -->
+    <section class="month" id="2026-05">
+      <div class="month-head">
+        <h3>May 2026</h3>
+        <span class="count">6 entries</span>
+        <span class="note">where it started — GitHub for AI-era builders ↗</span>
+      </div>
+      <div class="grid">
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 08</span><span class="date">05 · 31</span></div>
+          <h4><a href="2026-05/github-collaboration-loop-2026-05-31.html">The Collaboration Loop</a></h4>
+          <p>Fork → branch → PR → review → merge — the part of GitHub nobody teaches beginners. Eleven moves for shipping with other humans.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill build">collaboration</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 07</span><span class="date">05 · 30</span></div>
+          <h4><a href="2026-05/github-undo-book-2026-05-30.html">The GitHub Undo Book</a></h4>
+          <p>Twelve GitHub panics every beginner hits, and the one safe command that rescues each. Every command adversarially verified.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill new">rescue</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 06</span><span class="date">05 · 29</span></div>
+          <h4><a href="2026-05/github-power-moves-2026-05-29.html">GitHub Power Moves</a></h4>
+          <p>The keyboard shortcuts, URL hacks, gh CLI tricks, and extensions that make the platform feel like a different, faster product.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill build">cli</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 03</span><span class="date">05 · 28</span></div>
+          <h4><a href="2026-05/github-field-notebook-2026-05-28.html">GitHub Field Notebook</a></h4>
+          <p>Twelve habits that actually stick — gh CLI, branches, PRs, Claude Code workflows. Step-by-step, casual, no fluff.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill agent">claude code</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 02</span><span class="date">05 · 20</span></div>
+          <h4><a href="2026-05/github-handbook-2026-05-20.html">The GitHub Handbook</a></h4>
+          <p>A beginner-friendly handbook for AI-era operators — CLI, PRs, Actions, and the cool finds that justify the rabbit hole.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill build">basics</span></div>
+        </article>
+
+        <article class="entry">
+          <div class="top"><span class="vol">Vol. 01</span><span class="date">05 · 19</span></div>
+          <h4><a href="2026-05/github-tips-for-beginners.html">GitHub Tips for Beginners</a></h4>
+          <p>Where the notebook started. For people who learned to build with AI before they learned the platform. Ten moves, real commands.</p>
+          <div class="pills"><span class="pill github">github</span><span class="pill new">origin</span></div>
+        </article>
+
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        &mdash;Lupo
+        <small>The Mess is the Method · The Field Notebook · 34 entries · 2026-07-08</small>
+      </div>
+      <div class="end">
+        how this is built · <a href="DOCS.md">DOCS.md</a> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

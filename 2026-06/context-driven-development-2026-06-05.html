@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Context Before Code — How I Stopped Re-Prompting and Started Directing · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: the context-driven development workflow that gets AI to build the right thing the first time. Nine moves, real files, the operating-to-directing shift." />
+  <meta property="og:title" content="Context Before Code — How I Stopped Re-Prompting and Started Directing" />
+  <meta property="og:description" content="The setup that turns an AI from a clever intern into a teammate who already read the brief. Context files, specs, the directing shift — nine practical moves." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MOVE BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.terminal { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.context  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.mindset  { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Before / after split */
+    .ba {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    @media (max-width: 560px) { .ba { grid-template-columns: 1fr; } }
+    .ba .col {
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.92rem;
+    }
+    .ba .before {
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+    }
+    .ba .after {
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+    }
+    .ba h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+    }
+    .ba .before h4 { color: var(--margin); }
+    .ba .after h4 { color: oklch(0.36 0.10 145); }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.2rem;
+    }
+    .flow .node {
+      flex: 1 1 130px;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      position: relative;
+    }
+    .flow .node .step {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--margin);
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+    .flow .node b { font-size: 0.96rem; display: block; }
+    .flow .node span.sub { font-size: 0.8rem; color: var(--ink-soft); }
+    .flow .arrow {
+      align-self: center;
+      color: var(--margin);
+      font-family: 'Geist Mono', monospace;
+      font-size: 1.1rem;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 640px) {
+      .flow { flex-direction: column; }
+      .flow .arrow { transform: rotate(90deg); align-self: flex-start; padding-left: 1rem; }
+    }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 42ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 13</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;05</span>
+        <span class="tag">ai</span>
+        <span class="tag">workflow</span>
+      </div>
+
+      <h1>Context before code &mdash; how I stopped <span class="accent">re-prompting</span> and started directing.</h1>
+
+      <p class="deck">
+        The recent notebooks were about getting the model to <em>build</em> things.
+        This one is about getting it to build the <em>right</em> thing the first time.
+        Nine moves for setting up context so the AI shows up already knowing the brief
+        &mdash; the shift from operating it like a tool to directing it like a teammate.
+        Learned the slow way, over five months of session logs.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~13 min</span>
+        <span><b>Surface</b> · any agent (Claude Code, Cursor, Gemini)</span>
+        <span><b>Assumes</b> · you've prompted a model into a corner once</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          For my first few months with these tools I treated the model like a vending
+          machine. Type a prompt, get a result, the result is wrong, type a better
+          prompt. Repeat until tired. It worked, kind of, the way pushing a stalled
+          car works &mdash; it moves, but you're the engine.
+        </p>
+        <p>
+          The thing that actually changed my output wasn't a smarter prompt. It was
+          realizing the prompt was the wrong unit. The model wasn't missing
+          instructions &mdash; it was missing <em>context</em>. What I'm building, who
+          it's for, what stack, what's already decided. I'd been re-explaining the
+          project from scratch every single session like a goldfish with a keyboard.
+        </p>
+        <p>
+          Context-Driven Development is the fix, and the name is bigger than the idea.
+          It's just this: <b>write down the durable stuff once, in files the model
+          reads automatically, and spend your prompts on the work instead of the
+          recap.</b> Below are the nine moves that got me there. Top of the list is
+          where I'd start if I were doing it again from zero.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The nine moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Context precedes code</a></li>
+          <li><a href="#h2">The three context files</a></li>
+          <li><a href="#h3">Write a spec, not a prompt</a></li>
+          <li><a href="#h4">Plan in phases the model can check off</a></li>
+          <li><a href="#h5">Make context a living artifact</a></li>
+          <li><a href="#h6">Greenfield vs. brownfield</a></li>
+          <li><a href="#h7">Operating &rarr; directing</a></li>
+          <li><a href="#h8">The daily experiment habit</a></li>
+          <li><a href="#h9">Archive, never delete</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Context precedes code &mdash; define what &amp; why before how. <span class="pill mindset">mindset</span></h2>
+        <p>
+          This is the whole philosophy in one line, so I'll put it first. Before you
+          ask a model to write a single function, the model should be able to answer:
+          what are we building, who is it for, and what have we already decided? If it
+          can't, you're going to spend your session re-deciding things you already
+          settled &mdash; out loud, in chat, where they evaporate the moment the window
+          closes.
+        </p>
+
+        <div class="ba">
+          <div class="col before">
+            <h4>The vending-machine loop</h4>
+            "build me a login page" → it picks a stack → wrong stack → "no, use Next"
+            → it picks a style → wrong style → "match my brand" → what brand? → you
+            paste tokens → next session, all forgotten.
+          </div>
+          <div class="col after">
+            <h4>The context loop</h4>
+            stack + brand + goals live in a file the model reads first → "build the
+            login page" → it already knows Next, your tokens, your conventions → you
+            review, not re-explain.
+          </div>
+        </div>
+
+        <p class="scribble">the prompt was never the unit. the project is.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>The three context files &mdash; WHAT, HOW, WITH-WHAT. <span class="pill context">context</span></h2>
+        <p>
+          You don't need a documentation framework. You need three short files that
+          answer three questions, dropped where your agent looks automatically
+          (<code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursor/rules</code>,
+          a repo README &mdash; whatever your tool reads on its own). Keep each one
+          under a page. Concrete beats complete.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the three files</span>
+          </div>
+<pre><span class="key">product.md</span>      <span class="cmt"># WHAT &amp; WHY — vision, users, core features, success metric</span>
+<span class="key">guidelines.md</span>   <span class="cmt"># HOW we talk — voice, terminology, copy + error conventions</span>
+<span class="key">tech-stack.md</span>   <span class="cmt"># WITH WHAT — languages, deps + versions, deploy target, test setup</span></pre>
+        </div>
+
+        <p>
+          The trick that makes this real instead of busywork: <b>each file has an
+          "update when" rule at the bottom.</b> <code>tech-stack.md</code> updates when
+          you add a dependency. <code>product.md</code> updates when the goal shifts.
+          That one line is what keeps them from rotting into lies.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Open the project you're in right now. Write the <code>tech-stack.md</code> in
+            five minutes &mdash; just list what you're actually using and the versions.
+            Next session, watch the model stop guessing your framework. That's the
+            cheapest win in this whole notebook.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Write a spec, not a prompt &mdash; requirements + acceptance criteria. <span class="pill context">context</span></h2>
+        <p>
+          A prompt says "build the thing." A spec says "build the thing, here's done."
+          The difference is acceptance criteria &mdash; the checklist that lets the model
+          (and you) know when to stop. Without it, the model guesses what "done" means,
+          and its guess and yours rarely match.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">spec-for-a-work-unit.md</span>
+          </div>
+<pre><span class="cmt"># Feature: email capture on the landing page</span>
+
+<span class="key">## Requirement</span>
+Visitors can submit an email; it persists; they see confirmation.
+
+<span class="key">## Acceptance criteria</span>
+<span class="str">- [ ]</span> Empty / malformed email shows an inline error, no submit
+<span class="str">- [ ]</span> Valid email writes to the store and clears the field
+<span class="str">- [ ]</span> Success state is announced to screen readers
+<span class="str">- [ ]</span> Duplicate email is a friendly message, not a 500
+
+<span class="key">## Out of scope</span>
+<span class="cmt">- double opt-in, analytics events (next unit)</span></pre>
+        </div>
+
+        <p>
+          The <em>out of scope</em> block does as much work as the criteria. It's how you
+          stop the model from helpfully building four features when you asked for one.
+          Scope creep is just unstated boundaries &mdash; so state them.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Keep specs to one work unit. A spec that covers "the whole app" is a
+            product doc, and the model will treat it like wallpaper. Small spec, clear
+            done, ship, next spec.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Plan in phases the model can check off. <span class="pill context">context</span></h2>
+        <p>
+          Once the spec exists, ask the model to turn it into a phased plan
+          <em>before</em> writing code &mdash; then make it work the plan, one phase at a
+          time, pausing for your nod between phases. This is the single biggest
+          quality lever I found. A model that plans first writes code that fits
+          together; a model that dives straight in writes code you refactor later.
+        </p>
+
+        <div class="flow" role="img" aria-label="Context to Spec to Plan to Implement workflow">
+          <div class="node">
+            <span class="step">Phase 0</span>
+            <b>Context</b>
+            <span class="sub">files exist &amp; current</span>
+          </div>
+          <div class="arrow">&rarr;</div>
+          <div class="node">
+            <span class="step">Phase 1</span>
+            <b>Spec</b>
+            <span class="sub">reqs + acceptance</span>
+          </div>
+          <div class="arrow">&rarr;</div>
+          <div class="node">
+            <span class="step">Phase 2</span>
+            <b>Plan</b>
+            <span class="sub">phased tasks</span>
+          </div>
+          <div class="arrow">&rarr;</div>
+          <div class="node">
+            <span class="step">Phase 3</span>
+            <b>Implement</b>
+            <span class="sub">one phase, then pause</span>
+          </div>
+        </div>
+
+        <p>
+          The literal prompt I use: <em>"Don't write code yet. Read the spec, then give
+          me a phased plan with a checkbox per task. I'll approve, then you do phase one
+          and stop."</em> Costs one extra round-trip. Saves three.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Make context a living artifact, not a launch ritual. <span class="pill mindset">mindset</span></h2>
+        <p>
+          The failure mode isn't skipping the context files &mdash; it's writing them
+          once, feeling productive, and never touching them again. Three weeks later
+          they describe a project that no longer exists, and now they're worse than
+          nothing because the model trusts them.
+        </p>
+        <p>
+          The fix is a habit, not a tool: when a decision changes, change the file in
+          the same breath. Switched from Postgres to SQLite for the prototype? That's
+          a one-line edit to <code>tech-stack.md</code> right now, not "later." Treat
+          context like code &mdash; it gets committed, it gets reviewed, it drifts if you
+          let it.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Add one rule to your agent's instructions: <em>"When we make a stack or
+            product decision in chat, update the relevant context file before moving
+            on."</em> Now the upkeep rides along with the work instead of becoming a
+            chore you'll never do.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Greenfield vs. brownfield &mdash; two different context jobs. <span class="pill context">context</span></h2>
+        <p>
+          Starting fresh and inheriting a codebase need opposite first moves, and
+          mixing them up is where a lot of frustration comes from.
+        </p>
+
+        <div class="ba">
+          <div class="col before" style="background:var(--accent-wash);border-color:oklch(0.82 0.05 250)">
+            <h4 style="color:var(--accent-ink)">Greenfield</h4>
+            You're inventing the context. Write <code>product.md</code> first &mdash;
+            decide what and why <em>before</em> the model talks you into a stack. The
+            risk here is the model deciding for you.
+          </div>
+          <div class="col after">
+            <h4>Brownfield</h4>
+            The context already exists in the code &mdash; you just have to extract it.
+            Ask the model to read the repo and <em>draft</em> the three files for you,
+            then correct them. The risk here is assuming, not reading.
+          </div>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">brownfield bootstrap</span>
+          </div>
+<pre><span class="cmt"># let the model do the archaeology, then you edit</span>
+<span class="prompt">&gt;</span> <span class="str">Read this repo. Draft tech-stack.md from what you actually find —</span>
+<span class="str">  real deps and versions from the lockfile, not what you'd expect.</span>
+<span class="str">  Flag anything you're unsure about instead of guessing.</span></pre>
+        </div>
+
+        <p>
+          That "from the lockfile, not what you'd expect" clause matters. Left alone,
+          a model will confidently document the stack it <em>assumes</em> a project like
+          yours uses. Point it at the evidence.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Operating &rarr; directing &mdash; the shift the whole thing is for. <span class="pill mindset">mindset</span></h2>
+        <p>
+          Here's the part that took me five months to feel. Early on, I was
+          <em>operating</em> the model &mdash; hands on the keyboard, steering every turn,
+          the bottleneck in my own loop. The context files quietly changed the job.
+          Once the model knew the project, I stopped steering and started
+          <em>directing</em>: setting intent, reviewing output, sending it off again.
+        </p>
+        <p>
+          Concretely, that looked like going from one careful conversation at a time to
+          handing off whole work units &mdash; "here's the spec, here's the plan, go" &mdash;
+          and spending my attention on judgment instead of typing. Same tool. The
+          difference was entirely in how much it already knew before I asked.
+        </p>
+
+        <div class="ba">
+          <div class="col before">
+            <h4>Operating</h4>
+            You explain the project every session · you catch every wrong assumption
+            live · output quality tracks your patience that day · you are the engine.
+          </div>
+          <div class="col after">
+            <h4>Directing</h4>
+            The project explains itself · assumptions are caught by the files · output
+            quality tracks the context, not your mood · you are the editor.
+          </div>
+        </div>
+
+        <p class="scribble">you don't get faster by typing faster. you get faster by repeating yourself less.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>The daily experiment habit &mdash; one small test, written down. <span class="pill mindset">mindset</span></h2>
+        <p>
+          None of the above arrived as a theory. It came from doing one small thing
+          with these tools nearly every day and keeping notes on what stuck. A throwaway
+          script, a tiny local test, a "what happens if I phrase it this way" &mdash;
+          cheap, low-stakes, documented. The notes are the point. A trick you discovered
+          and didn't write down is a trick you'll rediscover from scratch next month.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">~/notes/2026-06-05.md</span>
+          </div>
+<pre><span class="key"># today's experiment</span>
+Tried: phased-plan-then-pause prompt on the email-capture unit.
+Result: model stopped after phase 1 cleanly, asked before phase 2. Good.
+Keep: "do phase one and stop" is the magic phrase.
+Drop: asking for the whole plan AND code in one message — it ignores the pause.
+
+<span class="cmt"># tomorrow: try the same pattern with a brownfield repo</span></pre>
+        </div>
+
+        <p>
+          Four lines. Tried / result / keep / drop. Do that daily for a month and you
+          have a personal playbook nobody could have written for you, because it's
+          calibrated to exactly how <em>you</em> work.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Start the file today, even if today's experiment is just reading this
+            notebook and trying move #2. <code>Tried / Result / Keep / Drop.</code>
+            That's the entire format. Future-you will thank present-you.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Archive, never delete &mdash; the guardrail I earned the hard way. <span class="pill terminal">safety</span></h2>
+        <p>
+          I'll close on the least glamorous one, because it's the one that cost me real
+          work before it became a rule. Give a capable model a cleanup task and it will
+          be <em>helpful</em> &mdash; sometimes by deleting files it decided were duplicates,
+          or wiping a directory it judged stale. Helpful and wrong is the worst
+          combination, because it moves fast.
+        </p>
+
+        <div class="ba">
+          <div class="col before">
+            <h4>What I let happen once</h4>
+            "clean up the duplicates" → the model found ~128 files it was sure were
+            redundant → deleted them → several weren't. Recovery: not fun.
+          </div>
+          <div class="col after">
+            <h4>The rule now</h4>
+            Destructive ops move to <code>_archive/</code>, never <code>rm</code>.
+            Anything with a numbered name gets archived before it's touched. Confirm
+            before anything irreversible.
+          </div>
+        </div>
+
+        <p>
+          This belongs in your context files too. One line in the instructions &mdash;
+          <em>"prefer archive over delete; confirm before any destructive action"</em>
+          &mdash; and the model inherits the lesson so you don't have to relearn it. The
+          best context isn't just what to build. It's also what never to do.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            For the hard guarantees &mdash; "never delete X," "never touch credentials"
+            &mdash; a sentence in a context file is a preference, not a lock. If it
+            <em>must</em> always happen, enforce it at the tool layer (a hook, a
+            permission rule), not in prose the model can reason its way around.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The three files</h4>
+          <ul>
+            <li><code>product.md</code><span>what &amp; why</span></li>
+            <li><code>guidelines.md</code><span>how we talk</span></li>
+            <li><code>tech-stack.md</code><span>with what</span></li>
+            <li><code>"update when"</code><span>the anti-rot line</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The workflow</h4>
+          <ul>
+            <li><code>Context</code><span>files exist &amp; current</span></li>
+            <li><code>Spec</code><span>reqs + acceptance + out-of-scope</span></li>
+            <li><code>Plan</code><span>phased, checkboxed</span></li>
+            <li><code>Implement</code><span>one phase, then pause</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The phrases</h4>
+          <ul>
+            <li><code>"don't write code yet"</code><span>force a plan first</span></li>
+            <li><code>"do phase one and stop"</code><span>keep the pause</span></li>
+            <li><code>"from the lockfile"</code><span>read, don't assume</span></li>
+            <li><code>"out of scope:"</code><span>kill creep early</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The mindset</h4>
+          <ul>
+            <li><code>direct</code><span>don't operate</span></li>
+            <li><code>repeat less</code><span>not type faster</span></li>
+            <li><code>tried/result/keep/drop</code><span>daily note</span></li>
+            <li><code>archive</code><span>never delete</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-05</small>
+      </div>
+      <div class="end">
+        next entry · <code>specs as the new prompt</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

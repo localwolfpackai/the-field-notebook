@@ -1,0 +1,1675 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>When the Model Gets a Verb — Ten Moves to Let Your AI Actually Do Things (Safely) with Tool Use · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: up to now your app only talks. Tool use is the switch that lets the model act — look something up, hit an API, book a table, issue a refund. This volume gives the model a verb without handing it the keys. Ten moves: describe a tool as JSON, let the model decide when to call it, run the function yourself, feed the result back, loop until done — then the guardrails that keep a talkative model from doing something expensive: whitelist the verbs, split read-tools from write-tools, require a human OK before anything irreversible, dry-run first, cap the loop, and log every call the model made. A live approve/deny tool-call loop you can drive." />
+  <meta property="og:title" content="When the Model Gets a Verb — Tool Use, Safely, for Non-Devs" />
+  <meta property="og:description" content="Your app only talks until you give the model a verb. Tool use lets it act — search, book, refund, send. Ten moves to wire it up and fence it in: describe the tool as JSON, let the model choose it, run it yourself, feed the result back, loop — then whitelist the verbs, split read from write, require a human OK before anything irreversible, and log every call. A live approve/deny tool loop you can drive." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --code-red:   oklch(0.72 0.16 25);
+
+      /* feature identity — this volume's spine is the read/write tool split */
+      --read:       oklch(0.55 0.12 235);
+      --read-wash:  oklch(0.93 0.04 235);
+      --read-ink:   oklch(0.40 0.13 235);
+      --write:      oklch(0.62 0.16 40);
+      --write-wash: oklch(0.95 0.06 40);
+      --write-ink:  oklch(0.44 0.16 40);
+      --ok:         oklch(0.58 0.13 150);
+      --ok-wash:    oklch(0.93 0.06 150);
+      --ok-ink:     oklch(0.38 0.11 150);
+      --deny:       oklch(0.63 0.17 25);
+      --deny-wash:  oklch(0.95 0.06 25);
+      --deny-ink:   oklch(0.45 0.15 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--write-wash) 62%, var(--write-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.65 0.14 40 / 0.4);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--read-wash); color: var(--read-ink); }
+    .hack h2 .pill.loop     { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.guard    { background: var(--sage-wash); color: var(--ok-ink); }
+    .hack h2 .pill.write    { background: var(--write-wash); color: var(--write-ink); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .red { color: var(--code-red); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+    .term .add { color: var(--code-green); }
+    .term .del { color: var(--code-red); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "tool-call approval loop" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .bench {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .bench { grid-template-columns: 1fr; } }
+
+    /* left: the user's ask + toolbox */
+    .versions {
+      margin: 1rem;
+      display: grid;
+      gap: 0.6rem;
+      align-content: start;
+      border-right: 1px dashed oklch(0.86 0.03 80);
+      padding-right: 1rem;
+    }
+    @media (max-width: 700px) { .versions { border-right: none; border-bottom: 1px dashed oklch(0.86 0.03 80); padding-right: 0; padding-bottom: 1rem; } }
+    .versions-lbl {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: -0.1rem;
+    }
+    .ver-card {
+      display: grid; gap: 0.35rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease-paper), background 0.2s var(--ease-paper);
+      user-select: none;
+      text-align: left;
+    }
+    .ver-card:hover { border-color: oklch(0.72 0.12 40); }
+    .ver-card.sel { background: var(--write-wash); border-color: oklch(0.70 0.14 40); }
+    .ver-card .vhead {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ver-card .vtag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.12em 0.5em; border-radius: 999px;
+      color: oklch(0.99 0 0);
+    }
+    .ver-card[data-kind="read"] .vtag { background: var(--read); }
+    .ver-card[data-kind="write"] .vtag { background: var(--write); }
+    .ver-card .vname { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .ver-card .vline {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      color: var(--ink-mute); line-height: 1.4;
+    }
+
+    .run-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      margin-top: 0.2rem;
+      background: var(--accent);
+      color: oklch(0.99 0 0);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer; user-select: none;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.86rem;
+      transition: filter 0.15s var(--ease-paper), transform 0.15s var(--ease-paper);
+    }
+    .run-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .run-btn.running { background: var(--ink-mute); cursor: progress; }
+
+    /* right: the agent loop / transcript */
+    .board {
+      padding: 1.2rem;
+      display: flex; flex-direction: column; gap: 0.7rem; justify-content: flex-start;
+      background:
+        radial-gradient(120% 120% at 100% 0%, var(--write-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--read-wash), transparent 55%),
+        var(--paper);
+      min-height: 18rem;
+    }
+    .board-head {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+    }
+    .steps { display: grid; gap: 0.45rem; }
+    .step {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: start;
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.65rem;
+      font-size: 0.82rem;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.3s var(--ease-paper), transform 0.3s var(--ease-paper);
+    }
+    .step.show { opacity: 1; transform: none; }
+    .step .ico {
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem; font-weight: 700;
+      width: 1.5rem; text-align: center; line-height: 1.5;
+    }
+    .step.think .ico { color: var(--violet); }
+    .step.call  .ico { color: var(--write-ink); }
+    .step.read  .ico { color: var(--read-ink); }
+    .step.result .ico { color: var(--ok-ink); }
+    .step.deny .ico { color: var(--deny-ink); }
+    .step.answer .ico { color: var(--ink); }
+    .step .txt { color: var(--ink-soft); line-height: 1.4; }
+    .step .txt b { color: var(--ink); font-weight: 600; }
+    .step .txt code {
+      font-size: 0.74rem; background: var(--paper-deep); border: 1px solid oklch(0.88 0.02 80);
+      padding: 0.03em 0.32em; border-radius: 4px; color: var(--ink);
+    }
+    .step.call { border-left: 3px solid var(--write); background: var(--write-wash); }
+    .step.deny { border-left: 3px solid var(--deny); background: var(--deny-wash); }
+    .step.result { border-left: 3px solid var(--ok); background: var(--ok-wash); }
+
+    /* the approval gate */
+    .gate {
+      display: grid; gap: 0.5rem;
+      border: 1px dashed oklch(0.78 0.10 40);
+      background: var(--write-wash);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      opacity: 0; transform: translateY(4px);
+      transition: opacity 0.3s var(--ease-paper), transform 0.3s var(--ease-paper);
+    }
+    .gate.show { opacity: 1; transform: none; }
+    .gate .g-head {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--write-ink);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .gate .g-body { font-size: 0.82rem; color: var(--ink); }
+    .gate .g-body code {
+      font-size: 0.74rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.03em 0.32em; border-radius: 4px;
+    }
+    .gate .g-btns { display: flex; gap: 0.5rem; }
+    .g-btn {
+      flex: 1; border: none; cursor: pointer; user-select: none;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.82rem;
+      padding: 0.45rem 0.6rem; border-radius: var(--radius-sm);
+      transition: filter 0.15s var(--ease-paper), transform 0.15s var(--ease-paper);
+    }
+    .g-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+    .g-btn.ok { background: var(--ok); color: oklch(0.99 0 0); }
+    .g-btn.no { background: var(--deny); color: oklch(0.99 0 0); }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .verdict-line code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px;
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .step, .gate, .ver-card, .run-btn { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: talks-only vs acts ─────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.good { border-left-color: var(--ok); background: var(--ok-wash); }
+    .anat .blk.bad  { border-left-color: var(--deny); background: var(--deny-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.good .tag { color: var(--ok-ink); }
+    .anat .blk.bad .tag { color: var(--deny-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.good .tag .dot { background: var(--ok); }
+    .anat .blk.bad .tag .dot { background: var(--deny); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / read-vs-write table ─────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.rd { color: var(--read-ink); font-weight: 600; }
+    .ptable td.wr { color: var(--write-ink); font-weight: 600; }
+
+    /* ── Mobile mock (a tool-call approval on a phone) ─────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.30 0.10 40 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--write) 0%, var(--accent) 170%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.5rem; }
+    .phone .lrow {
+      display: grid; gap: 0.15rem;
+      background: var(--paper-alt); border: 1px solid oklch(0.9 0.02 80);
+      border-radius: 8px; padding: 0.45rem 0.55rem;
+      border-left: 3px solid var(--read);
+    }
+    .phone .lrow.gate { border-left-color: var(--write); background: var(--write-wash); }
+    .phone .lrow.ok { border-left-color: var(--ok); background: var(--ok-wash); }
+    .phone .lrow .lt { font-family: 'Geist Mono', monospace; font-size: 0.52rem; color: var(--ink); font-weight: 600; }
+    .phone .lrow .lm { font-family: 'Geist Mono', monospace; font-size: 0.48rem; color: var(--ink-mute); line-height: 1.35; }
+    .phone .lrow .lx { font-family: 'Geist Mono', monospace; font-size: 0.46rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .phone .lrow .lx.auto { color: var(--read-ink); }
+    .phone .lrow .lx.hold { color: var(--write-ink); }
+    .phone .lrow .lx.done { color: var(--ok-ink); }
+    .phone .gate-btns { display: flex; gap: 0.3rem; margin-top: 0.15rem; }
+    .phone .gate-btns span {
+      flex: 1; text-align: center; font-family: 'Geist Mono', monospace; font-size: 0.46rem;
+      text-transform: uppercase; letter-spacing: 0.04em; padding: 0.2em 0; border-radius: 4px; color: oklch(0.99 0 0);
+    }
+    .phone .gate-btns .yes { background: var(--ok); }
+    .phone .gate-btns .nope { background: var(--deny); }
+    .phone .metric { background: oklch(0.16 0.01 60); border-radius: 8px; padding: 0.55rem 0.65rem; margin-top: 0.15rem; }
+    .phone .metric .mv { font-family: 'Geist', serif; font-weight: 800; font-size: 1.1rem; color: oklch(0.95 0.02 80); line-height: 1; }
+    .phone .metric .ml { font-family: 'Geist Mono', monospace; font-size: 0.46rem; text-transform: uppercase; letter-spacing: 0.08em; color: oklch(0.72 0.02 80); margin-top: 0.2rem; }
+    .phone .label-mini {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.65 0.14 40 / 0.35);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.65 0.14 40 / 0.30); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 36</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;07&nbsp;·&nbsp;08</span>
+        <span class="tag">tool use</span>
+        <span class="tag">verbs</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>When the model gets a <span class="accent">verb</span> &mdash; let your AI actually do things, without handing it the keys.</h1>
+
+      <p class="deck">
+        Thirty-five volumes and your app has done exactly one thing: <em>talk.</em> It answers, it explains, it even hands
+        you clean JSON &mdash; but it can&rsquo;t look anything up, can&rsquo;t hit an API, can&rsquo;t book the table or
+        issue the refund. Tool use is the switch that changes that. You hand the model a set of <em>verbs</em>, it decides
+        when to reach for one, <strong>you</strong> run the function, and the answer comes back with real data behind it.
+        The danger is obvious: a model that can act can act <em>wrong.</em> So this volume is two halves &mdash; five moves
+        to wire the loop, five to fence it in. Drive the approve/deny loop below.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-tool%20use-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude tool use" />
+        <img src="https://img.shields.io/badge/tools-read%20%2F%20write-1F6FEB?style=flat-square&logo=json&logoColor=white" alt="read and write tools" />
+        <img src="https://img.shields.io/badge/writes-human%20OK-2EA043?style=flat-square&logo=gnometerminal&logoColor=white" alt="human approval before writes" />
+        <img src="https://img.shields.io/badge/every%20call-logged-DB6D28?style=flat-square&logo=grafana&logoColor=white" alt="every tool call logged" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~11 min</span>
+        <span><b>Surface</b> · the same serverless route, now with a tool loop</span>
+        <span><b>Assumes</b> · you can call the model (Vol. 17) &amp; get JSON (Vol. 23)</span>
+        <span><b>Pairs with</b> · Vol. 10 (loop) · Vol. 19 (MCP) · Vol. 33 (defend) · Vol. 34 (observe)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          There&rsquo;s a moment every builder hits where &ldquo;the AI can answer that&rdquo; stops being enough. A user
+          types &ldquo;what&rsquo;s the status of order 4471?&rdquo; and the model &mdash; no matter how good the prompt
+          &mdash; has no idea, because that number lives in your database, not in its head. It can guess. It should not.
+          What it needs is a <em>hand</em>: a way to say &ldquo;I don&rsquo;t know, but I know how to find out &mdash;
+          call <code>lookupOrder(4471)</code> and I&rsquo;ll take it from there.&rdquo;
+        </p>
+        <p>
+          That&rsquo;s tool use in one sentence. You don&rsquo;t give the model a database or an API key. You give it a
+          <em>menu</em> &mdash; a few functions described in plain JSON &mdash; and the model, mid-answer, can point at one
+          and say &ldquo;run this with these arguments.&rdquo; Your code runs it, hands the result back, and the model
+          keeps going with real facts instead of a hallucination. The model never touches your systems. It only ever
+          <em>asks.</em> You are always the one who acts.
+        </p>
+        <p>
+          Which is exactly why this is the volume where the guardrails matter most. A read tool that looks up an order is
+          harmless. A write tool that <em>cancels</em> one is not &mdash; and the same friendly model drives both. So the
+          back half is the boring, non-negotiable stuff Dray calls &ldquo;the AI-engineer&rsquo;s seatbelt&rdquo;: split
+          reads from writes, whitelist the verbs, put a human in front of anything irreversible, dry-run first, cap the
+          loop so it can&rsquo;t spin, and log every single call. Ten moves. Half of them are about saying no.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">See the gap — a model with no hands</a></li>
+          <li><a href="#h2">Describe a tool as JSON</a></li>
+          <li><a href="#h3">Let the model choose the tool</a></li>
+          <li><a href="#h4">Run it yourself, feed the result back</a></li>
+          <li><a href="#h5">Loop until the model stops asking</a></li>
+          <li><a href="#h6">Split read tools from write tools</a></li>
+          <li><a href="#h7">Whitelist the verbs — nothing off-menu</a></li>
+          <li><a href="#h8">Put a human in front of writes</a></li>
+          <li><a href="#h9">Dry-run, then cap the loop</a></li>
+          <li><a href="#h10">Log every call the model made</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="tool-call approval loop demo">
+      <div class="demo-bar">
+        <span>the support agent · pick a user ask, watch it reach for tools &mdash; and approve the write</span>
+        <span class="live"><i></i> agent loop</span>
+      </div>
+
+      <div class="bench">
+        <div class="versions" id="versions">
+          <div class="versions-lbl">pick a user ask →</div>
+          <button class="ver-card sel" data-kind="read" data-c="status" aria-pressed="true">
+            <div class="vhead"><span class="vtag">read</span><span class="vname">&ldquo;Where&rsquo;s my order 4471?&rdquo;</span></div>
+            <div class="vline">needs: lookupOrder — read-only, auto-runs</div>
+          </button>
+          <button class="ver-card" data-kind="write" data-c="cancel" aria-pressed="false">
+            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Cancel order 4471.&rdquo;</span></div>
+            <div class="vline">needs: cancelOrder — irreversible, asks you first</div>
+          </button>
+          <button class="ver-card" data-kind="write" data-c="refund" aria-pressed="false">
+            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Refund me for 4471.&rdquo;</span></div>
+            <div class="vline">needs: issueRefund($) — money moves, asks you first</div>
+          </button>
+
+          <button class="run-btn" id="runBtn">▶ run the agent</button>
+        </div>
+
+        <div class="board" id="board">
+          <div class="board-head">agent loop · <span id="scored">idle</span></div>
+          <div class="steps" id="steps"><!-- steps injected --></div>
+          <div class="gate" id="gate">
+            <div class="g-head"><span>⚠ write tool — needs your OK</span></div>
+            <div class="g-body" id="gateBody">The model wants to call <code>cancelOrder(4471)</code>.</div>
+            <div class="g-btns">
+              <button class="g-btn ok" id="okBtn">✓ approve</button>
+              <button class="g-btn no" id="noBtn">✕ deny</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Pick an ask, then run the agent.</b> Read tools fire on their own. Write tools stop at a gate and wait for a human &mdash; that gate is the whole difference between &ldquo;handy&rdquo; and &ldquo;a stranger&rsquo;s typo just refunded $340.&rdquo;</span>
+        <span class="hint">run it ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>See the gap &mdash; a model with no hands. <span class="pill read">read</span></h2>
+        <p>
+          Everything you&rsquo;ve built so far is a <em>closed book quiz.</em> The model answers from what it was trained
+          on plus what you paste into the prompt &mdash; and that&rsquo;s it. The instant a question needs a fact that
+          lives in <em>your</em> world &mdash; an order number, today&rsquo;s inventory, a customer&rsquo;s plan &mdash;
+          the model has two options: admit it doesn&rsquo;t know, or make something up. You&rsquo;ve spent a whole volume
+          (Vol. 24) trying to stop the second one. Tool use removes the choice: it lets the model go <em>get</em> the fact.
+        </p>
+        <p>
+          Cal&rsquo;s framing from his notebook is the one that sticks: a plain model is a brain in a jar &mdash; brilliant,
+          and completely unable to touch anything. A tool is a <em>nerve ending.</em> It doesn&rsquo;t make the model
+          smarter; it connects the smart part to the real world. And the very first nerve you should wire up is a
+          read-only one, because it can look anything up and it can&rsquo;t break a thing.
+        </p>
+        <div class="anat" aria-label="closed book versus tool use">
+          <div class="blk bad">
+            <div class="tag"><span class="dot"></span>hands-off</div>
+            <p><em>No tools &mdash; the brain in a jar. Confident, sometimes wrong.</em> Ask for order 4471 and it invents a plausible status, because
+            &ldquo;I don&rsquo;t know&rdquo; is not what it was rewarded for. It <strong>cannot see your data</strong>, so
+            it fills the gap with fiction and says it like a fact.</p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>hands-on</div>
+            <p><em>With tools &mdash; a brain with a hand. &ldquo;I&rsquo;ll go find out.&rdquo;</em> It pauses, asks your code to run <code>lookupOrder(4471)</code>,
+            gets the real row back, and answers from that. The fact came from your system, not its imagination &mdash;
+            and you can point at exactly <strong>where every claim came from.</strong></p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Describe a tool as JSON. <span class="pill setup">setup</span></h2>
+        <p>
+          A tool isn&rsquo;t code the model runs &mdash; it&rsquo;s a <em>description</em> of a function you already have.
+          You give the model a name, a one-line explanation of when to use it, and a schema for its arguments. That&rsquo;s
+          the whole contract. Ashi&rsquo;s rule of thumb: write the <code>description</code> like a note to a new
+          teammate who&rsquo;s never seen your app &mdash; because to the model, that description <em>is</em> the entire
+          spec of what the tool does and when it&rsquo;s the right call.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">tools/support.js — one read tool, described for the model</span></div>
+<pre><span class="cmt">// A tool = { name, description, input schema } — NOT the code itself.</span>
+<span class="key">const</span> tools = [{
+  name: <span class="str">'lookupOrder'</span>,
+  description: <span class="str">'Look up the status of an order by its number. '</span> +
+               <span class="str">'Read-only. Use when the user asks about an existing order.'</span>,
+  input_schema: {
+    type: <span class="str">'object'</span>,
+    properties: {
+      orderId: { type: <span class="str">'number'</span>, description: <span class="str">'The order number, e.g. 4471'</span> }
+    },
+    required: [<span class="str">'orderId'</span>],
+  },
+}];
+
+<span class="cmt">// hand the menu to the model on the same call you already make</span>
+<span class="key">const</span> res = <span class="key">await</span> client.messages.create({
+  model: <span class="str">'claude-sonnet-5'</span>,
+  system: SUPPORT_V2,            <span class="cmt">// your versioned prompt from Vol. 35</span>
+  tools,                         <span class="hit">// ← the only new line</span>
+  messages,
+});</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>The <b>description is the interface.</b> A vague one (&ldquo;gets order info&rdquo;) makes the model guess
+          when to call it; a sharp one (&ldquo;read-only, use when the user asks about an <em>existing</em> order&rdquo;)
+          makes it reach for the right verb at the right time. Spend your effort here, not on the plumbing.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Let the model choose the tool. <span class="pill setup">setup</span></h2>
+        <p>
+          Here&rsquo;s the part that trips up every beginner the first time: <em>you don&rsquo;t tell the model to use the
+          tool.</em> You hand it the menu and ask your question, and the model decides. When it wants a tool, it
+          doesn&rsquo;t reply with text &mdash; it replies with a <code>tool_use</code> block: a name and the arguments it
+          filled in. That&rsquo;s the model raising its hand and saying &ldquo;run this for me.&rdquo; Your job is to notice
+          the raised hand instead of expecting a normal answer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">what the model hands back — not text, a request to act</span></div>
+<pre><span class="cmt">// res.stop_reason === 'tool_use'  → the model wants a tool, not to talk</span>
+<span class="key">if</span> (res.stop_reason === <span class="str">'tool_use'</span>) {
+  <span class="key">const</span> call = res.content.find(b =&gt; b.type === <span class="str">'tool_use'</span>);
+  <span class="cmt">// call.name  === 'lookupOrder'</span>
+  <span class="cmt">// call.input === { orderId: 4471 }   ← the model parsed the user's number</span>
+  <span class="cmt">// call.id    === 'toolu_01A…'         ← tag so you can match the result</span>
+}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>The model <b>can be wrong about which tool to call</b> or invent an argument. Never trust
+          <code>call.input</code> blindly &mdash; it&rsquo;s user-influenced text the model shaped. Validate it like any
+          form input (Vol. 33) <em>before</em> you run anything with it. The model is a smart intern, not an authenticated
+          request.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Run it yourself, feed the result back. <span class="pill loop">loop</span></h2>
+        <p>
+          This is the beating heart of tool use, and it&rsquo;s smaller than you&rsquo;d think. The model asked for
+          <code>lookupOrder(4471)</code>. <em>You</em> run the real function &mdash; hit your database, your API, whatever
+          &mdash; and hand the result back to the model as a <code>tool_result</code> tied to the same call id. Then you
+          ask the model again. Now it has the fact and can write a real answer. The model never ran anything; it asked, you
+          acted, you reported back.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — you are the hands; the model is the head</span></div>
+<pre><span class="cmt">// 1. actually run the function (your code, your data, your rules)</span>
+<span class="key">const</span> row = <span class="key">await</span> db.orders.find(call.input.orderId);
+
+<span class="cmt">// 2. hand the result back, tagged to the call the model made</span>
+messages.push({ role: <span class="str">'assistant'</span>, content: res.content });   <span class="cmt">// its request</span>
+messages.push({ role: <span class="str">'user'</span>, content: [{
+  type: <span class="str">'tool_result'</span>,
+  tool_use_id: call.id,
+  content: JSON.stringify(row),                     <span class="hit">// ← the real fact</span>
+}]});
+
+<span class="cmt">// 3. ask again — now it answers from data, not guesswork</span>
+<span class="key">const</span> final = <span class="key">await</span> client.messages.create({ model, system: SUPPORT_V2, tools, messages });</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Notice what you control here: the <code>tool_result</code> is <b>your</b> text. If the lookup fails, hand
+          back <code>{"error":"no such order"}</code> and the model will apologise gracefully instead of stalling. The
+          quality of tool use lives in what you feed back, not just what the model asks for.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Loop until the model stops asking. <span class="pill loop">loop</span></h2>
+        <p>
+          One tool call is rarely the whole story. To answer &ldquo;did my refund go through?&rdquo; the model might look
+          up the order, <em>then</em> look up the payment, <em>then</em> answer. So moves 3&ndash;4 aren&rsquo;t a step
+          &mdash; they&rsquo;re a <strong>loop.</strong> Ask the model. If it wants a tool, run it, feed it back, ask
+          again. Keep going until it stops raising its hand and just replies with text. This is the exact agent loop from
+          Vol. 10, now with real verbs attached.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the whole thing is a while loop — plain and boring, on purpose</span></div>
+<pre><span class="key">let</span> res = <span class="key">await</span> ask(messages);
+
+<span class="key">while</span> (res.stop_reason === <span class="str">'tool_use'</span>) {
+  <span class="key">const</span> call    = res.content.find(b =&gt; b.type === <span class="str">'tool_use'</span>);
+  <span class="key">const</span> result  = <span class="key">await</span> runTool(call);        <span class="cmt">// move 6+ lives inside here</span>
+  messages.push({ role: <span class="str">'assistant'</span>, content: res.content });
+  messages.push({ role: <span class="str">'user'</span>, content: [result] });
+  res = <span class="key">await</span> ask(messages);                    <span class="cmt">// ask again with the new fact</span>
+}
+
+<span class="key">return</span> res.content;   <span class="cmt">// finally: plain text, backed by real lookups</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>An uncapped <code>while</code> that pays per turn is a <b>runaway meter.</b> A confused model can loop on the
+          same tool forever &mdash; that&rsquo;s a real bill and a hung request. We fix it properly in move #9; for now,
+          just know the loop needs a leash before it ever sees production.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Split read tools from write tools. <span class="pill guard">guard</span></h2>
+        <p>
+          The single most important line you&rsquo;ll draw in this whole system: <strong>a tool either reads or it
+          writes.</strong> A read tool answers a question and changes nothing &mdash; look up an order, check inventory,
+          fetch the weather. A write tool <em>changes the world</em> &mdash; cancels, refunds, emails, deletes. They feel
+          the same to the model. They are not the same to you. Tag every tool the moment you define it, because everything
+          in the back half of this volume keys off that one flag.
+        </p>
+        <table class="ptable" aria-label="read vs write tools">
+          <thead>
+            <tr><th>question</th><th>read tool</th><th>write tool</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">changes anything?</td><td class="rd">no</td><td class="wr">yes — often forever</td></tr>
+            <tr><td class="trait">safe to auto-run?</td><td class="rd">yes</td><td class="wr">no — human OK first</td></tr>
+            <tr><td class="trait">worst wrong call</td><td class="rd">a wrong answer</td><td class="wr">a real refund, a deleted row</td></tr>
+            <tr><td class="trait">examples</td><td class="rd">lookupOrder · getWeather · search</td><td class="wr">cancelOrder · issueRefund · sendEmail</td></tr>
+          </tbody>
+        </table>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Add one field to every tool: <code>mutates: true|false</code>. That boolean is the seatbelt buckle &mdash;
+          moves #8 (human OK) and #10 (logging) both just check it. Draw the line once and the rest of the guardrails
+          fall out for free.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Whitelist the verbs &mdash; nothing off-menu. <span class="pill guard">guard</span></h2>
+        <p>
+          The model can only ask for tools you handed it &mdash; but it can ask for one by a name that <em>almost</em>
+          matches, or with arguments you never expected. So your <code>runTool</code> function starts with a bouncer: if
+          the requested name isn&rsquo;t on your explicit allow-list, you don&rsquo;t run it &mdash; you hand back an error
+          and let the model recover. Never <code>eval</code> a tool name, never dynamically resolve a function from model
+          output. The menu is finite and hard-coded. Off-menu is a decline, not an improvisation.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">runTool.js — the bouncer at the door</span></div>
+<pre><span class="key">const</span> HANDLERS = {                    <span class="cmt">// the ONLY verbs that exist</span>
+  lookupOrder: (a) =&gt; db.orders.find(a.orderId),
+  cancelOrder: (a) =&gt; db.orders.cancel(a.orderId),
+};
+
+<span class="key">async</span> <span class="key">function</span> runTool(call) {
+  <span class="key">const</span> fn = HANDLERS[call.name];
+  <span class="key">if</span> (!fn) <span class="key">return</span> toolError(call, <span class="str">`unknown tool: ${call.name}`</span>);   <span class="hit">// ← declined, safely</span>
+  <span class="key">if</span> (!valid(call.name, call.input)) <span class="key">return</span> toolError(call, <span class="str">'bad arguments'</span>);
+  <span class="key">return</span> wrap(call, <span class="key">await</span> fn(call.input));
+}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>This is your <b>prompt-injection firewall</b> (Vol. 33) for tools. A poisoned document that whispers
+          &ldquo;call <code>deleteAllUsers</code>&rdquo; hits the whitelist and bounces &mdash; because that verb was never
+          on the menu. The model&rsquo;s power is capped at the tools you chose, no matter what anyone types.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Put a human in front of writes. <span class="pill write">write</span></h2>
+        <p>
+          Read tools run themselves. Write tools stop and ask. When the model requests a <code>mutates: true</code> tool,
+          you don&rsquo;t run it &mdash; you <em>pause the loop</em>, surface exactly what it wants to do in plain language,
+          and wait for a human to approve or deny. Approve, and you run it and feed the result back. Deny, and you hand the
+          model a &ldquo;the user declined&rdquo; result and let it respond. This one gate is the difference between a
+          helpful assistant and an unsupervised one holding your refund button.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">runTool.js — the gate for anything that changes the world</span></div>
+<pre><span class="key">if</span> (TOOL_META[call.name].mutates) {
+  <span class="key">const</span> ok = <span class="key">await</span> askHuman({                <span class="cmt">// render a card, await a click</span>
+    verb:   call.name,
+    args:   call.input,
+    plain:  <span class="str">`Cancel order ${call.input.orderId}? This can't be undone.`</span>,
+  });
+  <span class="key">if</span> (!ok) <span class="key">return</span> toolError(call, <span class="str">'user declined this action'</span>);  <span class="hit">// ← model recovers</span>
+}
+<span class="key">return</span> wrap(call, <span class="key">await</span> HANDLERS[call.name](call.input));</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Write the <code>plain</code> line for humans, not machines: <b>&ldquo;Cancel order 4471? This can&rsquo;t
+          be undone.&rdquo;</b> beats <code>cancelOrder({id:4471})</code> every time. The person clicking approve should
+          understand the consequence without reading JSON. That sentence is the actual product.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap">
+      <div class="phone" aria-hidden="true">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="s-head">
+            <div class="k">acme support · agent</div>
+            <div class="t">Order 4471</div>
+          </div>
+          <div class="s-body">
+            <div class="label-mini">tool calls this turn</div>
+            <div class="lrow ok">
+              <div class="lt">🔎 lookupOrder(4471)</div>
+              <div class="lm">status: shipped · $340</div>
+              <div class="lx auto">◐ read — auto-ran</div>
+            </div>
+            <div class="lrow gate">
+              <div class="lt">↩ issueRefund(4471, $340)</div>
+              <div class="lm">write · irreversible</div>
+              <div class="lx hold">◑ held — needs your OK</div>
+              <div class="gate-btns">
+                <span class="yes">✓ approve</span>
+                <span class="nope">✕ deny</span>
+              </div>
+            </div>
+            <div class="metric">
+              <div class="mv">1 tap</div>
+              <div class="ml">to run · to refuse</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>This is what &ldquo;give it a verb&rdquo; looks like from a phone: the read tool already ran and pulled the real
+        order, and the write tool &mdash; a $340 refund &mdash; is <strong>parked behind one tap.</strong> The model did
+        all the thinking and picked the right verbs; a human still owns the moment money moves. Handy on top,
+        supervised underneath.</p>
+        <p class="scribble">the model can ask for anything. you decide what actually happens.</p>
+      </div>
+    </div>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Dry-run, then cap the loop. <span class="pill guard">guard</span></h2>
+        <p>
+          Two leashes, both cheap. First, a <strong>dry-run switch</strong>: a flag that runs the whole loop &mdash; the
+          model picks tools, fills arguments, hits the gate &mdash; but every write returns a fake success instead of
+          touching anything real. It&rsquo;s how you watch what the agent <em>would</em> do before you let it do it, and
+          it&rsquo;s your Vol. 24 eval harness for tools. Second, a <strong>hard cap</strong> on loop turns so a confused
+          model can&rsquo;t spin forever and run up the meter you were warned about in move #5.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">two leashes: dry-run for safety, a turn cap for cost</span></div>
+<pre><span class="cmt">// leash 1 — dry-run: writes pretend to work, touch nothing</span>
+<span class="key">if</span> (DRY_RUN &amp;&amp; TOOL_META[call.name].mutates) {
+  <span class="key">return</span> wrap(call, { ok: <span class="key">true</span>, dryRun: <span class="key">true</span> });     <span class="hit">// ← watched, not executed</span>
+}
+
+<span class="cmt">// leash 2 — a turn cap so the loop can never run away</span>
+<span class="key">let</span> turns = 0;
+<span class="key">while</span> (res.stop_reason === <span class="str">'tool_use'</span> &amp;&amp; turns++ &lt; <span class="amb">8</span>) { <span class="cmt">/* … */</span> }
+<span class="key">if</span> (turns &gt;= <span class="amb">8</span>) log.warn(<span class="str">'tool loop hit the cap — bailing out'</span>);</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Ship with <code>DRY_RUN=true</code> for the first day of any new write tool. Watch the logs, confirm it
+          asks for the <em>right</em> verbs with the <em>right</em> arguments, <em>then</em> flip it live. It&rsquo;s the
+          same &ldquo;canary before promote&rdquo; instinct from Vol. 35 &mdash; just applied to actions instead of prompts.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Log every call the model made. <span class="pill guard">guard</span></h2>
+        <p>
+          You gave the model verbs; now keep the receipt for every one. Every tool call gets a structured log line
+          &mdash; the request id from Vol. 34, the tool name, the arguments, whether it was approved, and the result. The
+          day something goes wrong, &ldquo;which action did the agent take, on whose behalf, and who approved it?&rdquo;
+          has to be a one-line lookup, not an archaeology dig. A model that can act needs an audit trail the way a cash
+          register needs a tape.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">one structured line per tool call — the register tape</span></div>
+<pre><span class="key">function</span> logToolCall(call, { approved, result }) {
+  log.info({
+    reqId:    ctx.reqId,               <span class="cmt">// ties to the Vol. 34 trace</span>
+    tool:     call.name,
+    mutates:  TOOL_META[call.name].mutates,
+    args:     call.input,
+    approved,                          <span class="hit">// ← who let this happen</span>
+    outcome:  result.error ? <span class="str">'error'</span> : <span class="str">'ok'</span>,
+  });
+}
+<span class="cmt">// now: "show me every issueRefund this week, and who approved each" = one query</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>This closes the loop with the last three volumes. Injection tries a bad verb → the whitelist (move #7)
+          bounces it → the log catches the attempt → it becomes a Vol. 24 eval case → it can never work twice. Ship it,
+          defend it, watch it, version it, <b>and now: give it hands you can see.</b></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Wire the loop</h4>
+          <ul>
+            <li><code>{name, description, input_schema}</code><span>a tool is a description</span></li>
+            <li><code>tools</code> on the call<span>hand over the menu</span></li>
+            <li><code>stop_reason: 'tool_use'</code><span>the raised hand</span></li>
+            <li><code>tool_result + call.id</code><span>feed the fact back</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Keep it going</h4>
+          <ul>
+            <li><code>while (tool_use)</code><span>ask → run → feed → ask</span></li>
+            <li><code>runTool(call)</code><span>you are the hands</span></li>
+            <li><code>{"error":"…"}</code><span>errors are results too</span></li>
+            <li><code>return text</code><span>loop ends when it talks</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Fence it in</h4>
+          <ul>
+            <li><code>mutates: true|false</code><span>read vs write, always</span></li>
+            <li><code>HANDLERS[name] ?? decline</code><span>whitelist, no eval</span></li>
+            <li><code>askHuman()</code> before writes<span>a person owns the OK</span></li>
+            <li><code>DRY_RUN + turn cap</code><span>watch first, cap always</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Keep the tape</h4>
+          <ul>
+            <li><code>reqId + tool + args</code><span>tie to the trace</span></li>
+            <li><code>approved: who</code><span>audit every write</span></li>
+            <li><code>bad verb → eval case</code><span>never twice</span></li>
+            <li><code>validate call.input</code><span>the model isn't auth'd</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 36 · tool use</small>
+      </div>
+      <div class="end">
+        built on the <code>describe → choose → run → feed → loop</code> loop, fenced by <code>read / write · human OK · log</code><br />
+        give the model a verb · keep the keys · keep the tape<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var board = document.getElementById('board');
+      if (!board) return;
+
+      var cards   = Array.prototype.slice.call(document.querySelectorAll('.ver-card'));
+      var runBtn  = document.getElementById('runBtn');
+      var verdict = document.getElementById('verdict');
+      var scored  = document.getElementById('scored');
+      var stepsEl = document.getElementById('steps');
+      var gate    = document.getElementById('gate');
+      var gateBody= document.getElementById('gateBody');
+      var okBtn   = document.getElementById('okBtn');
+      var noBtn   = document.getElementById('noBtn');
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      var current = 'status';
+      var timers  = [];
+      var running = false;
+
+      // Each scenario is a scripted agent transcript.
+      // steps: {cls, ico, txt}. A step with gate:true pauses for approve/deny.
+      var scenarios = {
+        status: {
+          label: 'read-only ask · no gate',
+          steps: [
+            { cls: 'think',  ico: '…', txt: '<b>Model:</b> user wants order status — I don&rsquo;t know it, I&rsquo;ll look it up.' },
+            { cls: 'call read', ico: '🔎', txt: '<b>tool_use</b> <code>lookupOrder(4471)</code> — read-only, auto-runs.' },
+            { cls: 'result', ico: '✓', txt: '<b>tool_result</b> <code>{ status: "shipped", total: 340 }</code> — real row from your DB.' },
+            { cls: 'answer', ico: '💬', txt: '<b>Model:</b> &ldquo;Order 4471 shipped and is on its way. Total was $340.&rdquo;' },
+          ],
+          done: '<b>Clean read.</b> The model raised its hand, your code ran <code>lookupOrder</code>, the fact came back, and it answered from data &mdash; no gate, because nothing changed. This is the safe 80% of tool use.'
+        },
+        cancel: {
+          label: 'write ask · human gate',
+          steps: [
+            { cls: 'think',  ico: '…', txt: '<b>Model:</b> user wants to cancel 4471 — that&rsquo;s a write. Let me check it exists first.' },
+            { cls: 'call read', ico: '🔎', txt: '<b>tool_use</b> <code>lookupOrder(4471)</code> — read, auto-runs.' },
+            { cls: 'result', ico: '✓', txt: '<b>tool_result</b> <code>{ status: "shipped" }</code> — exists, cancellable.' },
+            { cls: 'call', ico: '↩', gate: true, txt: '<b>tool_use</b> <code>cancelOrder(4471)</code> — <b>mutates: true</b>. Loop pauses at the gate.',
+              plain: 'The model wants to call <code>cancelOrder(4471)</code>. <b>This can&rsquo;t be undone.</b>' },
+          ],
+          onApprove: {
+            step: { cls: 'result', ico: '✓', txt: '<b>approved</b> → ran <code>cancelOrder(4471)</code> → <code>{ cancelled: true }</code>, logged with your name.' },
+            answer: { cls: 'answer', ico: '💬', txt: '<b>Model:</b> &ldquo;Done — order 4471 is cancelled. You&rsquo;ll see it drop off within a minute.&rdquo;' },
+            done: '<b>Approved.</b> The write only ran <em>after</em> a human said yes — and every detail is on the register tape (move #10). Handy, but never unsupervised.'
+          },
+          onDeny: {
+            step: { cls: 'deny', ico: '✕', txt: '<b>denied</b> → handed the model <code>{"error":"user declined"}</code>. Nothing changed.' },
+            answer: { cls: 'answer', ico: '💬', txt: '<b>Model:</b> &ldquo;No problem — I&rsquo;ve left order 4471 as-is. Anything else?&rdquo;' },
+            done: '<b>Denied — and the model recovered.</b> A declined write is just another <code>tool_result</code>. The agent stays graceful, nothing was cancelled, and the attempt is still logged.'
+          }
+        },
+        refund: {
+          label: 'money write · human gate',
+          steps: [
+            { cls: 'think',  ico: '…', txt: '<b>Model:</b> user wants a refund — money moves. Confirm the amount before I ask.' },
+            { cls: 'call read', ico: '🔎', txt: '<b>tool_use</b> <code>lookupOrder(4471)</code> — read, auto-runs.' },
+            { cls: 'result', ico: '✓', txt: '<b>tool_result</b> <code>{ total: 340, refundable: true }</code>.' },
+            { cls: 'call', ico: '↩', gate: true, txt: '<b>tool_use</b> <code>issueRefund(4471, $340)</code> — <b>mutates: true</b>, real money. Gate.',
+              plain: 'The model wants to <b>refund $340</b> to order 4471. <b>Money leaves your account.</b>' },
+          ],
+          onApprove: {
+            step: { cls: 'result', ico: '✓', txt: '<b>approved</b> → ran <code>issueRefund(4471, $340)</code> → <code>{ refunded: true }</code>, on the tape.' },
+            answer: { cls: 'answer', ico: '💬', txt: '<b>Model:</b> &ldquo;Refunded $340 to your original payment method. Give it 3–5 days.&rdquo;' },
+            done: '<b>Approved — $340 moved, on purpose.</b> The exact same friendly model drove this and the harmless lookup. The gate is the only thing that told the two apart.'
+          },
+          onDeny: {
+            step: { cls: 'deny', ico: '✕', txt: '<b>denied</b> → <code>{"error":"user declined"}</code>. No money moved.' },
+            answer: { cls: 'answer', ico: '💬', txt: '<b>Model:</b> &ldquo;Understood — I haven&rsquo;t issued any refund. Want me to escalate instead?&rdquo;' },
+            done: '<b>Denied — and that&rsquo;s the whole point.</b> A stranger&rsquo;s typo (or a jailbreak) can <em>ask</em> for a $340 refund all day. Without your tap, it never happens.'
+          }
+        }
+      };
+
+      function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+      function reset() {
+        clearTimers();
+        running = false;
+        stepsEl.innerHTML = '';
+        gate.classList.remove('show');
+        scored.textContent = 'idle';
+        runBtn.classList.remove('running');
+        runBtn.textContent = '▶ run the agent';
+      }
+
+      function addStep(s) {
+        var div = document.createElement('div');
+        div.className = 'step ' + s.cls;
+        div.innerHTML = '<span class="ico">' + s.ico + '</span><span class="txt">' + s.txt + '</span>';
+        stepsEl.appendChild(div);
+        // force reflow-free reveal
+        var t = setTimeout(function () { div.classList.add('show'); }, reduced ? 0 : 20);
+        timers.push(t);
+        return div;
+      }
+
+      function pickCard(card) {
+        cards.forEach(function (x) { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); });
+        card.classList.add('sel'); card.setAttribute('aria-pressed', 'true');
+        current = card.getAttribute('data-c');
+        reset();
+        verdict.innerHTML = '<b>Ask set: ' + scenarios[current].label + '.</b> Hit run and watch the model pick its tools.';
+      }
+
+      function finish(text) {
+        scored.textContent = 'done';
+        runBtn.classList.remove('running');
+        runBtn.textContent = '▶ run again';
+        verdict.innerHTML = text;
+        running = false;
+      }
+
+      function run() {
+        var sc = scenarios[current];
+        reset();
+        running = true;
+        runBtn.classList.add('running');
+        runBtn.textContent = 'agent running…';
+        scored.textContent = 'thinking…';
+
+        var step = reduced ? 0 : 620;
+        var i = 0;
+
+        function next() {
+          if (i >= sc.steps.length) {
+            if (!sc.steps[sc.steps.length - 1].gate) finish(sc.done);
+            return;
+          }
+          var s = sc.steps[i];
+          addStep(s);
+          i++;
+          if (s.gate) {
+            // pause the loop, raise the gate
+            gateBody.innerHTML = s.plain;
+            var gt = setTimeout(function () {
+              gate.classList.add('show');
+              scored.textContent = 'waiting for you';
+              verdict.innerHTML = '<b>The loop is paused.</b> A write tool never auto-runs — approve it or deny it. Both are safe; only one moves money.';
+              runBtn.textContent = 'awaiting approval…';
+            }, reduced ? 0 : 300);
+            timers.push(gt);
+            return; // stop advancing until a button is clicked
+          }
+          var t = setTimeout(next, step);
+          timers.push(t);
+        }
+        next();
+      }
+
+      function resolveGate(approved) {
+        if (!running) return;
+        gate.classList.remove('show');
+        var sc = scenarios[current];
+        var branch = approved ? sc.onApprove : sc.onDeny;
+        scored.textContent = approved ? 'approved · running' : 'denied';
+        var step = reduced ? 0 : 620;
+        var t1 = setTimeout(function () {
+          addStep(branch.step);
+          var t2 = setTimeout(function () {
+            addStep(branch.answer);
+            var t3 = setTimeout(function () { finish(branch.done); }, step);
+            timers.push(t3);
+          }, step);
+          timers.push(t2);
+        }, reduced ? 0 : 200);
+        timers.push(t1);
+      }
+
+      cards.forEach(function (card) {
+        card.addEventListener('click', function () { pickCard(card); });
+      });
+      runBtn.addEventListener('click', run);
+      okBtn.addEventListener('click', function () { resolveGate(true); });
+      noBtn.addEventListener('click', function () { resolveGate(false); });
+
+      reset();
+    })();
+  </script>
+</body>
+</html>

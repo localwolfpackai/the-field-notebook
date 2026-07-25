@@ -1,0 +1,1380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Texture Layer — Seven CSS Moves That Make an AI Artifact Stop Looking Generated · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: the seven paste-in CSS effects — progressive blur, gradient borders, scroll-fade, edge masks, liquid glass — that turn a flat AI-built page into something that reads like a real product." />
+  <meta property="og:title" content="The Texture Layer — Seven CSS Moves That Make an AI Artifact Stop Looking Generated" />
+  <meta property="og:description" content="The model nails layout. It does not nail texture. Here are the seven copy-paste effects that close the gap between 'AI-generated' and 'designed.'" />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.css      { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.js       { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.inline   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.advanced { background: var(--paper-deep); color: var(--ink-soft); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Live demo cards ------------------------------------- */
+    .demo {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid oklch(0.86 0.03 80);
+      position: relative;
+    }
+    .demo .demo-label {
+      position: absolute;
+      top: 0.6rem; left: 0.7rem;
+      z-index: 30;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: oklch(0.96 0 0 / 0.85);
+      background: oklch(0.20 0.01 60 / 0.45);
+      backdrop-filter: blur(6px);
+      padding: 0.2em 0.6em;
+      border-radius: 999px;
+      border: 1px solid oklch(1 0 0 / 0.12);
+    }
+
+    /* demo: progressive blur */
+    .demo-blur {
+      height: 230px;
+      position: relative;
+      background:
+        radial-gradient(120% 120% at 15% 20%, oklch(0.62 0.21 264) 0%, transparent 55%),
+        radial-gradient(120% 120% at 85% 30%, oklch(0.66 0.18 28) 0%, transparent 55%),
+        radial-gradient(120% 120% at 60% 90%, oklch(0.70 0.16 150) 0%, transparent 60%),
+        oklch(0.22 0.04 264);
+      overflow: hidden;
+    }
+    .demo-blur .ticker {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      padding: 1rem;
+      align-content: flex-start;
+    }
+    .demo-blur .chip {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: oklch(0.97 0 0 / 0.78);
+      background: oklch(1 0 0 / 0.10);
+      border: 1px solid oklch(1 0 0 / 0.16);
+      padding: 0.2em 0.6em;
+      border-radius: 6px;
+    }
+    .demo-blur .blur-stack {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 62%;
+      pointer-events: none;
+    }
+    .demo-blur .blur-stack > div,
+    .demo-blur .blur-stack::before,
+    .demo-blur .blur-stack::after { position: absolute; inset: 0; }
+    .demo-blur .blur-stack::before {
+      content: ""; z-index: 1; backdrop-filter: blur(0.5px);
+      -webkit-mask: linear-gradient(to bottom, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%);
+              mask: linear-gradient(to bottom, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%);
+    }
+    .demo-blur .blur-stack > div:nth-of-type(1) { z-index: 2; backdrop-filter: blur(1px);
+      -webkit-mask: linear-gradient(to bottom, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%);
+              mask: linear-gradient(to bottom, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); }
+    .demo-blur .blur-stack > div:nth-of-type(2) { z-index: 3; backdrop-filter: blur(2px);
+      -webkit-mask: linear-gradient(to bottom, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%);
+              mask: linear-gradient(to bottom, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%); }
+    .demo-blur .blur-stack > div:nth-of-type(3) { z-index: 4; backdrop-filter: blur(4px);
+      -webkit-mask: linear-gradient(to bottom, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%);
+              mask: linear-gradient(to bottom, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%); }
+    .demo-blur .blur-stack > div:nth-of-type(4) { z-index: 5; backdrop-filter: blur(8px);
+      -webkit-mask: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%);
+              mask: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%); }
+    .demo-blur .blur-stack > div:nth-of-type(5) { z-index: 6; backdrop-filter: blur(16px);
+      -webkit-mask: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%);
+              mask: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%); }
+    .demo-blur .blur-stack::after {
+      content: ""; z-index: 7; backdrop-filter: blur(32px);
+      -webkit-mask: linear-gradient(to bottom, transparent 87.5%, #000 100%);
+              mask: linear-gradient(to bottom, transparent 87.5%, #000 100%);
+    }
+    .demo-blur .footer-bar {
+      position: absolute;
+      inset: auto 0 0 0;
+      z-index: 10;
+      padding: 0.9rem 1rem;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: oklch(0.98 0 0 / 0.92);
+    }
+    .demo-blur .footer-bar .cta {
+      background: oklch(0.98 0 0 / 0.95);
+      color: oklch(0.22 0.04 264);
+      padding: 0.35em 0.85em;
+      border-radius: 7px;
+      font-weight: 600;
+    }
+
+    /* demo: gradient border (dark) */
+    .demo-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.85rem;
+      padding: 1.4rem;
+      background:
+        radial-gradient(130% 130% at 20% 0%, oklch(0.30 0.05 264) 0%, transparent 60%),
+        oklch(0.18 0.015 264);
+    }
+    .gcard {
+      position: relative;
+      border-radius: 12px;
+      padding: 1rem;
+      background: oklch(0.24 0.02 264);
+      min-height: 96px;
+    }
+    .gcard::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: 12px;
+      padding: 1px;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      background: linear-gradient(225deg, oklch(1 0 0 / 0) 0%, oklch(1 0 0 / 0.22) 50%, oklch(1 0 0 / 0) 100%);
+      pointer-events: none;
+    }
+    .gcard .t {
+      font-family: 'Geist', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: oklch(0.97 0 0 / 0.95);
+    }
+    .gcard .s {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: oklch(0.80 0.02 264 / 0.7);
+      margin-top: 0.35rem;
+    }
+    .gcard .dot {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, oklch(0.68 0.18 264), oklch(0.70 0.16 28));
+      margin-bottom: 0.7rem;
+    }
+
+    /* demo: edge mask carousel */
+    .demo-mask {
+      padding: 1.4rem 0;
+      background: var(--paper-alt);
+    }
+    .demo-mask .rail {
+      display: flex;
+      gap: 0.7rem;
+      padding: 0 1.4rem;
+      overflow-x: auto;
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+              mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+      scrollbar-width: none;
+    }
+    .demo-mask .rail::-webkit-scrollbar { display: none; }
+    .demo-mask .swatch {
+      flex: 0 0 auto;
+      width: 120px; height: 78px;
+      border-radius: 10px;
+      display: flex; align-items: flex-end;
+      padding: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.66rem;
+      color: oklch(0.20 0.01 60);
+    }
+
+    /* demo: scroll/intro float */
+    .demo-float {
+      padding: 1.6rem 1.4rem;
+      background: var(--paper-alt);
+      display: grid;
+      gap: 0.6rem;
+    }
+    .floater {
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: 10px;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+      opacity: 0;
+      transform: translateY(22px);
+      filter: blur(8px);
+      transition: opacity 0.7s var(--ease-paper), transform 0.7s var(--ease-paper), filter 0.7s var(--ease-paper);
+    }
+    .floater.in { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .floater b { color: var(--ink); }
+
+    /* margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 40ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* mental model row */
+    .model {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.8rem;
+      margin: 2rem 0 3rem;
+    }
+    .model .cell {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0.95rem 1.1rem;
+    }
+    .model .cell .k {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--margin);
+      margin-bottom: 0.35rem;
+    }
+    .model .cell .v { font-size: 0.92rem; color: var(--ink-soft); }
+    .model .cell .v b { color: var(--ink); }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Paste-in order';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .floater { transition: none; opacity: 1; transform: none; filter: none; }
+    }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 21</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;21</span>
+        <span class="tag">design</span>
+        <span class="tag">artifacts</span>
+      </div>
+
+      <h1>The <span class="accent">texture layer</span> &mdash; seven CSS moves that make an AI artifact stop looking generated.</h1>
+
+      <p class="deck">
+        The model nails the layout. It nails the spacing, the grid, the type scale.
+        What it almost never reaches for is <em>texture</em> &mdash; the feathered blur, the
+        1px specular border, the edge that fades instead of cuts. That last 5% is the
+        whole tell. This notebook is the seven paste-in effects that close it, every
+        one lifted from my own <code>snippets/ui-effects</code> drawer.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · any HTML artifact</span>
+        <span><b>Assumes</b> · you've shipped one AI-built page</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the pattern I kept hitting. I'd ask Claude or Gemini for a landing
+          page, and the structure would come back genuinely good &mdash; clean hierarchy,
+          sane padding, a real grid. Then I'd put it next to something off
+          Apple's site and feel the gap instantly without being able to name it.
+        </p>
+        <p>
+          The gap is texture. Models reach for structure because structure is
+          describable in language &mdash; "two columns, card grid, sticky header."
+          Texture lives below language. It's the way a blur ramps instead of
+          slams, the way light catches a 1px edge, the way a list fades at the
+          rail instead of ending in a hard scrollbar. Nobody prompts for that
+          because nobody has the words for it.
+        </p>
+        <p>
+          So I stopped prompting for it. I keep a drawer of seven effects and
+          paste them in <em>after</em> the model gets the bones right. Each one is a
+          named class, a copy-paste block, and a knob or two. This is that drawer
+          &mdash; with the demos running live right here on the page so you can see the
+          before/after without opening a thing.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#h1">Progressive blur (the feathered fade)</a></li>
+          <li><a href="#h2">Gradient border (specular 1px edge)</a></li>
+          <li><a href="#h3">Edge masks (fade, don't cut)</a></li>
+          <li><a href="#h4">Scroll-in float (focus into place)</a></li>
+          <li><a href="#h5">Noise overlay (kill the flat plastic)</a></li>
+          <li><a href="#h6">Liquid glass (real refraction)</a></li>
+          <li><a href="#h7">The prompt that asks for all of it</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- mental model -->
+    <div class="model" aria-label="Mental model">
+      <div class="cell">
+        <div class="k">what the model gives</div>
+        <div class="v"><b>Structure.</b> Grid, spacing, type scale, color tokens. Describable in words, so it's reliable.</div>
+      </div>
+      <div class="cell">
+        <div class="k">what you paste in after</div>
+        <div class="v"><b>Texture.</b> Blur ramps, light edges, soft fades. Lives below language &mdash; so you carry the snippets.</div>
+      </div>
+      <div class="cell">
+        <div class="k">the order that works</div>
+        <div class="v"><b>Bones first.</b> Let the model nail layout, then layer effects on top. Never the reverse.</div>
+      </div>
+    </div>
+
+    <!-- HACK 1 -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Progressive blur &mdash; the fade that feathers instead of slamming. <span class="pill css">css</span></h2>
+        <p>
+          The single biggest "this looks designed" upgrade, and the one models
+          never reach for. A plain <code>backdrop-filter: blur(20px)</code> gives you a
+          hard line where sharp content meets blur. iOS doesn't do that &mdash; it
+          <em>ramps</em> the blur across a gradient so content recedes into fog. You get
+          there by stacking layers, each with a heavier blur and a mask that only
+          shows its own slice.
+        </p>
+
+        <div class="demo">
+          <span class="demo-label">live · scroll-sheet footer</span>
+          <div class="demo-blur">
+            <div class="ticker" aria-hidden="true">
+              <span class="chip">asset_0142.png</span><span class="chip">hero-v3.fig</span>
+              <span class="chip">tokens.css</span><span class="chip">grid-08.svg</span>
+              <span class="chip">noise@2x.webp</span><span class="chip">type-scale.md</span>
+              <span class="chip">card-lg.tsx</span><span class="chip">og-image.png</span>
+              <span class="chip">palette.oklch</span><span class="chip">motion.json</span>
+              <span class="chip">blur-stack.css</span><span class="chip">edge-mask.css</span>
+              <span class="chip">refraction.js</span><span class="chip">specular.css</span>
+            </div>
+            <div class="blur-stack" aria-hidden="true">
+              <div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <div class="footer-bar">
+              <span>14 assets selected</span>
+              <span class="cta">Export</span>
+            </div>
+          </div>
+        </div>
+
+        <p>
+          See how the chips dissolve into the footer instead of getting chopped by
+          a line? That's eight stacked layers from <code>blur(0.5px)</code> up to
+          <code>blur(64px)</code>, each masked to a 12.5% band. Here's the shape &mdash; just
+          the top three layers; the pattern repeats:
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">progressive-blur-bottom.css</span>
+          </div>
+<pre><span class="cmt">/* fixed sheet at the bottom — drop in &lt;body&gt; */</span>
+.gradient-blur { position: fixed; inset: auto 0 0 0; height: 65%;
+                 z-index: 5; pointer-events: none; }
+
+.gradient-blur::before {           <span class="cmt">/* layer 1, lightest */</span>
+  backdrop-filter: <span class="key">blur(0.5px)</span>;
+  mask: linear-gradient(to bottom,
+    <span class="str">rgba(0,0,0,0)</span> 0%,    <span class="str">rgba(0,0,0,1)</span> 12.5%,
+    <span class="str">rgba(0,0,0,1)</span> 25%,   <span class="str">rgba(0,0,0,0)</span> 37.5%); }
+
+.gradient-blur &gt; div:nth-of-type(1) {
+  backdrop-filter: <span class="key">blur(1px)</span>;  <span class="cmt">/* each layer: 2× blur, */</span>
+  mask: linear-gradient(to bottom, <span class="cmt">/* band shifted down 12.5% */</span>
+    <span class="str">rgba(0,0,0,0)</span> 12.5%, <span class="str">rgba(0,0,0,1)</span> 25%,
+    <span class="str">rgba(0,0,0,1)</span> 37.5%, <span class="str">rgba(0,0,0,0)</span> 50%); }
+
+<span class="cmt">/* ...repeat for blur(2,4,8,16,32,64px). 8 layers total. */</span></pre>
+        </div>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Want it at the <b>top</b> instead (sticky header)? Flip every
+            <code>to bottom</code> to <code>to top</code> and set
+            <code>inset: 0 0 auto 0</code>. Same six <code>&lt;div&gt;</code>s. That's the whole change.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Gradient border &mdash; the 1px specular edge Apple uses everywhere. <span class="pill css">css</span></h2>
+        <p>
+          Solid borders read as "web." Real products use a hairline that looks
+          like light catching the edge of a physical object &mdash; brighter on one
+          side, fading to nothing on the other. The trick is a 1px
+          <code>::before</code> with a diagonal gradient, clipped to a ring with
+          <code>mask-composite</code> so only the border shows.
+        </p>
+
+        <div class="demo">
+          <span class="demo-label">live · dark cards</span>
+          <div class="demo-cards">
+            <div class="gcard"><div class="dot"></div><div class="t">Refraction</div><div class="s">--fx-filter</div></div>
+            <div class="gcard"><div class="dot"></div><div class="t">Specular</div><div class="s">225deg</div></div>
+            <div class="gcard"><div class="dot"></div><div class="t">Vibrancy</div><div class="s">backdrop</div></div>
+          </div>
+        </div>
+
+        <p>
+          Look at the top-left of each card &mdash; that faint bright edge isn't a
+          shadow, it's a masked gradient. On a dark surface it makes a card look
+          milled out of aluminum. Here's the entire snippet:
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">border-gradient.css</span>
+          </div>
+<pre><span class="cmt">/* add class "border-gradient" to any element, */</span>
+<span class="cmt">/* then REMOVE its existing border. */</span>
+.border-gradient { position: relative; }
+
+.border-gradient::before {
+  content: ""; position: absolute; inset: 0;
+  border-radius: 10px;
+  padding: <span class="key">1px</span>;                 <span class="cmt">/* the border thickness */</span>
+  <span class="cmt">/* two masks + exclude = only the 1px ring shows */</span>
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+               linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  background: linear-gradient(<span class="key">225deg</span>,
+    <span class="str">rgba(255,255,255,0)</span>   0%,    <span class="cmt">/* light from top-left */</span>
+    <span class="str">rgba(255,255,255,.2)</span>  50%,
+    <span class="str">rgba(255,255,255,0)</span> 100%);
+  pointer-events: none;
+}</pre>
+        </div>
+
+        <p class="scribble">the knob here is <code>225deg</code>. that's where your light source is. match it to your shadows.</p>
+      </div>
+    </article>
+
+    <!-- HACK 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Edge masks &mdash; let content fade, not cut. <span class="pill inline">inline</span></h2>
+        <p>
+          The cheapest effect in the drawer and one of the highest-leverage. Any
+          time content runs off the edge of a container &mdash; a horizontal carousel,
+          a long sidebar, a logo strip &mdash; a hard cutoff screams "scrollable region."
+          Fading the edges to transparent signals "there's more" without an ugly
+          scrollbar. It's two lines of inline CSS, no wrapper needed.
+        </p>
+
+        <div class="demo">
+          <span class="demo-label">live · drag the rail sideways →</span>
+          <div class="demo-mask">
+            <div class="rail">
+              <div class="swatch" style="background:oklch(0.80 0.13 264)">264</div>
+              <div class="swatch" style="background:oklch(0.82 0.13 200)">200</div>
+              <div class="swatch" style="background:oklch(0.84 0.13 150)">150</div>
+              <div class="swatch" style="background:oklch(0.86 0.14 110)">110</div>
+              <div class="swatch" style="background:oklch(0.85 0.14 70)">70</div>
+              <div class="swatch" style="background:oklch(0.82 0.15 40)">40</div>
+              <div class="swatch" style="background:oklch(0.80 0.15 20)">20</div>
+              <div class="swatch" style="background:oklch(0.82 0.13 330)">330</div>
+            </div>
+          </div>
+        </div>
+
+        <p>
+          The swatches dissolve at both rails instead of hitting a wall. That's a
+          single <code>mask-image</code> on the scroll container:
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">alpha-mask · inline on any element</span>
+          </div>
+<pre><span class="cmt">/* horizontal — fade left + right rails */</span>
+mask-image: linear-gradient(to right,
+  transparent, <span class="key">black 15%</span>, <span class="key">black 85%</span>, transparent);
+-webkit-mask-image: linear-gradient(to right,
+  transparent, black 15%, black 85%, transparent);
+
+<span class="cmt">/* vertical — same idea, top + bottom */</span>
+mask-image: linear-gradient(to bottom,
+  transparent, black 15%, black 85%, transparent);</pre>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Always ship both <code>mask-image</code> <b>and</b> <code>-webkit-mask-image</code>.
+            Safari and a lot of in-app browsers still need the prefixed one, and
+            without it the effect silently does nothing.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Scroll-in float &mdash; content focuses into place. <span class="pill js">js</span></h2>
+        <p>
+          Apple landing pages almost never dump everything at once. Sections
+          float up and sharpen as you reach them &mdash; opacity, a small
+          <code>translateY</code>, and a blur clearing to zero, all at once. It reads as
+          "premium weight": the content gets <em>developed</em> onto the screen rather
+          than just appearing. One keyframe plus a tiny
+          <code>IntersectionObserver</code> so it only fires when you actually scroll there.
+        </p>
+
+        <div class="demo">
+          <span class="demo-label">live · these floated in on view</span>
+          <div class="demo-float" id="float-demo">
+            <div class="floater"><b>Row one.</b> Faded up, slid 22px, blur cleared to zero.</div>
+            <div class="floater"><b>Row two.</b> Same transition — the eye reads it as focus.</div>
+            <div class="floater"><b>Row three.</b> Staggered by 90ms so it cascades, not snaps.</div>
+          </div>
+        </div>
+
+        <p>
+          The keyframe is the whole aesthetic; the observer is just the trigger.
+          Here's both:
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">animation-keyframe.css + observer.js</span>
+          </div>
+<pre><span class="cmt">/* the move: fade + rise + focus */</span>
+@keyframes animationIn {
+  0%   { opacity: 0; transform: <span class="key">translateY(30px)</span>; filter: <span class="key">blur(8px)</span>; }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+<span class="cmt">/* class: [animation:animationIn_0.8s_ease-out_both] animate-on-scroll */</span>
+
+<span class="cmt">// only run it when the element scrolls into view</span>
+<span class="key">const</span> io = <span class="key">new</span> IntersectionObserver(<span class="amb">(entries)</span> =&gt; {
+  entries.forEach(<span class="amb">(e)</span> =&gt; {
+    <span class="key">if</span> (e.isIntersecting) {
+      e.target.classList.add(<span class="str">"animate"</span>);
+      io.unobserve(e.target);   <span class="cmt">// fire once, then stop</span>
+    }
+  });
+}, { threshold: <span class="key">0.2</span>, rootMargin: <span class="str">"0px 0px -10% 0px"</span> });
+
+document.querySelectorAll(<span class="str">".animate-on-scroll"</span>).forEach(<span class="amb">(el)</span> =&gt; io.observe(el));</pre>
+        </div>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Stagger it: give each item <code>animation-delay: calc(var(--i) * 90ms)</code>
+            and set <code>--i</code> per element. Now the section <b>cascades</b> in instead of
+            firing all at once. The demo above does exactly this.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Noise overlay &mdash; the cure for flat plastic. <span class="pill advanced">advanced</span></h2>
+        <p>
+          Pure flat fills are the most reliable AI-slop tell. Real surfaces have
+          grain. A faint field of noise blended over a solid color is what turns
+          "default Tailwind card" into "frosted glass with a matte finish." You can
+          do a quick version with a tiling PNG, but the snippet in my drawer
+          generates it on a <code>&lt;canvas&gt;</code> and blends it through an SVG filter, so
+          it scales to any element size without a texture asset.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">noise — the quick + the real version</span>
+          </div>
+<pre><span class="cmt">/* QUICK: one tiling SVG noise, blended at low opacity */</span>
+.grain::after {
+  content: ""; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,...feTurbulence...");
+  opacity: <span class="key">0.04</span>;          <span class="cmt">/* the knob — 0.03–0.06 is plenty */</span>
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+<span class="cmt">/* REAL (from the drawer): canvas-generated, SVG-blended */</span>
+<span class="cmt">/* registered as a custom filter you call in CSS: */</span>
+--fx-filter: <span class="key">noise</span>(<span class="amb">0</span>, <span class="amb">1</span>, <span class="amb">0.25</span>);
+<span class="cmt">/*           saturation, intensity, opacity ↑ */</span>
+<span class="cmt">/* saturation 0 = grayscale grain, 1 = chromatic */</span></pre>
+        </div>
+
+        <p>
+          For 90% of artifacts the <code>::after</code> + <code>feTurbulence</code> version is all
+          you need, and it's zero JavaScript. Reach for the canvas engine only when
+          you want the grain to react to resize or pair with the glass effect below.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Noise is a <em>seasoning</em>, not a sauce. Above <code>0.06</code> opacity it stops
+            reading as texture and starts reading as a broken JPEG. When in doubt,
+            turn it down until you're not sure it's there &mdash; that's the right amount.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Liquid glass &mdash; actual refraction, not just blur. <span class="pill advanced">advanced</span></h2>
+        <p>
+          This is the deep end, and the one I reserve for a hero element &mdash; one
+          card, one nav bar, not the whole page. Standard <code>backdrop-filter:
+          blur()</code> just smears what's behind. Real glass <em>bends</em> light at its
+          edges. The drawer's <code>FxFilter</code> engine draws a displacement map on a
+          canvas, feeds it to an SVG <code>&lt;feDisplacementMap&gt;</code>, and warps the
+          backdrop the way a thick pane of glass actually would &mdash; chromatic
+          aberration on the edges and all.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">liquid-glass — how you call it</span>
+          </div>
+<pre><span class="cmt">// 1. paste the FxFilter engine once (it self-inits)</span>
+<span class="cmt">//    it scans for --fx-filter and injects the SVG for you</span>
+
+<span class="cmt">/* 2. then it's a one-line CSS property on your hero element */</span>
+.hero-card {
+  --fx-filter: <span class="key">liquid-glass</span>(<span class="amb">2</span>, <span class="amb">10</span>, <span class="amb">0</span>);
+  <span class="cmt">/*               refraction, offset, chromatic ↑ */</span>
+  border-radius: 20px;     <span class="cmt">/* engine reads this for edge warp */</span>
+}
+
+<span class="cmt">/* stack it with the others for the full Apple stack: */</span>
+.hero-card { --fx-filter: <span class="key">noise</span>(0,1,.2) <span class="key">liquid-glass</span>(2,10,1); }
+<span class="cmt">/*                        chromatic on ↑ — splits R/G/B at edges */</span></pre>
+        </div>
+
+        <p>
+          The engine tracks each element's size and border-radius and regenerates
+          the displacement map when they change &mdash; so it survives responsive
+          resizing without you wiring anything up. The cost is real, though:
+          it's a <code>requestAnimationFrame</code> loop scanning the DOM. Which is exactly
+          why it's a hero-only move.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Don't carpet-bomb a page with this. One refracting element is jewelry;
+            ten is a space heater. If you need glassy-but-cheap on many elements,
+            use plain <code>backdrop-filter: blur()</code> + the <b>noise</b> from #5 + the
+            <b>gradient border</b> from #2. That combo gets you 80% of the look for 5%
+            of the cost.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The prompt that asks for all of it &mdash; by name. <span class="pill js">workflow</span></h2>
+        <p>
+          Here's the meta-move. Once you have the vocabulary &mdash; <em>progressive blur,
+          specular border, edge mask, scroll-in float, noise grain</em> &mdash; you can hand
+          it back to the model. The reason Claude didn't reach for these isn't that
+          it can't write them; it's that "make it look nice" doesn't name them. Name
+          them and it builds them in on the first pass.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the texture-pass prompt</span>
+          </div>
+<pre><span class="prompt">you&gt;</span> The layout's right. Now do a <span class="key">texture pass</span>, no layout changes:
+
+   <span class="str">1.</span> Progressive blur on the sticky footer — 6 stacked
+      layers, blur(1px)→blur(32px), masked in 12.5% bands.
+   <span class="str">2.</span> Specular 1px gradient border on every card
+      (225° light, mask-composite: exclude). No solid borders.
+   <span class="str">3.</span> Edge-mask the horizontal rails — fade to transparent
+      at 15%/85%, ship the -webkit- prefix too.
+   <span class="str">4.</span> Scroll-in float on each section: opacity +
+      translateY(30px→0) + blur(8px→0), IntersectionObserver.
+   <span class="str">5.</span> 0.04-opacity noise overlay on the hero only.
+
+<span class="out">claude&gt; Done. Texture applied, layout untouched. Notes on each ↓</span></pre>
+        </div>
+
+        <p>
+          That's the actual workflow: structure from the model, vocabulary from
+          this notebook, texture pass back to the model with the effects named and
+          their knobs set. You're not asking it to have taste. You're handing it
+          yours, in terms it can compile.
+        </p>
+
+        <p class="scribble">this is the whole game. the model has the hands. you bring the words it doesn't have yet.</p>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The drawer, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The seven, by cost</h4>
+          <ul>
+            <li><code>edge-mask</code><span>cheapest · 2 lines inline</span></li>
+            <li><code>gradient-border</code><span>cheap · one ::before</span></li>
+            <li><code>noise ::after</code><span>cheap · feTurbulence</span></li>
+            <li><code>scroll-float</code><span>cheap · 1 keyframe + IO</span></li>
+            <li><code>progressive-blur</code><span>mid · 8 masked layers</span></li>
+            <li><code>liquid-glass</code><span>spendy · hero-only</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The knobs</h4>
+          <ul>
+            <li><code>225deg</code><span>border light source</span></li>
+            <li><code>15% / 85%</code><span>edge-mask fade points</span></li>
+            <li><code>blur(8px→0)</code><span>float focus amount</span></li>
+            <li><code>0.04</code><span>noise opacity ceiling</span></li>
+            <li><code>liquid-glass(2,10,1)</code><span>refract, offset, chroma</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Gotchas</h4>
+          <ul>
+            <li><code>-webkit-mask</code><span>always ship the prefix</span></li>
+            <li><code>remove border</code><span>before adding gradient one</span></li>
+            <li><code>noise &lt; 0.06</code><span>or it reads as broken</span></li>
+            <li><code>glass × 1</code><span>hero only, never tile it</span></li>
+            <li><code>reduced-motion</code><span>kill the float for a11y</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The workflow</h4>
+          <ul>
+            <li><code>1. bones</code><span>let the model do layout</span></li>
+            <li><code>2. words</code><span>name the effects you want</span></li>
+            <li><code>3. texture pass</code><span>hand them back, knobs set</span></li>
+            <li><code>4. one hero</code><span>spend the glass budget once</span></li>
+            <li><code>5. ship</code><span>now it doesn't look generated</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-21</small>
+      </div>
+      <div class="end">
+        next entry · <code>oklch palettes that don't clash</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    /* tiny scroll-in observer powering the #04 demo + the section reveals */
+    (function () {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var floaters = document.querySelectorAll('#float-demo .floater');
+      if (reduce) {
+        floaters.forEach(function (el) { el.classList.add('in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            var rows = entry.target.querySelectorAll('.floater');
+            rows.forEach(function (row, i) {
+              setTimeout(function () { row.classList.add('in'); }, i * 90);
+            });
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.3 });
+      var host = document.getElementById('float-demo');
+      if (host) io.observe(host);
+    })();
+  </script>
+</body>
+</html>

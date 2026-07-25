@@ -1,0 +1,1438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The 90%-Off Dial — Ten Moves for Prompt Caching, the Day Your Bill Stops Scaling With Repetition · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: stop re-paying full price for the same system prompt, the same docs, the same few-shot examples on every call. Ten moves to mark the stable part of your prompt as cacheable, read a cache hit, order your blocks so the cache actually lands, and turn a long, expensive context into a near-free read." />
+  <meta property="og:title" content="The 90%-Off Dial — Prompt Caching, the Day Your Bill Stops Scaling With Repetition" />
+  <meta property="og:description" content="You're paying full freight to re-read the same context on every turn. One marker tells the model to remember it. Ten moves: cache the stable prefix, read the hit, order your blocks, watch cost and latency fall off a cliff." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      /* feature identity — cache green (warm/hit), spend amber (cold) */
+      --cache:      oklch(0.58 0.13 155);
+      --cache-wash: oklch(0.93 0.06 155);
+      --cache-ink:  oklch(0.40 0.12 155);
+      --spend:      oklch(0.65 0.14 45);
+      --spend-wash: oklch(0.95 0.06 45);
+      --spend-ink:  oklch(0.45 0.14 45);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--cache-wash) 62%, var(--cache-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.58 0.13 155 / 0.45);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.cache    { background: var(--cache-wash); color: var(--cache-ink); }
+    .hack h2 .pill.cost     { background: var(--spend-wash); color: var(--spend-ink); }
+    .hack h2 .pill.ship     { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "cache ledger" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .ledger {
+      display: grid;
+      grid-template-columns: 1fr 0.9fr;
+      gap: 0;
+    }
+    @media (max-width: 660px) { .ledger { grid-template-columns: 1fr; } }
+
+    /* the prompt stack the model is reading */
+    .stack {
+      margin: 1rem;
+      display: grid;
+      gap: 0.5rem;
+      align-content: start;
+    }
+    .stack .row {
+      position: relative;
+      border-radius: var(--radius-sm);
+      border: 1px solid oklch(0.88 0.02 80);
+      background: var(--paper);
+      padding: 0.55rem 0.7rem 0.55rem 0.85rem;
+      font-size: 0.82rem;
+      transition: all 0.4s var(--ease-paper);
+      overflow: hidden;
+    }
+    .stack .row .rl {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+    }
+    .stack .row .rt { font-weight: 600; color: var(--ink); margin-top: 0.1rem; }
+    .stack .row .rtok {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem; color: var(--ink-mute);
+      margin-top: 0.15rem;
+    }
+    /* cacheable rows light up green when warm */
+    .stack .row.cacheable { border-left: 3px solid oklch(0.8 0.02 155); }
+    .ledger.warm .stack .row.cacheable {
+      border-color: var(--cache); border-left-color: var(--cache);
+      background: var(--cache-wash);
+    }
+    .ledger.warm .stack .row.cacheable .rl { color: var(--cache-ink); }
+    .stack .row.cacheable::after {
+      content: 'cache write';
+      position: absolute; top: 0.45rem; right: 0.55rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--spend-ink); background: var(--spend-wash);
+      padding: 0.08em 0.4em; border-radius: 4px;
+      transition: all 0.3s var(--ease-paper);
+    }
+    .ledger.warm .stack .row.cacheable::after {
+      content: 'cache hit ✓'; color: oklch(0.99 0 0); background: var(--cache);
+    }
+    .stack .row.fresh { border-left: 3px solid var(--spend); }
+    .stack .row.fresh::after {
+      content: 'always fresh';
+      position: absolute; top: 0.45rem; right: 0.55rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--spend-ink); background: var(--spend-wash);
+      padding: 0.08em 0.4em; border-radius: 4px;
+    }
+    .stack .cut {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Caveat', cursive; font-size: 1.05rem; color: var(--margin);
+      margin: 0.1rem 0;
+    }
+    .stack .cut hr { flex: 1; border: none; border-top: 1.5px dashed var(--margin); opacity: 0.6; }
+
+    /* the meter side */
+    .meters { padding: 1rem 1rem 1rem 0; display: grid; align-content: start; gap: 0.9rem; }
+    @media (max-width: 660px) { .meters { padding: 0 1rem 1rem; } }
+    .meter .mh {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: 0.3rem;
+    }
+    .meter .mh b { font-size: 0.94rem; color: var(--ink); letter-spacing: 0; text-transform: none; }
+    .meter .track { height: 0.85rem; border-radius: 999px; background: var(--paper-deep); overflow: hidden; }
+    .meter .fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--spend) 0%, oklch(0.7 0.15 35) 100%);
+      transition: width 0.55s var(--ease-paper), background 0.4s;
+    }
+    .ledger.warm .meter .fill {
+      background: linear-gradient(90deg, var(--cache) 0%, oklch(0.66 0.13 150) 100%);
+    }
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .toggle {
+      display: inline-flex; border: 1px solid oklch(0.84 0.03 80);
+      border-radius: 999px; overflow: hidden; background: var(--paper);
+    }
+    .toggle button {
+      font-family: 'Geist Mono', monospace; font-size: 0.74rem;
+      padding: 0.4rem 0.95rem; border: none; cursor: pointer;
+      background: transparent; color: var(--ink-soft); letter-spacing: 0.03em;
+      transition: all 0.2s var(--ease-paper);
+    }
+    .toggle button.on { color: oklch(0.99 0 0); }
+    .toggle button[data-m="cold"].on { background: var(--spend); }
+    .toggle button[data-m="warm"].on { background: var(--cache); }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .stack .row, .meter .fill { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: where the cache breakpoint goes ─────────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.stable { border-left-color: var(--cache); background: var(--cache-wash); }
+    .anat .blk.volatile  { border-left-color: var(--spend); background: var(--spend-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.stable .tag { color: var(--cache-ink); }
+    .anat .blk.volatile .tag { color: var(--spend-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.stable .tag .dot { background: var(--cache); }
+    .anat .blk.volatile .tag .dot { background: var(--spend); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+    .anat .cutline {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-family: 'Caveat', cursive; font-size: 1.15rem; color: var(--margin);
+    }
+    .anat .cutline hr { flex: 1; border: none; border-top: 1.5px dashed var(--margin); opacity: 0.6; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: oklch(0.36 0.10 145); font-weight: 600; }
+    .ptable td.no { color: var(--margin); font-weight: 600; }
+
+    /* ── Mobile mock (cache ledger on a phone) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 155 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--cache) 0%, var(--accent) 150%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.7rem; }
+    .phone .turn {
+      border-radius: 9px; overflow: hidden;
+      border: 1px solid oklch(0.9 0.015 80);
+    }
+    .phone .turn .th {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.55rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.52rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--ink-mute); background: var(--paper-deep);
+    }
+    .phone .turn .th .pc { margin-left: auto; padding: 0.05em 0.4em; border-radius: 999px; font-size: 0.46rem; }
+    .phone .turn.cold .th .pc { background: var(--spend-wash); color: var(--spend-ink); }
+    .phone .turn.warm .th .pc { background: var(--cache); color: oklch(0.99 0 0); }
+    .phone .turn .tbar { height: 0.5rem; margin: 0.5rem; border-radius: 999px; background: var(--paper-deep); overflow: hidden; }
+    .phone .turn .tbar i { display: block; height: 100%; border-radius: 999px; }
+    .phone .turn.cold .tbar i { width: 100%; background: var(--spend); }
+    .phone .turn.warm .tbar i { width: 12%; background: var(--cache); }
+    .phone .turn .tprice { padding: 0 0.55rem 0.5rem; font-family: 'Geist Mono', monospace; font-size: 0.5rem; color: var(--ink-soft); }
+    .phone .turn .tprice b { color: var(--ink); }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.58 0.13 155 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.58 0.13 155 / 0.4); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 30</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;29</span>
+        <span class="tag">caching</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>The <span class="accent">90%-off dial</span> &mdash; the day your bill stops scaling with how often you repeat yourself.</h1>
+
+      <p class="deck">
+        Every call, you re-send the same system prompt, the same docs, the same few-shot examples &mdash; and
+        you pay full freight to make the model <strong>re-read</strong> them from scratch. Prompt caching is one
+        marker that says <em>remember this part</em>. The stable prefix gets read once and replayed for pennies;
+        only the new bit at the end pays full price. Ten moves to mark it, order it, read the hit, and watch
+        cost and latency fall off a cliff. The ledger below is live &mdash; flip cold to warm and watch the bars
+        collapse.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Prompt_Caching-2EA043?style=flat-square&logo=anthropic&logoColor=white" alt="Claude prompt caching" />
+        <img src="https://img.shields.io/badge/Gemini-Context_Caching-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini context caching" />
+        <img src="https://img.shields.io/badge/cache_read-~10%25_of_price-D97757?style=flat-square&logo=cashapp&logoColor=white" alt="cache read about ten percent of price" />
+        <img src="https://img.shields.io/badge/pairs_with-cost_%26_latency-58A6B4?style=flat-square&logo=speedtest&logoColor=white" alt="pairs with cost and latency" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~10 min</span>
+        <span><b>Surface</b> · one <code>cache_control</code> marker on a block</span>
+        <span><b>Assumes</b> · you can make a basic <code>messages.create</code> call</span>
+        <span><b>Pairs with</b> · Vol. 25 (cost &amp; latency) · Vol. 26 (retrieval)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The first time I watched a token bill for an agent that re-sent a 6,000-token system prompt on every
+          single turn, I felt physically ill. The agent was good. It was also paying to re-read its own
+          instructions, its own tool list, and a wall of documentation &mdash; word for word &mdash; a hundred
+          times an hour. None of that changed between turns. I was buying the same book over and over because I
+          kept forgetting I owned it.
+        </p>
+        <p>
+          Prompt caching is the fix, and it's almost embarrassingly simple. You tell the provider: <em>this
+          chunk is stable, store it.</em> The next call that starts with the exact same chunk gets a
+          <strong>cache hit</strong> &mdash; the model skips re-reading it and you pay roughly a tenth of the
+          price for those tokens. Only the genuinely new part, the user's latest message, pays full freight.
+        </p>
+        <p>
+          It is not a new endpoint and not a new model. It's one marker &mdash; <code>cache_control</code> on
+          Claude, a cached-content handle on Gemini &mdash; plus one discipline: <strong>put the stable stuff
+          first, the volatile stuff last.</strong> Get the order right and the cache lands. Get it wrong and you
+          quietly pay full price forever. Ten moves below to land it on purpose.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Mark the stable prefix — one marker</a></li>
+          <li><a href="#h2">Read the shape — write once, read cheap</a></li>
+          <li><a href="#h3">Order it: stable first, volatile last</a></li>
+          <li><a href="#h4">Read the hit — the four usage counters</a></li>
+          <li><a href="#h5">Cache the system prompt and tools</a></li>
+          <li><a href="#h6">Cache a big document, ask many questions</a></li>
+          <li><a href="#h7">Mind the TTL — the cache is a fridge</a></li>
+          <li><a href="#h8">Don't cache the thing that always changes</a></li>
+          <li><a href="#h9">The break-even — when it pays for itself</a></li>
+          <li><a href="#h10">Verify the hit — log the ratio, gate on it</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="cache ledger demo">
+      <div class="demo-bar">
+        <span>same prompt, two ways to pay · flip cold → warm</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="ledger" id="ledger">
+        <div class="stack" aria-hidden="true">
+          <div class="row cacheable">
+            <div class="rl">system prompt</div>
+            <div class="rt">Role, rules, tone, output format</div>
+            <div class="rtok">2,400 tokens · never changes</div>
+          </div>
+          <div class="row cacheable">
+            <div class="rl">tool definitions</div>
+            <div class="rt">12 tools, full JSON schemas</div>
+            <div class="rtok">1,800 tokens · never changes</div>
+          </div>
+          <div class="row cacheable">
+            <div class="rl">retrieved docs</div>
+            <div class="rt">Knowledge base chunks for this session</div>
+            <div class="rtok">3,200 tokens · stable this session</div>
+          </div>
+          <div class="cut"><hr>cache breakpoint<hr></div>
+          <div class="row fresh">
+            <div class="rl">user turn</div>
+            <div class="rt">"Okay, now summarize that as a tweet."</div>
+            <div class="rtok">40 tokens · new every call</div>
+          </div>
+        </div>
+
+        <div class="meters">
+          <div class="meter">
+            <div class="mh"><span>cost / call</span><b id="m-cost">$0.0228</b></div>
+            <div class="track"><span class="fill" id="f-cost" style="width:100%"></span></div>
+          </div>
+          <div class="meter">
+            <div class="mh"><span>time to first token</span><b id="m-lat">2,400 ms</b></div>
+            <div class="track"><span class="fill" id="f-lat" style="width:100%"></span></div>
+          </div>
+          <div class="meter">
+            <div class="mh"><span>tokens charged full price</span><b id="m-tok">7,440</b></div>
+            <div class="track"><span class="fill" id="f-tok" style="width:100%"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="toggle" role="group" aria-label="cold or warm">
+          <button data-m="cold" class="on">❄ cold call</button>
+          <button data-m="warm">♨ warm hit</button>
+        </span>
+        <span class="verdict-line" id="verdict"><b>Cold call — full freight.</b> First time through, every block pays full price and the model reads all 7,440 tokens before it answers. This is what you pay on every call <em>without</em> caching.</span>
+        <span class="hint">flip me ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Mark the stable prefix &mdash; it's one marker on a block you already send. <span class="pill setup">setup</span></h2>
+        <p>
+          No new endpoint, no special model. You take the chunk that doesn't change between calls &mdash; the
+          system prompt, usually &mdash; and hang a <code>cache_control</code> marker on it. That tells the
+          provider: store everything up to and including this block. The next request that opens with the exact
+          same bytes gets to skip re-reading them.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cache.py &mdash; one marker on the stable system prompt</span></div>
+<pre><span class="key">import</span> anthropic
+client = anthropic.Anthropic()
+
+BIG_SYSTEM = open(<span class="str">"system_prompt.md"</span>).read()   <span class="cmt"># long & stable</span>
+
+response = client.messages.create(
+    model=<span class="str">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="amb">1024</span>,
+    system=[{
+        <span class="str">"type"</span>: <span class="str">"text"</span>,
+        <span class="str">"text"</span>: BIG_SYSTEM,
+        <span class="str">"cache_control"</span>: {<span class="str">"type"</span>: <span class="str">"ephemeral"</span>},  <span class="cmt"># &lt;-- the marker</span>
+    }],
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>:
+        <span class="str">"Summarize the last meeting in three bullets."</span>}],
+)</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Run that exact call <b>twice in a row</b>. The first one writes the cache; the second one hits it.
+          Then print <code>response.usage</code> on both and watch <code>cache_read_input_tokens</code> jump from
+          <b>0</b> to the size of your system prompt. That number is the dial moving.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Read the shape &mdash; you pay a little to write, almost nothing to read. <span class="pill read">read</span></h2>
+        <p>
+          Caching has two prices, and they're the whole mental model. The <strong>first</strong> call that stores
+          a chunk pays a small <em>premium</em> on those tokens &mdash; a cache <em>write</em>, slightly more than
+          normal. Every call <strong>after</strong> that reuses it pays a cache <em>read</em> &mdash; roughly a
+          tenth of the normal token price. So the trade is: pay a hair more once, pay almost nothing forever
+          after. The break-even lands fast (Move 9 does the math).
+        </p>
+        <div class="anat" aria-label="the two prices of caching">
+          <div class="blk volatile">
+            <div class="tag"><span class="dot"></span>write</div>
+            <p><em>The first call — a small premium.</em> The provider reads your big chunk and stores it. You pay normal price
+            plus a little &mdash; the one-time cost of putting the book on the shelf.</p>
+          </div>
+          <div class="blk stable">
+            <div class="tag"><span class="dot"></span>read</div>
+            <p><em>Every call after — about 10% of normal.</em> Same chunk, recognized, replayed. The model doesn't re-read it from
+            scratch &mdash; which is also why it answers <strong>faster</strong>, not just cheaper.</p>
+          </div>
+        </div>
+        <p class="scribble">cheaper AND faster — caching buys back latency too, not just dollars.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Order it: stable first, volatile last &mdash; this is the whole game. <span class="pill cache">cache</span></h2>
+        <p>
+          The cache matches on the <strong>prefix</strong> &mdash; it works left to right and stops the instant
+          something differs. So one rule governs everything: <strong>put what never changes at the front, what
+          changes every call at the back.</strong> System prompt, then tool schemas, then session documents, then
+          &mdash; last &mdash; the user's new message. Slip one volatile token (a timestamp, a request ID) up
+          near the top and you've poisoned the prefix: nothing after it can ever hit.
+        </p>
+        <div class="anat" aria-label="prompt order for caching">
+          <div class="blk stable">
+            <div class="tag"><span class="dot"></span>front</div>
+            <p><em>Cache this — system prompt → tools → stable docs.</em> Byte-for-byte identical across calls. This is the
+            prefix the cache stores and replays.</p>
+          </div>
+          <div class="cutline"><hr>put the cache breakpoint here<hr></div>
+          <div class="blk volatile">
+            <div class="tag"><span class="dot"></span>back</div>
+            <p><em>Always fresh — the user's latest turn.</em> Different every call by definition. It pays full price &mdash;
+            but it's tiny next to the prefix you just stopped re-paying for.</p>
+          </div>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>The killer is a <b>moving token near the top</b>. A "current time: 14:32:07" line in the system
+          prompt, a per-request <code>trace_id</code>, a freshly-shuffled examples list &mdash; any of them
+          changes the prefix and the cache misses <em>every single time</em>. If it has to be there, push it
+          <em>below</em> the breakpoint.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Read the hit &mdash; four counters tell you the whole story. <span class="pill read">read</span></h2>
+        <p>
+          You don't guess whether caching worked &mdash; the response tells you. Every reply carries a
+          <code>usage</code> block with four token counters. Two are new and they're the ones that matter:
+          <code>cache_creation_input_tokens</code> (what you just wrote) and
+          <code>cache_read_input_tokens</code> (what you got for cheap). On a cold call the read is 0. On a warm
+          call your whole prefix should show up in the read.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">usage.py &mdash; the same call, run twice</span></div>
+<pre><span class="cmt"># --- call 1 (cold): writes the cache ---</span>
+<span class="out">input_tokens:                 40</span>
+<span class="out">cache_creation_input_tokens:  7400   # paid a premium, once</span>
+<span class="out">cache_read_input_tokens:      0</span>
+
+<span class="cmt"># --- call 2 (warm): hits the cache ---</span>
+<span class="out">input_tokens:                 40</span>
+<span class="out">cache_creation_input_tokens:  0</span>
+<span class="hit">cache_read_input_tokens:      7400   # ~10% of full price ✓</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Compute a one-line <b>hit ratio</b> and print it: <code>read / (read + fresh + creation)</code>.
+          Anything north of ~0.8 on a steady workload means the cache is doing its job. If it's stuck near 0,
+          you have a moving token in your prefix &mdash; go re-read Move 3.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Cache the system prompt and the tool list &mdash; the agent tax. <span class="pill cache">cache</span></h2>
+        <p>
+          Agents are the textbook win. A real agent (<a href="the-agent-loop-2026-06-01.html">Vol. 10</a>) loops
+          dozens of times per task, and on every loop it re-sends the same fat system prompt and the same wall of
+          tool schemas (<a href="give-the-agent-hands-mcp-2026-06-19.html">Vol. 19</a> &mdash; MCP tool defs are
+          <em>big</em>). That's the part that never changes within a run. Mark the end of the tools block and the
+          entire instruction-plus-tools preamble caches as one prefix.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">agent_cache.py &mdash; cache the preamble, not the conversation</span></div>
+<pre>response = client.messages.create(
+    model=<span class="str">"claude-sonnet-4-6"</span>,
+    system=[{<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>: SYSTEM,
+             <span class="str">"cache_control"</span>: {<span class="str">"type"</span>: <span class="str">"ephemeral"</span>}}],
+    tools=[
+        tool_a, tool_b, ...,
+        {**tool_z, <span class="str">"cache_control"</span>: {<span class="str">"type"</span>: <span class="str">"ephemeral"</span>}},  <span class="cmt"># mark the LAST tool</span>
+    ],
+    messages=conversation,   <span class="cmt"># the only part that grows</span>
+)
+<span class="cmt"># everything up to the last tool is now one cached prefix.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Marking the <b>last</b> tool caches all the tools before it too &mdash; the breakpoint stores
+          everything up to that point. On a 20-turn agent run, this is the difference between paying for your
+          tool schemas <b>once</b> versus <b>twenty times</b>. It's the single biggest line-item you can delete.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Cache a big document, then ask it ten questions. <span class="pill cache">cache</span></h2>
+        <p>
+          The other classic: you have one large thing &mdash; a contract, a transcript, a codebase dump, the
+          retrieved chunks from <a href="retrieval-without-the-hype-2026-06-26.html">Vol. 26</a> &mdash; and you
+          want to interrogate it from a dozen angles. Don't re-send the document on every question. Put it in the
+          prefix, cache it once, and let each new question be the only thing that pays full price.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">interrogate.py &mdash; load the doc once, ask many times</span></div>
+<pre>DOC = open(<span class="str">"50_page_contract.txt"</span>).read()   <span class="cmt"># ~40k tokens</span>
+
+<span class="key">def</span> ask(question):
+    <span class="key">return</span> client.messages.create(
+        model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">512</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: [
+            {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>: DOC,
+             <span class="str">"cache_control"</span>: {<span class="str">"type"</span>: <span class="str">"ephemeral"</span>}},  <span class="cmt"># doc cached</span>
+            {<span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"text"</span>: question},        <span class="cmt"># only this is fresh</span>
+        ]}],
+    )
+
+ask(<span class="str">"What's the termination clause?"</span>)   <span class="cmt"># writes cache</span>
+ask(<span class="str">"Any auto-renewal traps?"</span>)         <span class="cmt"># hits cache</span>
+ask(<span class="str">"Summarize the payment terms."</span>)    <span class="cmt"># hits cache</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Caching has a <b>minimum size</b> &mdash; the cacheable chunk has to clear a token floor (roughly a
+          thousand-ish, model-dependent) or the provider won't bother storing it. Tiny prompts aren't worth
+          caching and the API will quietly ignore the marker. This move only pays off on <em>genuinely big,
+          reused</em> context.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Mind the TTL &mdash; the cache is a fridge, not a freezer. <span class="pill gotcha">gotcha</span></h2>
+        <p>
+          A cache entry doesn't live forever. The default lifetime is short &mdash; on the order of a few minutes
+          &mdash; and every <em>hit</em> refreshes the timer. So a busy endpoint keeps its cache warm just by
+          being busy, while a quiet one lets it go cold and the next call pays the write premium again. If you
+          need it to survive longer gaps, some providers offer a longer TTL tier for a bigger write premium.
+        </p>
+        <table class="ptable" aria-label="cache lifetime cheatsheet">
+          <thead><tr><th>Situation</th><th>What the cache does</th><th>Move</th></tr></thead>
+          <tbody>
+            <tr><td class="trait">Steady traffic</td><td>stays warm — each hit resets the clock</td><td class="yes">just cache it</td></tr>
+            <tr><td class="trait">Bursty, then idle</td><td>goes cold between bursts; re-writes on return</td><td class="no">consider a longer TTL</td></tr>
+            <tr><td class="trait">One call, then never</td><td>writes, never reads — pure premium</td><td class="no">don't cache</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">a hit resets the timer. keep it busy and it stays warm for free.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Don't cache the thing that always changes &mdash; you'll lose money. <span class="pill gotcha">gotcha</span></h2>
+        <p>
+          Caching is not free to write. If you hang a marker on a chunk that's <em>different every call</em>, you
+          pay the write premium <strong>every time</strong> and never collect a single read &mdash; strictly
+          worse than not caching at all. The skill is sorting your prompt into "stable" and "volatile" honestly,
+          and only marking the stable part. When in doubt, look at the <code>cache_read</code> counter: if it
+          never climbs, you cached the wrong thing.
+        </p>
+        <table class="ptable" aria-label="what to cache">
+          <thead><tr><th>Block</th><th>Cache it?</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td class="trait">System prompt</td><td class="yes">yes</td><td>stable across the whole app</td></tr>
+            <tr><td class="trait">Tool / function schemas</td><td class="yes">yes</td><td>fixed for the session</td></tr>
+            <tr><td class="trait">Retrieved docs (this session)</td><td class="yes">yes</td><td>reused across the turn's questions</td></tr>
+            <tr><td class="trait">The user's latest message</td><td class="no">no</td><td>new every call — leave it fresh</td></tr>
+            <tr><td class="trait">A live timestamp / request id</td><td class="no">no</td><td>poisons the prefix; never repeats</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>The break-even &mdash; when caching has paid for itself. <span class="pill cost">cost</span></h2>
+        <p>
+          Here's the back-of-napkin that makes it obvious. The write costs you a small premium <em>once</em>; each
+          read saves you roughly 90% of that chunk's price. So the cache pays for its own write premium after just
+          a <strong>handful of hits</strong> &mdash; and everything after that is pure savings. For anything you
+          call more than two or three times with the same prefix, caching is a no-brainer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">napkin.txt &mdash; a 7,400-token prefix, called 100×/hour</span></div>
+<pre><span class="cmt"># WITHOUT caching</span>
+<span class="out">100 calls × 7,400 tokens at full price ........ 740,000 tok</span>
+
+<span class="cmt"># WITH caching (1 write + 99 reads)</span>
+<span class="out">  1 write  × 7,400  (slight premium) ............   ~9,250 tok-equiv</span>
+<span class="hit"> 99 reads  × 7,400  at ~10% ....................   ~73,260 tok-equiv</span>
+<span class="out">total ......................................... ~82,510 tok-equiv</span>
+
+<span class="hit"># ≈ 89% fewer prefix tokens billed. the dial, turned.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Plug <em>your</em> numbers into that napkin before you optimize anything else. The biggest prefix
+          you re-send the most often is where the money is &mdash; usually the agent system prompt. Cache that one
+          block and you've likely captured 80% of the available savings in five minutes of work.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Verify the hit &mdash; log the ratio, gate on it. <span class="pill ship">ship</span></h2>
+        <p>
+          Caching fails <em>silently</em>. Someone adds a timestamp to the system prompt, refactors the tool order,
+          tweaks one byte of the preamble &mdash; and your hit ratio quietly drops to zero while the bill creeps
+          back up. Nothing errors. So treat it like any other metric from <a href="cost-and-latency-two-dials-2026-06-25.html">Vol.
+          25</a>: log <code>cache_read</code> on every call, watch the ratio, and let your <a href="grade-it-before-they-do-evals-2026-06-24.html">Vol.
+          24</a> harness fail the build if it regresses.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">guard.py &mdash; a test that fails when the cache breaks</span></div>
+<pre><span class="key">def</span> hit_ratio(usage):
+    read  = usage.cache_read_input_tokens
+    total = read + usage.input_tokens + usage.cache_creation_input_tokens
+    <span class="key">return</span> read / total <span class="key">if</span> total <span class="key">else</span> <span class="amb">0.0</span>
+
+<span class="cmt"># warm it once, then assert the second call hits</span>
+ask(<span class="str">"warmup"</span>)
+u = ask(<span class="str">"real question"</span>).usage
+<span class="key">assert</span> hit_ratio(u) &gt; <span class="amb">0.8</span>, <span class="str">"cache regressed — check the prefix!"</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Add that one assert to CI. The day someone slips a moving token into the system prompt, the test
+          goes red <b>before</b> the bill does. A cache you don't monitor is a cache that's already broken &mdash;
+          you just don't know it yet.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a cache ledger">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">caching · cost ledger</div>
+            <div class="t">Same prefix, two turns</div>
+          </div>
+          <div class="s-body">
+            <div class="turn cold">
+              <div class="th">turn 1 · cold <span class="pc">write</span></div>
+              <div class="tbar"><i></i></div>
+              <div class="tprice">7,440 tok billed · <b>$0.0228</b></div>
+            </div>
+            <div class="turn warm">
+              <div class="th">turn 2 · warm <span class="pc">hit ✓</span></div>
+              <div class="tbar"><i></i></div>
+              <div class="tprice">7,400 read @ 10% · <b>$0.0029</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>The pattern that ships everywhere: <strong>warm once, hit forever</strong>. Turn one writes the cache
+        and pays a small premium. Turn two reuses the same 7,400-token prefix for a tenth of the price &mdash; and
+        answers faster, because the model didn't have to re-read it.</p>
+        <p class="scribble">the prefix is the product — the new turn is the only thing you pay for.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Mark it</h4>
+          <ul>
+            <li><code>cache_control</code><span>the one marker</span></li>
+            <li><code>"ephemeral"</code><span>the default tier</span></li>
+            <li><code>on the block</code><span>end of stable part</span></li>
+            <li><code>last tool</code><span>caches all before it</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Order it</h4>
+          <ul>
+            <li><code>system →</code><span>stable, front</span></li>
+            <li><code>tools →</code><span>stable, next</span></li>
+            <li><code>docs →</code><span>stable this session</span></li>
+            <li><code>user msg</code><span>volatile, last</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Read the hit</h4>
+          <ul>
+            <li><code>cache_read</code><span>what you saved</span></li>
+            <li><code>cache_creation</code><span>what you wrote</span></li>
+            <li><code>read/total</code><span>the hit ratio</span></li>
+            <li><code>&gt;0.8</code><span>healthy</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Stay honest</h4>
+          <ul>
+            <li><code>no timestamps</code><span>up top — they poison it</span></li>
+            <li><code>min size</code><span>tiny prompts skip</span></li>
+            <li><code>short TTL</code><span>hits keep it warm</span></li>
+            <li><code>gate on it</code><span>CI fails if it breaks</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 30 · prompt caching</small>
+      </div>
+      <div class="end">
+        built from the <code>caching</code> cookbook<br />
+        one marker · stop re-paying<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var ledger = document.getElementById('ledger');
+      if (!ledger) return;
+      var btns = Array.prototype.slice.call(document.querySelectorAll('.toggle button'));
+      var verdict = document.getElementById('verdict');
+
+      var data = {
+        cold: {
+          cost: '$0.0228', costW: 100,
+          lat:  '2,400 ms', latW: 100,
+          tok:  '7,440',    tokW: 100,
+          copy: '<b>Cold call — full freight.</b> First time through, every block pays full price and the model reads all 7,440 tokens before it answers. This is what you pay on every call <em>without</em> caching.'
+        },
+        warm: {
+          cost: '$0.0029', costW: 13,
+          lat:  '~600 ms',  latW: 25,
+          tok:  '40',       tokW: 6,
+          copy: '<b>Warm hit — the dial, turned.</b> The 7,400-token prefix is recognized and replayed at ~10% price. Only the 40-token new turn pays full freight — so cost drops ~87%, and time-to-first-token falls because the model skipped re-reading the prefix.'
+        }
+      };
+
+      function set(mode) {
+        var d = data[mode];
+        ledger.classList.toggle('warm', mode === 'warm');
+        document.getElementById('m-cost').textContent = d.cost;
+        document.getElementById('m-lat').textContent  = d.lat;
+        document.getElementById('m-tok').textContent  = d.tok;
+        document.getElementById('f-cost').style.width = d.costW + '%';
+        document.getElementById('f-lat').style.width  = d.latW + '%';
+        document.getElementById('f-tok').style.width  = d.tokW + '%';
+        if (verdict) verdict.innerHTML = d.copy;
+        btns.forEach(function (b) { b.classList.toggle('on', b.dataset.m === mode); });
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () { set(b.dataset.m); });
+      });
+    })();
+  </script>
+</body>
+</html>

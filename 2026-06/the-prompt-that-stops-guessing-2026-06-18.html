@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Prompt That Stops the Agent From Guessing — Eight Moves for Constraint-First Prompting · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: the prompt patterns that stop coding agents from guessing — front-loaded constraints, the plan-execution lock, negative rules, and audit-first discipline. Pulled from 874 real prompts." />
+  <meta property="og:title" content="The Prompt That Stops the Agent From Guessing" />
+  <meta property="og:description" content="Beyond 'build me a thing' — the constraint-first prompt patterns that turn a guessing agent into a precise one. Learned the slow way across 874 prompts." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-red:   oklch(0.72 0.16 22);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MOVE BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.constraint { background: var(--margin-soft); color: var(--margin); }
+    .hack h2 .pill.flow       { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.mindset    { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .bad { color: var(--code-red); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* before / after split */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 620px) { .split { grid-template-columns: 1fr; } }
+    .split .term .bar .label { font-size: 0.72rem; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* the constraint checklist grid */
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.7rem;
+    }
+    .shortcut {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.85rem;
+      display: flex; gap: 0.7rem; align-items: center;
+    }
+    .shortcut .ks {
+      flex: 0 0 auto;
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    .shortcut .what {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+    .shortcut .what b { color: var(--ink); }
+
+    /* swap grid (say-this / not-that) */
+    .url-grid {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .url-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      gap: 0.85rem;
+      align-items: baseline;
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .url-row .vague { font-size: 0.88rem; color: oklch(0.50 0.12 27); }
+    .url-row .vague::before { content: '✗ '; font-weight: 700; }
+    .url-row .sharp { font-size: 0.9rem; color: var(--ink-soft); }
+    .url-row .sharp::before { content: '✓ '; color: var(--sage); font-weight: 700; }
+    @media (max-width: 560px) {
+      .url-row { grid-template-columns: 1fr; gap: 0.3rem; }
+    }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* pull stat */
+    .stat-band {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 0 0 3rem;
+      padding: 1.3rem clamp(1rem, 2vw, 1.6rem);
+      background: var(--code-bg);
+      border-radius: var(--radius-lg);
+      color: var(--code-ink);
+    }
+    .stat-band .stat .n {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: clamp(1.8rem, 1.2rem + 2vw, 2.6rem);
+      color: var(--code-accent);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .stat-band .stat .l {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      color: var(--code-mute);
+      letter-spacing: 0.03em;
+      margin-top: 0.4rem;
+      line-height: 1.4;
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+    .cheat-col li .b {
+      font-weight: 700; color: var(--margin);
+      font-family: 'Geist Mono', monospace; font-size: 0.78rem;
+    }
+
+    /* The big copy-paste template */
+    .template {
+      margin-top: 1rem;
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .stat-band { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 18</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;18</span>
+        <span class="tag">prompting</span>
+        <span class="tag">agents</span>
+      </div>
+
+      <h1>The prompt that stops the agent from <span class="accent">guessing</span>.</h1>
+
+      <p class="deck">
+        I pulled 874 of my own prompts out of Cursor's database to see what I
+        actually type when an agent is doing the work. The pattern was loud:
+        the prompts that worked weren't longer or cleverer &mdash; they front-loaded
+        constraints and took away the agent's room to improvise. This is that
+        playbook, eight moves deep.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · Cursor · Claude Code · any coding agent</span>
+        <span><b>Assumes</b> · you've let an agent build one thing</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the thing nobody told me when I started letting agents write
+          code for me: the model is almost never the problem. The prompt is. When
+          an agent rebuilds a component you didn't ask it to touch, or "improves"
+          a brief into something generic, or confidently describes a file it
+          never opened &mdash; that's not the model being dumb. That's the model
+          filling a gap <em>you</em> left open.
+        </p>
+        <p>
+          So I went looking at my own evidence. Cursor keeps every prompt you've
+          ever typed in a little SQLite file. I exported mine: 874 prompts, 759
+          unique. The single most-repeated one &mdash; 33 times &mdash; wasn't a
+          request at all. It was a set of <em>rules</em>. "Implement the plan.
+          Don't edit the plan file. Don't stop until every to-do is done."
+        </p>
+        <p>
+          That's the whole lesson in one line. The best prompt I own is mostly
+          a list of things the agent is <strong>not</strong> allowed to do. Below
+          are the eight moves that came out of reading the rest. Top to bottom,
+          roughly most-used first.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#h1">Front-load the dealbreakers</a></li>
+          <li><a href="#h2">The plan-execution lock</a></li>
+          <li><a href="#h3">Negative constraints (the "do NOT" list)</a></li>
+          <li><a href="#h4">Audit first, edit never (until you say go)</a></li>
+          <li><a href="#h5">"Ask me 3 questions before you touch anything"</a></li>
+          <li><a href="#h6">Name the file, kill the guess</a></li>
+          <li><a href="#h7">Demand the status check</a></li>
+          <li><a href="#h8">Protect the danger zones out loud</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <div class="stat-band" role="img" aria-label="Numbers from the prompt extraction">
+      <div class="stat"><div class="n">874</div><div class="l">prompts pulled from one Cursor db</div></div>
+      <div class="stat"><div class="n">33×</div><div class="l">most-repeated prompt — a rules list, not a request</div></div>
+      <div class="stat"><div class="n">#1</div><div class="l">recurring friction across every usage report: "wrong approach"</div></div>
+      <div class="stat"><div class="n">2–3</div><div class="l">constraints to front-load before any real task</div></div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Front-load the dealbreakers &mdash; before the ask, not after. <span class="pill constraint">constraint</span></h2>
+        <p>
+          The friction that showed up the most across every usage report I kept
+          was the same one: <em>"wrong approach."</em> The agent picks a direction,
+          commits to it, and you're now arguing it back out of a decision it
+          already made. The fix is stupidly simple and I resisted it for months:
+          say the 2&ndash;3 things that would make the result wrong <strong>first</strong>,
+          before you describe the task.
+        </p>
+
+        <div class="split">
+          <div class="term">
+            <div class="bar">
+              <span class="d"></span><span class="d"></span><span class="d"></span>
+              <span class="label">guessable</span>
+            </div>
+<pre><span class="bad">build me a pricing page</span>
+
+<span class="cmt"># agent invents a stack, a
+# layout, a color system, 3
+# tiers you didn't ask for...</span></pre>
+          </div>
+          <div class="term">
+            <div class="bar">
+              <span class="d"></span><span class="d"></span><span class="d"></span>
+              <span class="label">constrained</span>
+            </div>
+<pre><span class="cmt"># dealbreakers first:</span>
+<span class="str">Tailwind v4, light mode,
+mobile-first, two tiers only,
+no new dependencies.</span>
+
+<span class="key">Now</span> build a pricing page.</pre>
+          </div>
+        </div>
+
+        <p>
+          Same request. The second one can't drift, because the expensive
+          decisions are already made. I think of it as spending three sentences
+          to save three rounds of "no, not like that."
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Take any task you'd normally one-line. Before you send it, write the
+            sentence: <b>"This is wrong if it ______."</b> Fill the blank twice.
+            Paste those two answers above your request. That's the whole move.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>The plan-execution lock &mdash; my single most-typed prompt. <span class="pill flow">flow</span></h2>
+        <p>
+          This is the one I typed 33 times without realizing it had become a
+          template. The shape: you make a plan <em>with</em> the agent in one step,
+          then in a fresh step you tell it to execute that plan with its hands
+          tied. The lock is the second half &mdash; it stops the agent from
+          re-litigating the plan it just agreed to.
+        </p>
+
+        <div class="term template">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the lock — copy this verbatim</span>
+          </div>
+<pre><span class="str">Implement the plan as specified, it is attached for
+your reference.</span>
+
+<span class="key">Do NOT</span> edit the plan file itself.
+The to-dos already exist &mdash; <span class="key">do not</span> recreate them.
+Mark each <span class="amb">in_progress</span> as you work, starting with #1.
+<span class="key">Don't stop</span> until every to-do is complete.</pre>
+        </div>
+
+        <p>
+          Why it works: "plan" and "execute" are different jobs, and agents are
+          worst at the seam between them &mdash; that's where they wander. Splitting
+          them into two prompts with an explicit "don't touch the plan" rule keeps
+          the thinking and the doing from contaminating each other.
+        </p>
+
+        <div class="scribble">two prompts beat one. the seam is where agents wander off.</div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Negative constraints &mdash; the "do NOT" list is the steering wheel. <span class="pill constraint">constraint</span></h2>
+        <p>
+          Most prompt advice is about what to ask for. The leverage is in what to
+          forbid. A coding agent has a thousand reasonable-looking moves available
+          at every step; you don't steer by listing the one you want, you steer by
+          fencing off the ones that quietly cause damage. My real prompts are full
+          of these &mdash; and they're never clever, just specific.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">do-not lines, lifted from real sessions</span>
+          </div>
+<pre><span class="key">Don't</span> overlap or break any other setups.
+<span class="key">Don't</span> add anything unnecessary &mdash; tighten, don't expand.
+<span class="key">Don't</span> overload the context window with files you don't need.
+<span class="key">Don't</span> delete &mdash; archive to a dated folder instead.
+<span class="key">Don't</span> touch the Pictures folder. <span class="cmt"># burned by this once</span></pre>
+        </div>
+
+        <p>
+          That last one is real and it's there because an agent once chewed through
+          a giant media folder it had no business reading. A "do NOT" line is
+          cheap insurance &mdash; one sentence that prevents one specific disaster
+          you've already lived through.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Negative constraints are most powerful as <b>standing rules</b>, not
+            per-prompt ones. The "archive, never delete" rule earned a permanent
+            home in my config after the agent assumed 128 files were duplicates
+            and removed them. Some "do NOT"s should outlive the session.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Audit first, edit never &mdash; until you explicitly say go. <span class="pill flow">flow</span></h2>
+        <p>
+          The strongest sessions I've ever run all started the same way: the agent
+          <em>looked</em> before it <em>touched</em>. Read-only first. You'd be amazed
+          how much drift disappears when the agent isn't allowed to change anything
+          on the first pass &mdash; it has to understand the system before it can
+          break it.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the two-pass open</span>
+          </div>
+<pre><span class="cmt"># pass 1 — read only</span>
+<span class="str">Analyze this folder and offer a plan. Make NO
+changes yet. Tell me what you found and what
+you'd do, then wait.</span>
+
+<span class="cmt"># pass 2 — only after you've read pass 1</span>
+<span class="str">Good. Proceed with steps 1&ndash;3 only. Stop and
+report before step 4.</span></pre>
+        </div>
+
+        <p>
+          The reason this matters beyond safety: an agent that has to <em>describe</em>
+          its plan before acting can't quietly invent. The classic failure &mdash;
+          confidently telling you what a script does without reading it &mdash; only
+          happens when nothing forced it to look first.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Next messy folder or unfamiliar repo: open with <b>"analyze and offer a
+            plan, make no changes, then wait."</b> Read the plan. <em>Then</em> let it
+            move. You'll catch the wrong approach while it's still words, not
+            commits.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>"Ask me 3 questions before you touch anything." <span class="pill mindset">mindset</span></h2>
+        <p>
+          A tiny phrase that punches way above its weight, and it shows up in my
+          extraction more than once: <em>"ask 3 questions you need from me before
+          making changes."</em> It flips the default. Instead of the agent guessing
+          to fill the gaps in your brief, it surfaces the gaps and hands them back
+          to you.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">gap-surfacing open</span>
+          </div>
+<pre><span class="str">Before you write any code, ask me the 3 questions
+whose answers would most change your approach.</span>
+
+<span class="cmt"># the agent now tells you what it was
+# about to assume — which is exactly the
+# stuff that produces "wrong approach"</span></pre>
+        </div>
+
+        <p>
+          The number matters. "Any questions?" gets you nothing or twenty. "The 3
+          that would most change your approach" forces a ranking &mdash; you get the
+          load-bearing unknowns, not the trivia. It's the cheapest insurance against
+          a confidently-wrong first draft I know of.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Name the file, kill the guess. <span class="pill constraint">constraint</span></h2>
+        <p>
+          Half of "wrong approach" is the agent editing the wrong thing because it
+          guessed where the code lived. The fix doesn't require a clever prompt &mdash;
+          it requires you to do five seconds of pointing. Paste the path. Paste the
+          DOM selector. Name the function. Specificity isn't a tone, it's coordinates.
+        </p>
+
+        <div class="split">
+          <div class="term">
+            <div class="bar">
+              <span class="d"></span><span class="d"></span><span class="d"></span>
+              <span class="label">guessable</span>
+            </div>
+<pre><span class="bad">fix the broken nav</span>
+
+<span class="cmt"># which nav? which file?
+# the agent goes hunting,
+# touches three components</span></pre>
+          </div>
+          <div class="term">
+            <div class="bar">
+              <span class="d"></span><span class="d"></span><span class="d"></span>
+              <span class="label">pointed</span>
+            </div>
+<pre><span class="cmt"># coordinates, not vibes</span>
+<span class="str">In src/components/nav.tsx,
+the mobile menu at line 40
+doesn't close on route change.
+Fix only that. Touch nothing else.</span></pre>
+          </div>
+        </div>
+
+        <p>
+          When I'm in the browser I'll grab the exact selector from the inspector
+          and paste it in. When I'm in the repo I'll name the file and line. The
+          agent stops being a detective and starts being a surgeon &mdash; and
+          surgeons don't redecorate the room.
+        </p>
+
+        <div class="scribble">specificity is the entire game. coordinates &gt; adjectives.</div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Demand the status check &mdash; "report, then verify." <span class="pill flow">flow</span></h2>
+        <p>
+          Another phrase that earned its keep through sheer repetition in my logs:
+          <em>"Provide current status update. If finished, return final summary and
+          verification results."</em> The verification clause is the part that
+          matters. An agent left to its own devices will tell you it's done. It will
+          not, by default, tell you whether <em>done</em> actually works.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the close-out</span>
+          </div>
+<pre><span class="str">Status update. If finished:
+  &mdash; one-line summary per to-do
+  &mdash; the command you ran to verify each
+  &mdash; the actual output, not "it should work"</span>
+
+<span class="cmt"># "should work" is where the bugs hide</span></pre>
+        </div>
+
+        <p>
+          The discipline here mirrors the one I hold myself to: <em>verify, never
+          guess.</em> If the agent can't show you the lint output or the passing test
+          or the screenshot, the task isn't done &mdash; it's claimed. Asking for the
+          evidence in the same breath as the summary makes the difference impossible
+          to skip.
+        </p>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Protect the danger zones &mdash; out loud, every time. <span class="pill mindset">mindset</span></h2>
+        <p>
+          The most expensive lessons I have aren't about getting better output &mdash;
+          they're about not losing work. Early on, agents broke my environment more
+          than they helped it: deleted files they assumed were duplicates, wiped
+          editor profiles, went after gigabytes of bundles. Every one of those was a
+          missing sentence in a prompt.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the guardrail line</span>
+          </div>
+<pre><span class="key">Off-limits</span>, do not read or modify:
+  ~/Pictures, anything with a numbered backup
+  name (v2-backup, step-1), .env / credentials,
+  any dir over a few hundred MB.
+
+<span class="key">When in doubt, archive to a dated folder.</span>
+<span class="key">Never delete. Confirm before anything destructive.</span></pre>
+        </div>
+
+        <p>
+          Two things made these stick. First, the destructive ones belong in a
+          <em>hook</em> or a standing rule &mdash; a guarantee, not a hope, because "please
+          don't" is a preference and a preference can be forgotten mid-session.
+          Second, the numbered-name instinct: anything called <code>step-1</code> or
+          <code>v2-backup</code> means "I might want this back." Archive it, don't
+          trust the agent's read on whether it's junk.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            There's a real line between a <b>preference</b> and a <b>guarantee</b>.
+            "Use light mode" is fine in a prompt. "Never delete without confirming"
+            should live somewhere the agent <em>cannot</em> skip &mdash; a hook, a config
+            rule &mdash; because the cost of it being forgotten once is hours, not
+            seconds.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SAY THIS NOT THAT -->
+    <article class="hack" id="swap">
+      <div class="nbr">↔</div>
+      <div class="body">
+        <h2>Say this, not that &mdash; the same nine asks, sharpened.</h2>
+        <p>
+          The whole notebook collapses into a single habit: trade the adjective for
+          the coordinate, the wish for the constraint. Here's the swap in nine
+          everyday lines.
+        </p>
+
+        <div class="url-grid">
+          <div class="url-row">
+            <div class="vague">make it look better</div>
+            <div class="sharp">tighten spacing to the 4px scale, one accent color, no new fonts</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">clean up this folder</div>
+            <div class="sharp">analyze it, propose a plan, change nothing until I approve</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">fix the bug</div>
+            <div class="sharp">in file X at line Y, Z is broken — fix only that, touch nothing else</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">build a dashboard</div>
+            <div class="sharp">two tiers, light mode, no new deps; ask me 3 questions first</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">organize my projects</div>
+            <div class="sharp">organize without breaking existing setups or AI config; archive, don't delete</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">is it done?</div>
+            <div class="sharp">summary per to-do + the command you ran to verify + the real output</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">improve my prompt</div>
+            <div class="sharp">add the 2 negative constraints that would most prevent the wrong result</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">refactor this</div>
+            <div class="sharp">implement the attached plan, don't edit the plan, don't stop till it's all done</div>
+          </div>
+          <div class="url-row">
+            <div class="vague">go ahead</div>
+            <div class="sharp">proceed with steps 1–3 only, stop and report before step 4</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Before you send</h4>
+          <ul>
+            <li><span class="b">01</span><span>front-load 2&ndash;3 dealbreakers</span></li>
+            <li><span class="b">06</span><span>name the file / paste the path</span></li>
+            <li><span class="b">03</span><span>add the "do NOT" lines</span></li>
+            <li><span class="b">08</span><span>fence off the danger zones</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>How to open</h4>
+          <ul>
+            <li><span class="b">04</span><span>"analyze, plan, change nothing, wait"</span></li>
+            <li><span class="b">05</span><span>"ask me the 3 questions that matter"</span></li>
+            <li><span class="b">02</span><span>plan in one step, execute in the next</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>How to close</h4>
+          <ul>
+            <li><span class="b">07</span><span>"status + how you verified + real output"</span></li>
+            <li><span class="b">07</span><span>reject "it should work"</span></li>
+            <li><span class="b">02</span><span>"don't stop till every to-do is done"</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Make it permanent</h4>
+          <ul>
+            <li><code>hook</code><span>destructive rules → a guarantee</span></li>
+            <li><code>config</code><span>"archive, never delete"</span></li>
+            <li><code>rule</code><span>your taste defaults, glob-scoped</span></li>
+            <li><span class="b">→</span><span>preference in prompt, guarantee in code</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-18</small>
+      </div>
+      <div class="end">
+        next entry · <code>reading your own agent logs</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

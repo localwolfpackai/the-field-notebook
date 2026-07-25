@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ship It to the World — Ten Moves From a localhost AI App to a Live One That Won't Bankrupt You · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: your AI app works on localhost — now put it on the internet without leaking your API key, without a stranger running up a $900 bill, and without it falling over on the first real user. Ten moves: move the key server-side, add a rate limit, cap the spend, set a timeout, and deploy in one command." />
+  <meta property="og:title" content="Ship It to the World — Deploy Your AI App Without Getting Wrecked" />
+  <meta property="og:description" content="Everything so far builds. This one ships. Move the key off the browser, rate-limit the endpoint, cap the daily spend, add a timeout, deploy in one command. Ten moves and a live 'deploy readiness' gate you can flip green." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --code-red:   oklch(0.72 0.16 25);
+
+      /* feature identity — live green (shipped) vs danger red (exposed) */
+      --live:       oklch(0.58 0.13 150);
+      --live-wash:  oklch(0.93 0.06 150);
+      --live-ink:   oklch(0.38 0.11 150);
+      --danger:     oklch(0.63 0.17 25);
+      --danger-wash:oklch(0.95 0.06 25);
+      --danger-ink: oklch(0.45 0.15 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--live-wash) 62%, var(--live-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.58 0.13 150 / 0.45);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.secure   { background: var(--danger-wash); color: var(--danger-ink); }
+    .hack h2 .pill.guard    { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.ship     { background: var(--live-wash); color: var(--live-ink); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .red { color: var(--code-red); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "deploy readiness" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .studio { grid-template-columns: 1fr; } }
+
+    /* the guard toggles (left) */
+    .guards {
+      margin: 1rem;
+      display: grid;
+      gap: 0.55rem;
+      align-content: start;
+      border-right: 1px dashed oklch(0.86 0.03 80);
+      padding-right: 1rem;
+    }
+    @media (max-width: 700px) { .guards { border-right: none; border-bottom: 1px dashed oklch(0.86 0.03 80); padding-right: 0; padding-bottom: 1rem; } }
+    .guard-row {
+      display: flex; align-items: center; gap: 0.7rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.7rem;
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease-paper), background 0.2s var(--ease-paper);
+      user-select: none;
+    }
+    .guard-row:hover { border-color: oklch(0.78 0.06 150); }
+    .guard-row.on { background: var(--live-wash); border-color: oklch(0.72 0.09 150); }
+    .guard-row .box {
+      width: 20px; height: 20px; flex-shrink: 0;
+      border-radius: 5px;
+      border: 2px solid oklch(0.78 0.03 80);
+      background: var(--paper);
+      display: grid; place-items: center;
+      font-size: 0.8rem; color: transparent;
+      transition: background 0.2s var(--ease-paper), border-color 0.2s var(--ease-paper), color 0.2s;
+    }
+    .guard-row.on .box { background: var(--live); border-color: var(--live); color: oklch(0.99 0 0); }
+    .guard-row .txt { display: grid; gap: 0.05rem; }
+    .guard-row .txt b { font-size: 0.88rem; color: var(--ink); font-weight: 600; }
+    .guard-row .txt span {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-mute);
+    }
+
+    /* the deploy panel (right) */
+    .stage {
+      padding: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      background:
+        radial-gradient(120% 120% at 100% 0%, var(--live-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--danger-wash), transparent 55%),
+        var(--paper);
+      min-height: 15rem;
+    }
+    .deploy-card {
+      width: 100%; max-width: 20rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 18px 40px -30px oklch(0.40 0.10 150 / 0.55);
+    }
+    .deploy-card .dc-head {
+      padding: 0.8rem 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      border-bottom: 1px solid oklch(0.90 0.02 80);
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.04em; color: var(--ink-soft);
+    }
+    .deploy-card .dc-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--danger);
+      transition: background 0.3s var(--ease-paper), box-shadow 0.3s;
+    }
+    .deploy-card.ready .dc-dot { background: var(--live); box-shadow: 0 0 0 4px var(--live-wash); }
+    .deploy-card .dc-url {
+      margin-left: auto; color: var(--ink-mute);
+      opacity: 0.5; transition: opacity 0.3s, color 0.3s;
+    }
+    .deploy-card.ready .dc-url { opacity: 1; color: var(--live-ink); }
+    .deploy-card .dc-body { padding: 0.9rem 1rem 1.1rem; }
+    .dc-score {
+      font-family: 'Geist', serif; font-weight: 800;
+      font-size: 2.4rem; line-height: 1; color: var(--ink);
+    }
+    .dc-score b { color: var(--live); }
+    .dc-score small {
+      font-family: 'Geist Mono', monospace; font-size: 0.7rem;
+      color: var(--ink-mute); font-weight: 500; letter-spacing: 0.04em;
+    }
+    .dc-bar {
+      height: 8px; border-radius: 999px; background: var(--paper-deep);
+      margin: 0.7rem 0 0.9rem; overflow: hidden;
+    }
+    .dc-bar i {
+      display: block; height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--amber), var(--live));
+      border-radius: 999px;
+      transition: width 0.4s var(--ease-paper);
+    }
+    .dc-btn {
+      display: block; width: 100%; text-align: center;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.86rem;
+      padding: 0.6rem 1rem; border-radius: var(--radius-sm);
+      border: none; cursor: not-allowed;
+      background: var(--paper-deep); color: var(--ink-mute);
+      transition: background 0.3s var(--ease-paper), color 0.3s;
+    }
+    .deploy-card.ready .dc-btn { background: var(--live); color: oklch(0.99 0 0); cursor: pointer; }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .verdict-line code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px;
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .deploy-card, .deploy-card *, .guard-row, .guard-row * { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: exposed vs shipped ─────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.good { border-left-color: var(--live); background: var(--live-wash); }
+    .anat .blk.bad  { border-left-color: var(--danger); background: var(--danger-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.good .tag { color: var(--live-ink); }
+    .anat .blk.bad .tag { color: var(--danger-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.good .tag .dot { background: var(--live); }
+    .anat .blk.bad .tag .dot { background: var(--danger); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: var(--live-ink); font-weight: 600; }
+    .ptable td.no { color: var(--margin); font-weight: 600; }
+
+    /* ── Mobile mock (a shipped status page on a phone) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 150 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--live) 0%, var(--accent) 160%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.55rem; }
+    .phone .srow {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      color: var(--ink-soft);
+    }
+    .phone .srow .st { width: 0.85rem; height: 0.85rem; border-radius: 50%; flex-shrink: 0; background: var(--live); box-shadow: 0 0 0 3px var(--live-wash); }
+    .phone .srow .nm { color: var(--ink); font-weight: 600; }
+    .phone .srow .vl { margin-left: auto; color: var(--ink-mute); }
+    .phone .metric { background: var(--paper-alt); border: 1px solid oklch(0.9 0.02 80); border-radius: 8px; padding: 0.55rem 0.65rem; margin-top: 0.3rem; }
+    .phone .metric .mv { font-family: 'Geist', serif; font-weight: 800; font-size: 1.3rem; color: var(--ink); line-height: 1; }
+    .phone .metric .ml { font-family: 'Geist Mono', monospace; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute); margin-top: 0.2rem; }
+    .phone .label-mini {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.58 0.13 150 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.58 0.13 150 / 0.4); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 32</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;07&nbsp;·&nbsp;01</span>
+        <span class="tag">ship</span>
+        <span class="tag">live</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Ship it to the <span class="accent">world</span> &mdash; put your AI app on the internet without leaking the key or waking up to a $900 bill.</h1>
+
+      <p class="deck">
+        Everything in this notebook so far <em>builds</em>. This one <em>ships</em>. Your app runs on
+        <code>localhost</code> &mdash; great. The moment it&rsquo;s public, three things can go wrong: your API key
+        is sitting in the browser for anyone to steal, a bored stranger loops your endpoint and runs up a bill, and
+        the first real spike falls over. Ten moves to close all three &mdash; move the key server-side, rate-limit
+        the door, cap the spend, add a timeout, and deploy in one command. Flip the guards below and watch the
+        deploy gate go green.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Vercel-deploy-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel deploy" />
+        <img src="https://img.shields.io/badge/Claude-API-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude API" />
+        <img src="https://img.shields.io/badge/key-server_side-2EA043?style=flat-square&logo=letsencrypt&logoColor=white" alt="key server side" />
+        <img src="https://img.shields.io/badge/spend-capped-DB6D28?style=flat-square&logo=zap&logoColor=white" alt="spend capped" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~11 min</span>
+        <span><b>Surface</b> · one serverless route + a deploy command</span>
+        <span><b>Assumes</b> · you have an app working on localhost</span>
+        <span><b>Pairs with</b> · Vol. 17 (build the app) · Vol. 25 (the two dials)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          There&rsquo;s a specific kind of quiet panic that hits the first time you paste your working AI app onto a
+          real URL and text it to a friend. It works &mdash; and then you realize you have <em>no idea</em> what
+          happens next. Is the key exposed? Can they spam it? What stops the bill? For most people the honest
+          answer is &ldquo;nothing,&rdquo; and they find out the expensive way.
+        </p>
+        <p>
+          Here&rsquo;s the reframe that makes this easy: <strong>going live is not a bigger version of running
+          locally &mdash; it&rsquo;s a different job.</strong> Locally, you are the only user and you trust yourself.
+          Publicly, every request is from a stranger, and a few of those strangers are bots. The whole job of
+          shipping is putting a small number of <em>guards</em> between those strangers and your wallet. It&rsquo;s
+          not glamorous plumbing. It&rsquo;s four boring guards, and every one of them is a two-minute change.
+        </p>
+        <p>
+          Ten moves below, in the order you&rsquo;d actually do them: move the key off the browser, wrap it in a
+          serverless route, rate-limit the door, cap the daily spend, add a timeout, deploy in one command, then
+          watch it. None of it requires being a &ldquo;real&rdquo; backend engineer. It requires a checklist &mdash;
+          which is what this is.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">See the danger — the key in the browser</a></li>
+          <li><a href="#h2">Move the call to a serverless route</a></li>
+          <li><a href="#h3">Put the key in an env var, never a file</a></li>
+          <li><a href="#h4">Rate-limit the door</a></li>
+          <li><a href="#h5">Cap the spend before it caps you</a></li>
+          <li><a href="#h6">Add a timeout and a max-tokens ceiling</a></li>
+          <li><a href="#h7">Deploy in one command</a></li>
+          <li><a href="#h8">Wire the secret in the dashboard, not the repo</a></li>
+          <li><a href="#h9">Watch it — logs, spend, and a status ping</a></li>
+          <li><a href="#h10">Run the pre-ship gate before you send the link</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="deploy readiness gate demo">
+      <div class="demo-bar">
+        <span>four guards between a stranger and your wallet · flip them on</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="studio">
+        <div class="guards" id="guards">
+          <div class="guard-row" data-g="key" role="checkbox" tabindex="0" aria-checked="false">
+            <span class="box">✓</span>
+            <span class="txt"><b>Key moved server-side</b><span>no secret in the browser</span></span>
+          </div>
+          <div class="guard-row" data-g="rate" role="checkbox" tabindex="0" aria-checked="false">
+            <span class="box">✓</span>
+            <span class="txt"><b>Rate limit on the route</b><span>N requests / minute / IP</span></span>
+          </div>
+          <div class="guard-row" data-g="spend" role="checkbox" tabindex="0" aria-checked="false">
+            <span class="box">✓</span>
+            <span class="txt"><b>Daily spend cap</b><span>hard stop at $X / day</span></span>
+          </div>
+          <div class="guard-row" data-g="timeout" role="checkbox" tabindex="0" aria-checked="false">
+            <span class="box">✓</span>
+            <span class="txt"><b>Timeout + max tokens</b><span>no runaway request</span></span>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="deploy-card" id="dc">
+            <div class="dc-head">
+              <span class="dc-dot"></span>
+              <span>deploy readiness</span>
+              <span class="dc-url">your-app.vercel.app</span>
+            </div>
+            <div class="dc-body">
+              <div class="dc-score"><b id="dc-n">0</b><span> / 4 guards</span></div>
+              <div class="dc-bar"><i id="dc-bar"></i></div>
+              <button class="dc-btn" id="dc-btn">Locked — 4 guards required</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Right now you&rsquo;re exposed.</b> The key&rsquo;s in the browser, the endpoint is open, there&rsquo;s no ceiling on spend. Flip all four guards and the gate goes green &mdash; that&rsquo;s the difference between &ldquo;it works on my machine&rdquo; and &ldquo;it&rsquo;s safe to hand to a stranger.&rdquo;</span>
+        <span class="hint">flip me ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>See the danger &mdash; the key is in the browser. <span class="pill read">read</span></h2>
+        <p>
+          Almost every &ldquo;my first AI app&rdquo; makes the same call: the browser hits the model API directly,
+          with the key in the frontend code. On <code>localhost</code> that&rsquo;s invisible and harmless. The
+          second it&rsquo;s deployed, that key is shipped to every visitor &mdash; it&rsquo;s in the Network tab, in
+          the bundle, one right-click away. Someone copies it, points it at their own script, and your key is now
+          funding their side project until you notice the bill.
+        </p>
+        <p>
+          This isn&rsquo;t a hypothetical you can defer. A leaked key gets scraped by bots within hours &mdash;
+          there are literally crawlers watching public deploys for exactly this. The fix is the spine of everything
+          below: <strong>the browser never sees the key.</strong> The browser talks to <em>your</em> server; your
+          server talks to the model.
+        </p>
+        <div class="anat" aria-label="exposed versus shipped">
+          <div class="blk bad">
+            <div class="tag"><span class="dot"></span>exposed</div>
+            <p><em>The browser calls the model &mdash; the key ships to every visitor.</em> <code>fetch(anthropic, { headers: { key }})</code> in
+            frontend code = the secret is in the bundle. Free to steal, impossible to un-ship. This is the
+            default, and it&rsquo;s the one thing you must never deploy.</p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>shipped</div>
+            <p><em>The browser calls your server &mdash; the key lives only on the server.</em> Browser → your <code>/api/chat</code> route → the model.
+            The stranger can see your route all day; the key stays behind it. This one move removes ~80% of the
+            risk.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Move the call to a serverless route. <span class="pill setup">setup</span></h2>
+        <p>
+          You don&rsquo;t need a server you rent and babysit. A <strong>serverless function</strong> is one file
+          that runs on demand &mdash; a folder called <code>api/</code> with a <code>chat.js</code> in it is a
+          working backend on Vercel, Netlify, and Cloudflare. Ashi&rsquo;s modular habit applies here: this route
+          is one small, self-contained piece that does exactly one thing &mdash; take a message, call the model,
+          return the answer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — the whole backend, one file</span></div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">'@anthropic-ai/sdk'</span>;
+
+<span class="cmt">// the key is read from the environment — never hard-coded</span>
+<span class="key">const</span> client = <span class="key">new</span> Anthropic({ apiKey: process.env.<span class="amb">ANTHROPIC_API_KEY</span> });
+
+<span class="key">export default async function</span> <span class="vio">handler</span>(req, res) {
+  <span class="key">if</span> (req.method !== <span class="str">'POST'</span>) <span class="key">return</span> res.status(<span class="amb">405</span>).end();
+
+  <span class="key">const</span> msg = <span class="key">await</span> client.messages.create({
+    model: <span class="str">'claude-sonnet-5'</span>,
+    max_tokens: <span class="amb">1024</span>,
+    messages: [{ role: <span class="str">'user'</span>, content: req.body.text }],
+  });
+
+  res.json({ reply: msg.content[<span class="amb">0</span>].text });
+}</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>The frontend change is tiny: swap the direct model call for <code>fetch('/api/chat', &#123; method:
+          'POST', body: JSON.stringify(&#123; text &#125;) &#125;)</code>. Same app, same UI &mdash; the only
+          difference is the request now goes to <b>your</b> door first. Hand this whole move to a coding agent and
+          it&rsquo;s a five-minute refactor.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Put the key in an env var &mdash; never in a file you commit. <span class="pill secure">secure</span></h2>
+        <p>
+          Now the key lives on the server &mdash; but <em>how</em> it gets there matters. The rule is absolute:
+          the key is an <strong>environment variable</strong>, and it is <strong>never</strong> written into any
+          file that goes to git. The classic disaster is hard-coding it &ldquo;just for now,&rdquo; committing,
+          and pushing &mdash; git remembers forever, even after you delete the line. Bots scan public repos for
+          exactly this pattern.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">.env.local (dev) + .gitignore — keep the secret out of git</span></div>
+<pre><span class="cmt"># .env.local — used only on your machine, LISTED in .gitignore</span>
+<span class="amb">ANTHROPIC_API_KEY</span>=<span class="str">sk-ant-•••••••••••••••••••</span>
+
+<span class="cmt"># .gitignore — this line is not optional</span>
+<span class="red">.env*</span>
+
+<span class="cmt"># sanity check before you ever commit:</span>
+<span class="prompt">$</span> git status --ignored | grep env
+<span class="hit">  .env.local   (ignored ✓ — good, it will NOT be pushed)</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>If you <em>already</em> committed a key once, deleting it isn&rsquo;t enough &mdash; it&rsquo;s in
+          the git history. <b>Rotate it.</b> Go to the console, revoke the old key, generate a new one. Treat any
+          key that ever touched a commit as burned. This is the one panic where Vol. 07&rsquo;s undo book
+          doesn&rsquo;t save you &mdash; the fix is a new key, not a rewind.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Rate-limit the door. <span class="pill guard">guard</span></h2>
+        <p>
+          The key is safe now &mdash; but the <em>route</em> is wide open. Anyone can hit
+          <code>/api/chat</code> in a loop, and each hit costs you money. A <strong>rate limit</strong> is the
+          bouncer: N requests per minute per visitor, and the (N+1)th gets a polite <code>429</code> instead of a
+          model call. Dray&rsquo;s AI-engineer framing: you&rsquo;re not calling the model on every request &mdash;
+          you&rsquo;re calling it on every <em>allowed</em> request, and you decide what &ldquo;allowed&rdquo; means.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — a small in-memory limiter (per IP)</span></div>
+<pre><span class="key">const</span> hits = <span class="key">new</span> Map();  <span class="cmt">// ip → [timestamps]</span>
+<span class="key">const</span> LIMIT = <span class="amb">10</span>, WINDOW = <span class="amb">60_000</span>;  <span class="cmt">// 10 / minute</span>
+
+<span class="key">function</span> <span class="vio">allowed</span>(ip, now) {
+  <span class="key">const</span> recent = (hits.get(ip) || []).filter(t =&gt; now - t &lt; WINDOW);
+  recent.push(now);
+  hits.set(ip, recent);
+  <span class="key">return</span> recent.length &lt;= LIMIT;
+}
+
+<span class="cmt">// inside the handler, before the model call:</span>
+<span class="key">const</span> ip = req.headers[<span class="str">'x-forwarded-for'</span>] || <span class="str">'anon'</span>;
+<span class="key">if</span> (!allowed(ip, Date.now()))
+  <span class="key">return</span> res.status(<span class="red">429</span>).json({ error: <span class="str">'slow down'</span> });</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>The in-memory version resets whenever the function goes cold &mdash; fine for a demo or a small
+          launch. For anything real, back it with a shared store (Upstash Redis has a drop-in
+          <code>@upstash/ratelimit</code> that&rsquo;s a few lines). Start with the Map, upgrade when you have
+          actual traffic to protect.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Cap the spend before it caps you. <span class="pill guard">guard</span></h2>
+        <p>
+          Rate-limiting slows one attacker. A <strong>spend cap</strong> is the circuit breaker for everything
+          else &mdash; a bug that loops, a launch that goes viral, ten users who each hit the limit. It&rsquo;s the
+          same instinct as the budget in Vol. 25 (<a href="../2026-06/cost-and-latency-two-dials-2026-06-25.html">The
+          Two Dials</a>), moved up to the account level. Two layers: a hard limit in the console (belt) and a
+          rough per-day counter in your route (suspenders).
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">two layers of spend protection</span></div>
+<pre><span class="cmt"># LAYER 1 — the account belt (do this first, in the console):</span>
+<span class="cmt"># Anthropic Console → Billing → set a monthly usage limit + alerts.</span>
+<span class="cmt"># This is the hard stop nothing in your code can override.</span>
+
+<span class="cmt"># LAYER 2 — a rough in-app counter (suspenders):</span>
+<span class="key">let</span> spentToday = <span class="amb">0</span>, day = <span class="key">new</span> Date().getDate();
+<span class="key">const</span> CAP = <span class="amb">5.00</span>;  <span class="cmt"># dollars/day for this route</span>
+
+<span class="cmt"># after each call, add the est. cost (tokens × price):</span>
+spentToday += estimateCost(msg.usage);
+<span class="key">if</span> (spentToday &gt; CAP)
+  <span class="key">return</span> res.status(<span class="red">503</span>).json({ error: <span class="str">'daily budget reached'</span> });</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>The console limit is the one that actually saves you &mdash; set it <b>today</b>, before you deploy
+          anything. The in-app counter is approximate and resets on cold starts; treat it as a courtesy brake, not
+          the real one. Belt first, suspenders second. Never ship with neither.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Add a timeout and a max-tokens ceiling. <span class="pill guard">guard</span></h2>
+        <p>
+          The last guard is about a single request going wrong instead of a stranger being malicious. A prompt can
+          trigger a very long generation; a network hiccup can leave a call hanging. Without a
+          <strong>timeout</strong> and a <strong>max-tokens</strong> ceiling, one bad request can hold a function
+          open (you pay for the wall-clock) and stream out far more than you meant to (you pay for the tokens).
+          Both are one line.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">two ceilings on a single request</span></div>
+<pre><span class="key">const</span> msg = <span class="key">await</span> client.messages.create(
+  {
+    model: <span class="str">'claude-sonnet-5'</span>,
+    max_tokens: <span class="amb">1024</span>,        <span class="cmt"># the token ceiling — can't overrun</span>
+    messages: [{ role: <span class="str">'user'</span>, content: clean(req.body.text) }],
+  },
+  { timeout: <span class="amb">20_000</span> }         <span class="cmt"># 20s wall-clock — no hanging call</span>
+);
+
+<span class="cmt"># and a length ceiling on INPUT too — trim what users can send:</span>
+<span class="key">function</span> <span class="vio">clean</span>(t) { <span class="key">return</span> String(t || <span class="str">''</span>).slice(<span class="amb">0</span>, <span class="amb">4000</span>); }</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Trimming the <b>input</b> is the quiet one people skip. A user (or a bot) can paste a novel into your
+          text box; without a <code>.slice()</code> you&rsquo;re paying to send all of it to the model. Cap what
+          comes in <em>and</em> what goes out &mdash; both ends of the request have a ceiling.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Deploy in one command. <span class="pill ship">ship</span></h2>
+        <p>
+          Here&rsquo;s the part that feels like it should be hard and isn&rsquo;t. With the guards in place, going
+          live is a single command &mdash; Bailey&rsquo;s whole prototyping ethos is that the distance from
+          &ldquo;runs locally&rdquo; to &ldquo;has a URL&rdquo; should be seconds, not a DevOps project. Vercel,
+          Netlify, and Cloudflare Pages all detect the framework, build it, and hand you a live HTTPS URL.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">localhost → the internet, one command</span></div>
+<pre><span class="prompt">$</span> npm i -g vercel
+<span class="prompt">$</span> vercel
+<span class="out">? Set up and deploy? yes</span>
+<span class="out">? Which scope?          your-name</span>
+<span class="out">? Link to existing?     no</span>
+<span class="out">🔗  Building...  api/chat.js → serverless function</span>
+<span class="hit">✅  Production: https://your-app.vercel.app  [live]</span>
+
+<span class="cmt"># push a change later? just run it again:</span>
+<span class="prompt">$</span> vercel --prod</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Connect the repo to Vercel once and every <code>git push</code> auto-deploys &mdash; which is the
+          real reason &ldquo;we aren&rsquo;t pushing to git yet, but it&rsquo;s coming&rdquo; matters. The moment
+          this notebook is a repo, shipping a new entry becomes: commit, push, done. The deploy pipeline is waiting
+          for the git step.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Wire the secret in the dashboard, not the repo. <span class="pill secure">secure</span></h2>
+        <p>
+          Your <code>.env.local</code> stays on your machine (Move 3) &mdash; so the deployed function has no key
+          unless you give it one, in the right place. Every host has an <strong>Environment Variables</strong>
+          panel in the project dashboard. That&rsquo;s where the production key goes. It&rsquo;s encrypted, it&rsquo;s
+          never in the code, and you can rotate it without touching a line.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">set the production secret — CLI or dashboard</span></div>
+<pre><span class="cmt"># option A — one command:</span>
+<span class="prompt">$</span> vercel env add <span class="amb">ANTHROPIC_API_KEY</span> production
+<span class="out">? Value:  sk-ant-••••••••••••  (paste; hidden)</span>
+<span class="hit">✅  Added — encrypted, injected at runtime, not in the repo</span>
+
+<span class="cmt"># option B — dashboard:</span>
+<span class="cmt"># Project → Settings → Environment Variables → Add</span>
+<span class="cmt">#   Name: ANTHROPIC_API_KEY   Value: sk-ant-...   Env: Production</span>
+
+<span class="prompt">$</span> vercel --prod   <span class="cmt"># redeploy so the function picks it up</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Setting the env var does <b>not</b> apply to the already-live build &mdash; you have to redeploy
+          after adding it, or the function still has no key and every call 500s. First-deploy checklist: add the
+          secret, <em>then</em> ship. If your live app throws auth errors, this is almost always why.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Watch it &mdash; logs, spend, and a one-line status ping. <span class="pill ship">ship</span></h2>
+        <p>
+          Shipped isn&rsquo;t done &mdash; shipped is when you start <em>watching</em>. Cal&rsquo;s open-notebook
+          habit is the right one here: keep the logs open for the first day like a diary and actually read what
+          real traffic does to your assumptions. Three things to watch, all free: the function logs, the billing
+          dashboard, and a dead-simple health endpoint.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the three things you watch on day one</span></div>
+<pre><span class="cmt"># 1 — live function logs (tail them like a heartbeat):</span>
+<span class="prompt">$</span> vercel logs your-app.vercel.app --follow
+<span class="out">POST /api/chat  200  1.2s   (real user ✓)</span>
+<span class="out">POST /api/chat  429  0.0s   (rate limit held ✓)</span>
+
+<span class="cmt"># 2 — spend: Anthropic Console → Usage. check it once a day.</span>
+
+<span class="cmt"># 3 — a status ping anyone can hit, no key, no cost:</span>
+<span class="cmt">// api/health.js</span>
+<span class="key">export default</span> (req, res) =&gt; res.json({ ok: <span class="key">true</span>, ts: Date.now() });</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>The <code>429</code>s in your logs are <b>good news</b> &mdash; that&rsquo;s a guard doing its job,
+          logged in real time. The first time you see one fire against actual traffic instead of your own test, that
+          abstract &ldquo;rate limit&rdquo; becomes a real thing you built that&rsquo;s protecting a real wallet.
+          That&rsquo;s the moment it stops being a tutorial.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Run the pre-ship gate before you send the link. <span class="pill ship">ship</span></h2>
+        <p>
+          Same discipline as grading model output on a rubric (Vol. 24) &mdash; don&rsquo;t <em>feel</em> ready,
+          <em>check</em> ready. Before you paste that URL into a text, run the four guards as a literal checklist.
+          It takes ninety seconds and it&rsquo;s the difference between a clean launch and a story that starts with
+          &ldquo;so I woke up to an email from Anthropic.&rdquo;
+        </p>
+        <table class="ptable" aria-label="pre-ship gate">
+          <thead>
+            <tr><th>Guard</th><th>The check</th><th>Ready?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">Key server-side</td><td>Network tab shows a call to <code>/api/*</code>, never to the model directly. No <code>sk-ant</code> in the bundle.</td><td class="yes">✓ ship</td></tr>
+            <tr><td class="trait">Rate limit</td><td>Hammer the endpoint 15× fast — request 11+ returns <code>429</code>.</td><td class="yes">✓ ship</td></tr>
+            <tr><td class="trait">Spend cap</td><td>Console monthly limit set + alert email on. The hard stop exists.</td><td class="yes">✓ ship</td></tr>
+            <tr><td class="trait">Timeout + ceilings</td><td><code>max_tokens</code> set, request <code>timeout</code> set, input <code>.slice()</code>d.</td><td class="yes">✓ ship</td></tr>
+            <tr><td class="trait">Any guard missing</td><td>Key in browser, open endpoint, no cap, or no timeout.</td><td class="no">✗ hold</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">four green checks, then send the link — not before.</p>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a live app status page">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">your-app.vercel.app · live</div>
+            <div class="t">Shipped &amp; guarded</div>
+          </div>
+          <div class="s-body">
+            <div>
+              <div class="label-mini">guards</div>
+              <div class="srow"><span class="st"></span><span class="nm">Key server-side</span><span class="vl">/api</span></div>
+              <div class="srow"><span class="st"></span><span class="nm">Rate limit</span><span class="vl">10/min</span></div>
+              <div class="srow"><span class="st"></span><span class="nm">Spend cap</span><span class="vl">$5/day</span></div>
+              <div class="srow"><span class="st"></span><span class="nm">Timeout</span><span class="vl">20s</span></div>
+            </div>
+            <div>
+              <div class="label-mini">today</div>
+              <div class="metric">
+                <div class="mv">$0.41</div>
+                <div class="ml">spend · 47 requests · 3 blocked</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>This is what &ldquo;done&rdquo; looks like: four green guards, a real URL, and a spend number you can
+        glance at from your phone. <strong>The app isn&rsquo;t safe because it&rsquo;s clever</strong> &mdash;
+        it&rsquo;s safe because four boring checks are standing between a stranger and your bill.</p>
+        <p class="scribble">the guards are the product — the model call was the easy part.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Hide the key</h4>
+          <ul>
+            <li><code>api/chat.js</code><span>browser → your server</span></li>
+            <li><code>process.env</code><span>read, never hard-code</span></li>
+            <li><code>.env* in .gitignore</code><span>never committed</span></li>
+            <li><code>rotate if leaked</code><span>git remembers</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Guard the door</h4>
+          <ul>
+            <li><code>rate limit</code><span>N/min/IP → 429</span></li>
+            <li><code>console cap</code><span>the real hard stop</span></li>
+            <li><code>max_tokens</code><span>output ceiling</span></li>
+            <li><code>timeout + slice</code><span>no runaway</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Ship it</h4>
+          <ul>
+            <li><code>vercel</code><span>one command, live URL</span></li>
+            <li><code>env add … prod</code><span>secret in dashboard</span></li>
+            <li><code>vercel --prod</code><span>redeploy to apply</span></li>
+            <li><code>git push</code><span>auto-deploy (soon)</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Watch it</h4>
+          <ul>
+            <li><code>vercel logs -f</code><span>tail the heartbeat</span></li>
+            <li><code>Console → Usage</code><span>check spend daily</span></li>
+            <li><code>api/health</code><span>free status ping</span></li>
+            <li><code>4/4 gate</code><span>then send the link</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 32 · localhost → live</small>
+      </div>
+      <div class="end">
+        built on the <code>ship-it</code> checklist<br />
+        four guards · one command · watch it<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var dc = document.getElementById('dc');
+      if (!dc) return;
+
+      var rows = Array.prototype.slice.call(document.querySelectorAll('.guard-row'));
+      var nEl = document.getElementById('dc-n');
+      var barEl = document.getElementById('dc-bar');
+      var btnEl = document.getElementById('dc-btn');
+      var verdict = document.getElementById('verdict');
+
+      var messages = {
+        0: '<b>Right now you’re exposed.</b> The key’s in the browser, the endpoint is open, there’s no ceiling on spend. Flip all four guards and the gate goes green — that’s the difference between “it works on my machine” and “it’s safe to hand to a stranger.”',
+        1: '<b>One guard down, three to go.</b> Better — but a single guard isn’t a launch. A safe deploy is the whole set, not the best one.',
+        2: '<b>Halfway.</b> The key and the door might be handled, but an open spend cap or a missing timeout is still a bill waiting to happen.',
+        3: '<b>So close.</b> Three guards up. The one you skipped is exactly the gap a bot or a bug walks through. Don’t ship at 3/4.',
+        4: '<b>Green. Ship it.</b> Key server-side, door rate-limited, spend capped, requests bounded. This is the difference between a demo and something you can safely hand to a stranger. Send the link.'
+      };
+
+      function paint() {
+        var on = rows.filter(function (r) { return r.classList.contains('on'); }).length;
+        nEl.textContent = on;
+        barEl.style.width = (on / 4 * 100) + '%';
+        dc.classList.toggle('ready', on === 4);
+        btnEl.textContent = on === 4 ? 'Deploy to production →' : ('Locked — ' + (4 - on) + ' guard' + (4 - on === 1 ? '' : 's') + ' left');
+        verdict.innerHTML = messages[on];
+      }
+
+      function toggle(r) {
+        r.classList.toggle('on');
+        r.setAttribute('aria-checked', r.classList.contains('on') ? 'true' : 'false');
+        paint();
+      }
+
+      rows.forEach(function (r) {
+        r.addEventListener('click', function () { toggle(r); });
+        r.addEventListener('keydown', function (e) {
+          if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(r); }
+        });
+      });
+
+      paint();
+    })();
+  </script>
+</body>
+</html>

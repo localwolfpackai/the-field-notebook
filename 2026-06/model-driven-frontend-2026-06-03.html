@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt → Config → UI — Let a Model Drive Your Frontend · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook build guide: wire Claude or Gemini into a real React frontend by having the model return a structured PageConfig JSON that renders into components. Nine modular moves, real code, a local test harness." />
+  <meta property="og:title" content="Prompt → Config → UI — Let a Model Drive Your Frontend" />
+  <meta property="og:description" content="Stop bolting a chatbot onto your app. Have the model return structured JSON your renderer turns into UI — nine steps, Next.js + Claude/Gemini, with a scratch script at every stop." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* THE-WHOLE-IDEA flow map ------------------------------- */
+    .loop-map {
+      margin: 0 0 3rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.1rem, 2vw, 2rem);
+      position: relative;
+    }
+    .loop-map::before {
+      content: 'the whole idea';
+      position: absolute;
+      top: -13px; left: 1.6rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.16em 0.8em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(-1.5deg);
+    }
+    .loop-map h3 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .loop-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0.55rem;
+    }
+    .node {
+      flex: 1 1 130px;
+      background: var(--paper);
+      border: 1px solid oklch(0.84 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .node .n-k {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--margin);
+    }
+    .node .n-t { font-weight: 600; font-size: 0.95rem; }
+    .node .n-d { font-size: 0.82rem; color: var(--ink-soft); }
+    .node.config { border-style: dashed; border-color: var(--accent); background: var(--accent-wash); }
+    .arrow {
+      align-self: center;
+      font-family: 'Geist Mono', monospace;
+      color: var(--margin);
+      font-size: 1.2rem;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 680px) {
+      .loop-flow { flex-direction: column; }
+      .arrow { transform: rotate(90deg); }
+    }
+
+    /* STEP BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.local    { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.frontend { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.ship     { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Claude-vs-Gemini compare card */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col {
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1rem;
+      background: var(--paper-alt);
+    }
+    .compare .col.claude { border-top: 3px solid var(--amber); }
+    .compare .col.gemini { border-top: 3px solid var(--accent); }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .compare .col.claude h4 { color: oklch(0.50 0.13 68); }
+    .compare .col.gemini h4 { color: var(--accent-ink); }
+    .compare .col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+    .compare .col li {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      padding-left: 1rem;
+      position: relative;
+    }
+    .compare .col li::before {
+      content: '–';
+      position: absolute; left: 0;
+      color: var(--ink-mute);
+    }
+    .compare .col li b { color: var(--ink); }
+
+    /* Mini rendered-preview mock */
+    .preview {
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .preview .chrome {
+      display: flex; gap: 0.4rem; align-items: center;
+      padding: 0.45rem 0.7rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+    }
+    .preview .chrome .d { width: 9px; height: 9px; border-radius: 50%; background: oklch(0.78 0.04 60); }
+    .preview .chrome .u {
+      margin-left: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+    }
+    .preview .render { padding: 1.1rem 1.2rem; display: grid; gap: 0.7rem; }
+    .preview .p-hero h5 {
+      font-family: 'Geist', serif; font-weight: 800;
+      font-size: 1.25rem; margin: 0 0 0.2rem;
+    }
+    .preview .p-hero p { font-size: 0.86rem; color: var(--ink-soft); margin: 0; }
+    .preview .p-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    @media (max-width: 460px) { .preview .p-cards { grid-template-columns: 1fr; } }
+    .preview .p-card {
+      border: 1px solid oklch(0.88 0.025 80);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      background: var(--paper-alt);
+    }
+    .preview .p-card span {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--margin);
+    }
+    .preview .p-card b { display: block; font-size: 0.9rem; margin-top: 0.15rem; }
+    .preview .p-cta {
+      display: inline-block;
+      background: var(--accent); color: var(--paper);
+      font-size: 0.8rem; font-weight: 600;
+      padding: 0.4em 0.9em; border-radius: var(--radius-sm);
+      width: fit-content;
+    }
+    .preview .tagline {
+      font-family: 'Caveat', cursive; color: var(--margin);
+      font-size: 1rem; padding: 0 1.2rem 0.9rem;
+    }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 40ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 11</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;03</span>
+        <span class="tag">ai</span>
+        <span class="tag">frontend</span>
+      </div>
+
+      <h1>Prompt &rarr; config &rarr; <span class="accent">UI</span> &mdash; let a model drive your frontend.</h1>
+
+      <p class="deck">
+        Most people bolt a chat box onto a finished app and call it "AI." There's
+        a better seam. Have the model return <em>structured JSON</em> &mdash; a
+        little blueprint of what the page should be &mdash; and let a plain
+        renderer turn that into real React. The model decides <em>what</em>; your
+        components decide <em>how it looks</em>. This notebook builds the whole
+        loop in nine moves: schema first, endpoint second, renderer third, a
+        scratch script at every stop, and a one-line swap between Claude and
+        Gemini at the end.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~17 min</span>
+        <span><b>Stack</b> · Next.js + Claude / Gemini</span>
+        <span><b>Assumes</b> · you can run <code>npm run dev</code></span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The thing that finally made AI features click for me was realizing the
+          model doesn't have to write your markup. It just has to fill in a form
+          you designed. Give it a tight schema &mdash; "a page has a hero, some
+          cards, and a CTA" &mdash; and ask for JSON that fits. You get back data,
+          not HTML. And data is the friendliest thing a frontend can receive:
+          you validate it, you render it, you style it with components you already
+          trust.
+        </p>
+        <p>
+          That split is the whole trick. Last notebook (Vol. 10) was about
+          directing Claude's <em>taste</em> inside Artifacts. This one is the
+          engineering version: the model is a backend that returns a layout spec,
+          and your job is the contract between them. Once that contract holds, you
+          can swap models, cache responses, add fields, and never touch the render
+          layer.
+        </p>
+        <p>
+          Code is TypeScript + Next.js because it's the path of least resistance
+          for "model on the server, UI in the browser." But the pattern is
+          language-agnostic. The schema is the product. Everything else is plumbing.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The build order ↓</h3>
+        <ol>
+          <li><a href="#s1">The pattern: model as a JSON backend</a></li>
+          <li><a href="#s2">The contract — design the schema first</a></li>
+          <li><a href="#s3">The endpoint — one route, one job</a></li>
+          <li><a href="#s4">Force valid JSON, every time</a></li>
+          <li><a href="#s5">The renderer — config to components</a></li>
+          <li><a href="#s6">Wire the prompt box to the route</a></li>
+          <li><a href="#s7">The open notebook — a scratch tester</a></li>
+          <li><a href="#s8">Swap the engine — Claude ↔ Gemini</a></li>
+          <li><a href="#s9">Guardrails &amp; ship-day checks</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MENTAL MODEL -->
+    <div class="loop-map" id="s1">
+      <h3>Before any code: the picture in your head.</h3>
+      <div class="loop-flow" role="img" aria-label="Flow: user types a prompt, the model returns a structured config, your renderer maps that config to components, the browser shows the page.">
+        <div class="node">
+          <span class="n-k">user</span>
+          <span class="n-t">types a prompt</span>
+          <span class="n-d">"a landing page for a dog café"</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="n-k">model</span>
+          <span class="n-t">returns config</span>
+          <span class="n-d">JSON matching your schema</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node config">
+          <span class="n-k">your code</span>
+          <span class="n-t">validate + map</span>
+          <span class="n-d">config → React components</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="n-k">browser</span>
+          <span class="n-t">renders</span>
+          <span class="n-d">real UI, your styles</span>
+        </div>
+      </div>
+      <p style="margin-top:1rem; max-width: var(--measure); font-size:0.95rem; color:var(--ink-soft);">
+        Read it left to right and notice where the boundary sits. The model never
+        sees your CSS. Your components never see the model. The <b>config</b> is the
+        only thing that crosses the line &mdash; which means it's the only thing you
+        have to get right.
+      </p>
+    </div>
+
+    <!-- STEP 1 -->
+    <article class="hack" id="s1b">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>The pattern: treat the model like a JSON backend. <span class="pill">concept</span></h2>
+        <p>
+          Here's the reframe that pays for the whole notebook. A chatbot answers
+          in prose. A <em>backend</em> answers in a shape you defined. We want the
+          second one. So instead of "write me a landing page," the real instruction
+          to the model is: "fill out <code>PageConfig</code> for this request, and
+          return only that."
+        </p>
+        <p>
+          Why this beats asking for HTML directly: HTML from a model is a liability.
+          It can inject a class you don't have, an inline style that breaks your
+          theme, a tag your sanitizer hates. JSON can't do any of that &mdash; it's
+          inert data until <em>your</em> code decides what a <code>"hero"</code>
+          block means. You keep the taste. The model brings the content and the
+          arrangement.
+        </p>
+
+        <div class="loop-map" style="margin-bottom:0;">
+          <h3 style="margin-bottom:0.7rem;">Two ways to ask &mdash; same prompt, very different outcomes.</h3>
+          <div class="compare">
+            <div class="col claude">
+              <h4>✗ "Write the page"</h4>
+              <ul>
+                <li>Model returns a wall of <b>HTML/CSS</b></li>
+                <li>Off-brand spacing, random colors</li>
+                <li>You parse strings to fix it</li>
+                <li>Every model writes markup differently</li>
+              </ul>
+            </div>
+            <div class="col gemini">
+              <h4>✓ "Fill the config"</h4>
+              <ul>
+                <li>Model returns <b>typed JSON</b></li>
+                <li>Your components own the look</li>
+                <li>You validate one object</li>
+                <li>Swap models, output stays the same shape</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tryit">
+          <span class="badge">frame ↳</span>
+          <div>
+            For the rest of this build, whenever you're tempted to ask a model for
+            "the page," ask for <b>the data that describes the page</b> instead.
+            That single habit is most of the battle.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 2 -->
+    <article class="hack" id="s2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>The contract &mdash; design the schema before you touch a model. <span class="pill">concept</span></h2>
+        <p>
+          The schema <em>is</em> the product. Spend your first twenty minutes here,
+          not in the prompt. I write it as a Zod schema because Zod gives me three
+          things at once: TypeScript types for the frontend, runtime validation for
+          the response, and a JSON Schema I can hand to the model. One source of
+          truth, three jobs.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">lib/schema.ts</span>
+          </div>
+<pre><span class="key">import</span> { z } <span class="key">from</span> <span class="str">"zod"</span>;
+
+<span class="cmt">// A block is one chunk of the page. Start with three.</span>
+<span class="key">const</span> Hero = z.<span class="amb">object</span>({
+  type:     z.<span class="amb">literal</span>(<span class="str">"hero"</span>),
+  heading:  z.<span class="amb">string</span>().max(<span class="str">80</span>),
+  subhead:  z.<span class="amb">string</span>().max(<span class="str">160</span>),
+});
+
+<span class="key">const</span> Cards = z.<span class="amb">object</span>({
+  type:  z.<span class="amb">literal</span>(<span class="str">"cards"</span>),
+  items: z.<span class="amb">array</span>(z.<span class="amb">object</span>({
+    label: z.<span class="amb">string</span>(),
+    body:  z.<span class="amb">string</span>().max(<span class="str">120</span>),
+  })).min(<span class="str">2</span>).max(<span class="str">4</span>),
+});
+
+<span class="key">const</span> Cta = z.<span class="amb">object</span>({
+  type:  z.<span class="amb">literal</span>(<span class="str">"cta"</span>),
+  label: z.<span class="amb">string</span>().max(<span class="str">32</span>),
+  href:  z.<span class="amb">string</span>(),
+});
+
+<span class="cmt">// The page is an ordered list of blocks. That's the contract.</span>
+<span class="key">export const</span> PageConfig = z.<span class="amb">object</span>({
+  title:  z.<span class="amb">string</span>(),
+  blocks: z.<span class="amb">array</span>(z.<span class="amb">discriminatedUnion</span>(<span class="str">"type"</span>, [Hero, Cards, Cta])),
+});
+
+<span class="key">export type</span> PageConfig = z.<span class="amb">infer</span>&lt;<span class="key">typeof</span> PageConfig&gt;;</pre>
+        </div>
+
+        <p>
+          Notice the constraints: <code>max(80)</code> on the heading,
+          <code>min(2).max(4)</code> on the cards. Those aren't decoration &mdash;
+          they're how you keep a model from handing you a 300-character headline that
+          blows up your hero. The schema is also your design system's bouncer.
+        </p>
+
+        <div class="scribble">small schema first. you can always add a block type later — discriminated unions make it painless.</div>
+      </div>
+    </article>
+
+    <!-- STEP 3 -->
+    <article class="hack" id="s3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>The endpoint &mdash; one route, one job. <span class="pill">api</span></h2>
+        <p>
+          Now a single server route: take the user's prompt, ask the model to fill
+          the config, return JSON. Keep it boring. No streaming yet, no model-swap
+          yet &mdash; just prove the round trip. This is a Next.js App Router handler,
+          but it's a plain function; the shape is identical in Express or a Cloudflare
+          Worker.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">app/api/generate/route.ts</span>
+          </div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">"@anthropic-ai/sdk"</span>;
+<span class="key">import</span> { PageConfig } <span class="key">from</span> <span class="str">"@/lib/schema"</span>;
+<span class="key">import</span> { SYSTEM, configTool } <span class="key">from</span> <span class="str">"@/lib/prompt"</span>;
+
+<span class="key">const</span> anthropic = <span class="key">new</span> Anthropic();
+
+<span class="key">export async function</span> <span class="amb">POST</span>(req: Request) {
+  <span class="key">const</span> { prompt } = <span class="key">await</span> req.json();
+
+  <span class="key">const</span> msg = <span class="key">await</span> anthropic.messages.create({
+    model: <span class="str">"claude-sonnet-4-6"</span>,
+    max_tokens: <span class="str">1200</span>,
+    system: SYSTEM,
+    tools: [configTool],              <span class="cmt">// ← defined in step 4</span>
+    tool_choice: { type: <span class="str">"tool"</span>, name: <span class="str">"emit_page"</span> },
+    messages: [{ role: <span class="str">"user"</span>, content: prompt }],
+  });
+
+  <span class="cmt">// the model "called" our tool — the args ARE the config</span>
+  <span class="key">const</span> block = msg.content.find((b) =&gt; b.type === <span class="str">"tool_use"</span>);
+  <span class="key">const</span> parsed = PageConfig.<span class="amb">safeParse</span>(block?.input);
+
+  <span class="key">if</span> (!parsed.success) {
+    <span class="key">return</span> Response.json({ error: <span class="str">"bad config"</span> }, { status: <span class="str">422</span> });
+  }
+  <span class="key">return</span> Response.json(parsed.data);
+}</pre>
+        </div>
+
+        <p>
+          Two design choices worth naming. One: the API key comes from the
+          environment, never the client &mdash; the model call lives on the server so
+          the secret stays there. Two: we <code>safeParse</code> before we trust
+          anything. A 422 here is a feature, not a failure; it means the renderer
+          will only ever see data that fits the contract.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Set <code>ANTHROPIC_API_KEY</code> in <code>.env.local</code> and never
+            commit it. The SDK reads it automatically &mdash; that's why
+            <code>new Anthropic()</code> takes no args. Same story for Gemini's key
+            in step 8.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 4 -->
+    <article class="hack" id="s4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Force valid JSON, every single time. <span class="pill">api</span></h2>
+        <p>
+          The quiet hero of this whole pattern is <b>tool use</b> (a.k.a. function
+          calling). Instead of begging the model in prose to "return JSON and nothing
+          else," you hand it a tool whose input schema <em>is</em> your config. The
+          model fills the tool's arguments. You get structured data by construction
+          &mdash; no markdown fences to strip, no "Sure! Here's your JSON:" preamble
+          to regex away.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">lib/prompt.ts</span>
+          </div>
+<pre><span class="key">import</span> { zodToJsonSchema } <span class="key">from</span> <span class="str">"zod-to-json-schema"</span>;
+<span class="key">import</span> { PageConfig } <span class="key">from</span> <span class="str">"./schema"</span>;
+
+<span class="cmt">// the contract, restated as a tool the model can "call"</span>
+<span class="key">export const</span> configTool = {
+  name: <span class="str">"emit_page"</span>,
+  description: <span class="str">"Return the page as a PageConfig object. Pick block "</span>
+    + <span class="str">"types that fit the request. Keep copy tight and concrete."</span>,
+  input_schema: <span class="amb">zodToJsonSchema</span>(PageConfig),
+};
+
+<span class="key">export const</span> SYSTEM = `You are a layout author.
+- Use ONLY the block types in the schema.
+- Write specific copy, never lorem ipsum.
+- Order blocks: hero first, cta last.
+- If the request is vague, make one tasteful choice and commit.`;</pre>
+        </div>
+
+        <p>
+          The <code>zodToJsonSchema</code> call means your tool definition can never
+          drift from your validator &mdash; they're generated from the same Zod object.
+          Change a <code>max()</code> in step 2 and both the model's instructions and
+          your runtime check update together. That's the kind of coupling you
+          actually want.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">why ↳</span>
+          <div>
+            <code>tool_choice: { type: "tool", name: "emit_page" }</code> from step 3
+            <b>forces</b> the call. The model can't wander off into chat &mdash; its
+            only move is to fill your form. That one line removes a whole class of
+            "the JSON had a paragraph glued to the front" bugs.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 5 -->
+    <article class="hack" id="s5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>The renderer &mdash; map config to components. <span class="pill frontend">frontend</span></h2>
+        <p>
+          This is the part that feels like magic but is the most boring code in the
+          repo &mdash; and that's the point. A lookup table from <code>block.type</code>
+          to a component. Each block type is a small, dumb, well-styled component you
+          already know how to build. Add a new block type? Write one component, add
+          one line to the registry. Nothing else changes.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">components/page-renderer.tsx</span>
+          </div>
+<pre><span class="key">import type</span> { PageConfig } <span class="key">from</span> <span class="str">"@/lib/schema"</span>;
+<span class="key">import</span> { Hero, Cards, Cta } <span class="key">from</span> <span class="str">"./blocks"</span>;
+
+<span class="cmt">// the whole "engine": one map, type → component</span>
+<span class="key">const</span> registry = {
+  hero:  Hero,
+  cards: Cards,
+  cta:   Cta,
+} <span class="key">as const</span>;
+
+<span class="key">export function</span> <span class="amb">PageRenderer</span>({ config }: { config: PageConfig }) {
+  <span class="key">return</span> (
+    &lt;main&gt;
+      {config.blocks.map((block, i) =&gt; {
+        <span class="key">const</span> Block = registry[block.type];
+        <span class="cmt">// @ts-expect-error — discriminated union narrows per type</span>
+        <span class="key">return</span> &lt;Block key={i} {...block} /&gt;;
+      })}
+    &lt;/main&gt;
+  );
+}</pre>
+        </div>
+
+        <p>
+          The blocks themselves are just components with your tokens baked in &mdash;
+          the model supplies <code>heading</code> and <code>items</code>, you supply
+          the spacing, type scale, and color. Here's roughly what the dog-café prompt
+          renders into once the config flows through:
+        </p>
+
+        <div class="preview" role="img" aria-label="Mock of a rendered page: a hero with heading and subhead, three feature cards, and a call-to-action button.">
+          <div class="chrome">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="u">localhost:3000</span>
+          </div>
+          <div class="render">
+            <div class="p-hero">
+              <h5>Bark &amp; Brew</h5>
+              <p>Cold brew for you, a water bowl for them. Open 7&ndash;3, daily.</p>
+            </div>
+            <div class="p-cards">
+              <div class="p-card"><span>card</span><b>Patio seating</b></div>
+              <div class="p-card"><span>card</span><b>House oat-milk</b></div>
+              <div class="p-card"><span>card</span><b>Pup menu</b></div>
+            </div>
+            <div class="p-cta">Reserve a table →</div>
+          </div>
+          <div class="tagline">one config object → this. styled by your components, not the model.</div>
+        </div>
+
+        <p class="scribble">the registry is your real moat. taste lives in the blocks; the model just fills them.</p>
+      </div>
+    </article>
+
+    <!-- STEP 6 -->
+    <article class="hack" id="s6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Wire the prompt box to the route. <span class="pill frontend">frontend</span></h2>
+        <p>
+          Now the front door: a text box, a button, and a <code>fetch</code>. Type a
+          request, POST it to <code>/api/generate</code>, drop the returned config into
+          state, render it. This is the smallest possible client &mdash; loading and
+          error states get real attention in step 9; here we just close the loop so
+          you can see it move.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">app/page.tsx</span>
+          </div>
+<pre><span class="str">"use client"</span>;
+<span class="key">import</span> { useState } <span class="key">from</span> <span class="str">"react"</span>;
+<span class="key">import</span> { PageRenderer } <span class="key">from</span> <span class="str">"@/components/page-renderer"</span>;
+<span class="key">import type</span> { PageConfig } <span class="key">from</span> <span class="str">"@/lib/schema"</span>;
+
+<span class="key">export default function</span> <span class="amb">Home</span>() {
+  <span class="key">const</span> [prompt, setPrompt] = useState(<span class="str">""</span>);
+  <span class="key">const</span> [config, setConfig] = useState&lt;PageConfig | null&gt;(<span class="key">null</span>);
+  <span class="key">const</span> [busy, setBusy] = useState(<span class="key">false</span>);
+
+  <span class="key">async function</span> <span class="amb">generate</span>() {
+    setBusy(<span class="key">true</span>);
+    <span class="key">const</span> res = <span class="key">await</span> fetch(<span class="str">"/api/generate"</span>, {
+      method: <span class="str">"POST"</span>,
+      body: JSON.stringify({ prompt }),
+    });
+    setConfig(<span class="key">await</span> res.json());
+    setBusy(<span class="key">false</span>);
+  }
+
+  <span class="key">return</span> (
+    &lt;&gt;
+      &lt;input value={prompt} onChange={(e) =&gt; setPrompt(e.target.value)} /&gt;
+      &lt;button onClick={generate} disabled={busy}&gt;
+        {busy ? <span class="str">"thinking…"</span> : <span class="str">"build it"</span>}
+      &lt;/button&gt;
+      {config &amp;&amp; &lt;PageRenderer config={config} /&gt;}
+    &lt;/&gt;
+  );
+}</pre>
+        </div>
+
+        <p>
+          That's the entire user-facing app. Box in, page out. Everything
+          interesting already happened on the server and in the renderer &mdash;
+          which is exactly the separation you want. The client stays thin enough to
+          rewrite in an afternoon.
+        </p>
+      </div>
+    </article>
+
+    <!-- STEP 7 -->
+    <article class="hack" id="s7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The open notebook &mdash; a scratch tester you run locally. <span class="pill local">local</span></h2>
+        <p>
+          Before I trust any of this in the browser, I poke at it from a throwaway
+          script. It's faster than clicking, it shows me the raw config, and it's
+          where I catch a schema that's too loose or a prompt that's too vague. Keep
+          a <code>scratch/</code> folder. This file lives there and never ships.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">scratch/try.ts — run with: npx tsx scratch/try.ts</span>
+          </div>
+<pre><span class="key">import</span> { PageConfig } <span class="key">from</span> <span class="str">"../lib/schema"</span>;
+
+<span class="key">const</span> prompts = [
+  <span class="str">"landing page for a dog café in San Diego"</span>,
+  <span class="str">"signup page for a budgeting app, friendly tone"</span>,
+  <span class="str">""</span>,                          <span class="cmt">// ← edge case: empty prompt</span>
+  <span class="str">"a;lksdjf zzz 9999"</span>,           <span class="cmt">// ← edge case: garbage</span>
+];
+
+<span class="key">for</span> (<span class="key">const</span> prompt <span class="key">of</span> prompts) {
+  <span class="key">const</span> res = <span class="key">await</span> fetch(<span class="str">"http://localhost:3000/api/generate"</span>, {
+    method: <span class="str">"POST"</span>,
+    body: JSON.stringify({ prompt }),
+  });
+  <span class="key">const</span> data = <span class="key">await</span> res.json();
+
+  <span class="cmt">// re-validate client-side so the test is honest</span>
+  <span class="key">const</span> ok = PageConfig.<span class="amb">safeParse</span>(data).success;
+  console.log(
+    `[${ok ? <span class="str">"PASS"</span> : <span class="str">"FAIL"</span>}] "${prompt.slice(0, 28)}"`,
+    `→ ${data.blocks?.length ?? <span class="str">0</span>} blocks`,
+  );
+}</pre>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">output</span>
+          </div>
+<pre><span class="out">[PASS] "landing page for a dog café"  → 3 blocks</span>
+<span class="out">[PASS] "signup page for a budgeting"  → 3 blocks</span>
+<span class="out">[PASS] ""                             → 2 blocks  </span><span class="cmt"># model still picked something sane</span>
+<span class="out">[FAIL] "a;lksdjf zzz 9999"            → 0 blocks  </span><span class="cmt"># 422 — caught it</span></pre>
+        </div>
+
+        <p>
+          That last line is the whole reason to write the script. Garbage in didn't
+          crash the app or render a broken page &mdash; it tripped the validator and
+          came back as a clean 422. Now I know the failure mode <em>before</em> a real
+          user finds it. The notebook isn't a test suite; it's a place to be curious
+          on purpose.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Add a prompt that should break your schema &mdash; ask for "twelve cards"
+            when you capped it at four. Watch the model either trim to four or the
+            validator reject it. Either way, you learn where your contract actually
+            holds.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 8 -->
+    <article class="hack" id="s8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Swap the engine &mdash; Claude ↔ Gemini behind one interface. <span class="pill">api</span></h2>
+        <p>
+          Here's the payoff for keeping the config as the only thing that crosses the
+          boundary: the model becomes a swappable part. Wrap each provider in a tiny
+          adapter that takes a prompt and returns a <code>PageConfig</code>. The route
+          doesn't care which one it called. Neither does the renderer.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">lib/engines.ts</span>
+          </div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">"@anthropic-ai/sdk"</span>;
+<span class="key">import</span> { GoogleGenAI } <span class="key">from</span> <span class="str">"@google/genai"</span>;
+<span class="key">import</span> { PageConfig } <span class="key">from</span> <span class="str">"./schema"</span>;
+<span class="key">import</span> { SYSTEM, jsonSchema } <span class="key">from</span> <span class="str">"./prompt"</span>;
+
+<span class="key">type</span> Engine = (prompt: string) =&gt; Promise&lt;unknown&gt;;
+
+<span class="key">const</span> claude: Engine = <span class="key">async</span> (prompt) =&gt; {
+  <span class="key">const</span> a = <span class="key">new</span> Anthropic();
+  <span class="key">const</span> m = <span class="key">await</span> a.messages.create({
+    model: <span class="str">"claude-sonnet-4-6"</span>, max_tokens: <span class="str">1200</span>, system: SYSTEM,
+    tools: [{ name: <span class="str">"emit_page"</span>, input_schema: jsonSchema }],
+    tool_choice: { type: <span class="str">"tool"</span>, name: <span class="str">"emit_page"</span> },
+    messages: [{ role: <span class="str">"user"</span>, content: prompt }],
+  });
+  <span class="key">return</span> m.content.find((b) =&gt; b.type === <span class="str">"tool_use"</span>)?.input;
+};
+
+<span class="key">const</span> gemini: Engine = <span class="key">async</span> (prompt) =&gt; {
+  <span class="key">const</span> g = <span class="key">new</span> GoogleGenAI({});
+  <span class="key">const</span> r = <span class="key">await</span> g.models.generateContent({
+    model: <span class="str">"gemini-2.5-flash"</span>,
+    contents: `${SYSTEM}\n\nRequest: ${prompt}`,
+    config: {
+      responseMimeType: <span class="str">"application/json"</span>,   <span class="cmt">// ← Gemini's JSON mode</span>
+      responseSchema: jsonSchema,
+    },
+  });
+  <span class="key">return</span> JSON.parse(r.text);
+};
+
+<span class="key">const</span> engines = { claude, gemini } <span class="key">as const</span>;
+
+<span class="key">export async function</span> <span class="amb">buildConfig</span>(prompt: string, which: <span class="amb">keyof</span> <span class="key">typeof</span> engines) {
+  <span class="key">const</span> raw = <span class="key">await</span> engines[which](prompt);
+  <span class="key">return</span> PageConfig.<span class="amb">parse</span>(raw);   <span class="cmt">// same validator for both</span>
+}</pre>
+        </div>
+
+        <p>
+          Same prompt, same schema, same validator &mdash; two engines. Both providers
+          have a structured-output mode (Claude via forced tool use, Gemini via
+          <code>responseSchema</code>), and because you re-validate with one Zod object,
+          their slightly different outputs land in the exact same shape. Now you can A/B
+          them on cost, latency, and taste without rewriting a line of UI.
+        </p>
+
+        <div class="compare">
+          <div class="col claude">
+            <h4>Claude — forced tool use</h4>
+            <ul>
+              <li><b>Tightest contract</b> — <code>tool_choice</code> guarantees the call</li>
+              <li>Strong at tasteful, restrained copy</li>
+              <li>Great when the schema is nested or strict</li>
+            </ul>
+          </div>
+          <div class="col gemini">
+            <h4>Gemini — responseSchema</h4>
+            <ul>
+              <li><b>Fast + cheap</b> on Flash, good for high volume</li>
+              <li>Native JSON mode, no tool wrapper needed</li>
+              <li>Handy when you want raw throughput over nuance</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            The adapters are where provider quirks go to die. If Gemini ever returns a
+            stray field or Claude nests differently, you fix it in <em>one</em> function
+            &mdash; the route and renderer never learn the difference. That's the entire
+            value of the boundary.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 9 -->
+    <article class="hack" id="s9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Guardrails &amp; the ship-day checklist. <span class="pill ship">ship</span></h2>
+        <p>
+          The demo works. Shipping it means handling the three things demos skip:
+          the model fails, the model is slow, and the model occasionally returns
+          something almost-but-not-quite valid. None of these are exotic. All of them
+          have one-line answers if you planned for them.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the route, hardened</span>
+          </div>
+<pre><span class="key">export async function</span> <span class="amb">POST</span>(req: Request) {
+  <span class="key">const</span> { prompt, engine = <span class="str">"claude"</span> } = <span class="key">await</span> req.json();
+
+  <span class="cmt">// 1. cap input — don't pay for a novel</span>
+  <span class="key">if</span> (!prompt || prompt.length &gt; <span class="str">500</span>) {
+    <span class="key">return</span> Response.json({ error: <span class="str">"bad prompt"</span> }, { status: <span class="str">400</span> });
+  }
+
+  <span class="key">try</span> {
+    <span class="key">const</span> config = <span class="key">await</span> buildConfig(prompt, engine);
+    <span class="key">return</span> Response.json(config);
+  } <span class="key">catch</span> (err) {
+    <span class="cmt">// 2. one retry on a validation miss — models wobble</span>
+    <span class="key">try</span> {
+      <span class="key">const</span> config = <span class="key">await</span> buildConfig(prompt, engine);
+      <span class="key">return</span> Response.json(config);
+    } <span class="key">catch</span> {
+      <span class="cmt">// 3. fall back to a safe default page, never a white screen</span>
+      <span class="key">return</span> Response.json(FALLBACK_PAGE, { status: <span class="str">200</span> });
+    }
+  }
+}</pre>
+        </div>
+
+        <p>
+          On the client, the same discipline: show a skeleton while
+          <code>busy</code> is true, show a friendly retry button on error, and
+          render the fallback page if the config is the default. The user never sees a
+          stack trace or a spinner that spins forever. A model-driven UI feels broken
+          the instant it stalls &mdash; loading states aren't polish here, they're the
+          product.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">checklist ↳</span>
+          <div>
+            <b>Validate</b> on the server, always. <b>Retry</b> once on a parse miss.
+            <b>Fall back</b> to a static config instead of crashing. <b>Cap</b> the
+            input length and the <code>max_tokens</code>. <b>Cache</b> identical
+            prompts so you stop paying twice. Five lines each, and it stops feeling
+            like a demo.
+          </div>
+        </div>
+
+        <p>
+          That's the loop, end to end: a schema you designed, a model that fills it,
+          a renderer that owns the look, and enough guardrails that a bad response is
+          a non-event. The model drives the content. You still own the car.
+        </p>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole build, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The pattern</h4>
+          <ul>
+            <li><code>data, not HTML</code><span>ask for config, not markup</span></li>
+            <li><code>schema = product</code><span>design it first, 20 min</span></li>
+            <li><code>model → JSON</code><span>your components own the look</span></li>
+            <li><code>one boundary</code><span>config is all that crosses</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The contract</h4>
+          <ul>
+            <li><code>zod object</code><span>types + validation + schema</span></li>
+            <li><code>discriminatedUnion</code><span>one field per block type</span></li>
+            <li><code>.max() / .min()</code><span>constraints = your bouncer</span></li>
+            <li><code>zodToJsonSchema</code><span>feed the same shape to the model</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The wiring</h4>
+          <ul>
+            <li><code>tool_choice: tool</code><span>force valid JSON (Claude)</span></li>
+            <li><code>responseSchema</code><span>JSON mode (Gemini)</span></li>
+            <li><code>registry[type]</code><span>config → component map</span></li>
+            <li><code>safeParse</code><span>nothing untrusted hits the UI</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Ship-day</h4>
+          <ul>
+            <li><code>scratch/try.ts</code><span>poke it before you trust it</span></li>
+            <li><code>retry once</code><span>models wobble, recover quietly</span></li>
+            <li><code>FALLBACK_PAGE</code><span>never a white screen</span></li>
+            <li><code>cap + cache</code><span>stop paying twice</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-03</small>
+      </div>
+      <div class="end">
+        next entry · <code>streaming the config as it builds</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

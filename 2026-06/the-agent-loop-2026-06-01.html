@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Agent Loop — Build Your First Tool-Using AI From Scratch · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: an AI agent is just a while loop with tools. Build one from a single API call up to a streaming CLI — in plain developer language, with code you can paste." />
+  <meta property="og:title" content="The Agent Loop — Build Your First Tool-Using AI From Scratch" />
+  <meta property="og:description" content="Strip away the mystique: an agent is a while loop that can call functions. Here's the whole thing, step by step, from one API call to a working CLI." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-pink:  oklch(0.80 0.12 350);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MENTAL MODEL DIAGRAM --------------------------------- */
+    .loop-map {
+      margin: 0 0 3rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.1rem, 2vw, 2rem);
+      position: relative;
+    }
+    .loop-map::before {
+      content: 'the whole idea';
+      position: absolute;
+      top: -13px; left: 1.6rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.16em 0.8em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(-1.5deg);
+    }
+    .loop-map h3 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .loop-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0.55rem;
+    }
+    .node {
+      flex: 1 1 130px;
+      background: var(--paper);
+      border: 1px solid oklch(0.84 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .node .n-k {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--margin);
+    }
+    .node .n-t { font-weight: 600; font-size: 0.95rem; }
+    .node .n-d { font-size: 0.82rem; color: var(--ink-soft); }
+    .node.loopback { border-style: dashed; border-color: var(--accent); background: var(--accent-wash); }
+    .arrow {
+      align-self: center;
+      font-family: 'Geist Mono', monospace;
+      color: var(--margin);
+      font-size: 1.2rem;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 680px) {
+      .loop-flow { flex-direction: column; }
+      .arrow { transform: rotate(90deg); }
+    }
+
+    /* STEP BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.code     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.concept  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.loop     { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .fn  { color: var(--code-pink); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 09</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;01</span>
+        <span class="tag">ai</span>
+        <span class="tag">agents</span>
+      </div>
+
+      <h1>The <span class="accent">agent loop</span> &mdash; build your first tool-using AI from scratch.</h1>
+
+      <p class="deck">
+        Everyone keeps saying "agents" like it's a black box you have to buy.
+        It isn't. An agent is a <code>while</code> loop that can call your
+        functions. That's the whole secret. This notebook builds one from a
+        single API call up to a streaming CLI &mdash; no framework, no magic,
+        just the loop and the four moves that make it work.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~16 min</span>
+        <span><b>Stack</b> · Python + Claude API</span>
+        <span><b>Assumes</b> · you can run a <code>.py</code> file</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          I avoided building agents for way too long because the word sounded
+          like a thing you needed a degree for. Then I read the actual loop and
+          felt a little robbed &mdash; it's about fifteen lines. The model talks,
+          you notice it asked for a tool, you run the tool, you hand the result
+          back, you let it talk again. Repeat until it stops asking. That loop
+          <em>is</em> the agent.
+        </p>
+        <p>
+          So this is me re-teaching it the way I wish someone had taught me:
+          smallest possible pieces, real code you can paste, and a local scratch
+          script at every step so you can watch it work before you trust it. By
+          the end you'll have a tiny agent that can read files, do math, and tell
+          you what it did &mdash; and you'll know exactly where every decision happens.
+        </p>
+        <p>
+          Examples are Python with the Claude API because that's my daily driver,
+          but the shape is identical in TypeScript or with any model that does
+          tool calling. Steal the loop. The language is a detail.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The build order ↓</h3>
+        <ol>
+          <li><a href="#s1">The mental model: agent = loop + tools</a></li>
+          <li><a href="#s2">Hello, model — your first call</a></li>
+          <li><a href="#s3">Define a tool the model can ask for</a></li>
+          <li><a href="#s4">The loop — run the tool, hand it back</a></li>
+          <li><a href="#s5">Let it chain — multi-step on its own</a></li>
+          <li><a href="#s6">Stop conditions — no runaway loops</a></li>
+          <li><a href="#s7">Structured output you can trust</a></li>
+          <li><a href="#s8">The open notebook — a test harness</a></li>
+          <li><a href="#s9">Stream it so it feels alive</a></li>
+          <li><a href="#s10">Wrap it as a CLI &amp; ship</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MENTAL MODEL -->
+    <div class="loop-map" id="s1">
+      <h3>Before any code: the picture in your head.</h3>
+      <div class="loop-flow" role="img" aria-label="Agent loop: you send a message, model replies, if it asks for a tool you run it and feed the result back, otherwise you're done">
+        <div class="node">
+          <span class="n-k">you</span>
+          <span class="n-t">send message</span>
+          <span class="n-d">a task + the list of tools</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="n-k">model</span>
+          <span class="n-t">replies</span>
+          <span class="n-d">text, or "use this tool"</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node loopback">
+          <span class="n-k">you</span>
+          <span class="n-t">run the tool</span>
+          <span class="n-d">feed result back → loop</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="n-k">model</span>
+          <span class="n-t">done</span>
+          <span class="n-d">final answer, no tool ask</span>
+        </div>
+      </div>
+      <p class="scribble" style="margin-top:1rem;">the dashed box is the only part you write. everything else is the API.</p>
+    </div>
+
+    <!-- STEP 2 -->
+    <article class="hack" id="s2">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Hello, model &mdash; the one call everything is built on. <span class="pill code">code</span></h2>
+        <p>
+          Before tools, before loops, get one round-trip working. Install the SDK,
+          set your key, send a message, print the reply. If this runs, you have
+          everything you need &mdash; the rest is just wrapping this call in logic.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">setup</span>
+          </div>
+<pre><span class="prompt">$</span> pip install anthropic
+<span class="prompt">$</span> export ANTHROPIC_API_KEY=<span class="str">sk-ant-...</span>   <span class="cmt"># keep this out of your code</span></pre>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">hello.py</span>
+          </div>
+<pre><span class="key">import</span> anthropic
+
+client = anthropic.<span class="fn">Anthropic</span>()  <span class="cmt"># reads the env var automatically</span>
+
+resp = client.messages.<span class="fn">create</span>(
+    model=<span class="str">"claude-sonnet-4-6"</span>,   <span class="cmt"># fast + cheap; bump to opus for hard reasoning</span>
+    max_tokens=<span class="amb">1024</span>,
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"In one sentence: what is an agent?"</span>},
+    ],
+)
+
+<span class="fn">print</span>(resp.content[<span class="amb">0</span>].text)</pre>
+        </div>
+
+        <p>
+          Two things to notice that trip up newcomers. The reply is a
+          <em>list</em> of content blocks, not a string &mdash; that's why it's
+          <code>resp.content[0].text</code>. And the conversation is stateless: the
+          API remembers nothing between calls. <b>You</b> carry the history. Hold
+          that thought &mdash; it's the entire reason the loop in step 04 looks the
+          way it does.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Run it. Then change the model to <code>claude-opus-4-8</code> and ask
+            something genuinely hard. Same code, different brain. That swap is
+            most of "tuning" in practice.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 3 -->
+    <article class="hack" id="s3">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Define a tool &mdash; teach the model what it's allowed to ask for. <span class="pill concept">concept</span></h2>
+        <p>
+          A "tool" is just a function you've described in JSON so the model knows
+          it exists. You're not giving the model your code &mdash; you're giving it a
+          menu. It reads the description, decides if it's relevant, and asks you to
+          run it with specific arguments. The schema is the contract.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">tools.py</span>
+          </div>
+<pre><span class="cmt"># 1. the menu entry the model reads</span>
+TOOLS = [
+    {
+        <span class="str">"name"</span>: <span class="str">"calculate"</span>,
+        <span class="str">"description"</span>: <span class="str">"Evaluate a basic arithmetic expression. "</span>
+                       <span class="str">"Use for any math the user asks for."</span>,
+        <span class="str">"input_schema"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"expression"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>,
+                               <span class="str">"description"</span>: <span class="str">"e.g. '42 * (3 + 1)'"</span>},
+            },
+            <span class="str">"required"</span>: [<span class="str">"expression"</span>],
+        },
+    },
+]
+
+<span class="cmt"># 2. the actual code that runs when the model picks it</span>
+<span class="key">def</span> <span class="fn">calculate</span>(expression: str) -> str:
+    <span class="key">return</span> <span class="fn">str</span>(<span class="fn">eval</span>(expression, {<span class="str">"__builtins__"</span>: {}}))  <span class="cmt"># sandboxed-ish</span>
+
+<span class="cmt"># 3. a lookup so the loop can find the function by name</span>
+DISPATCH = {<span class="str">"calculate"</span>: calculate}</pre>
+        </div>
+
+        <p>
+          The description field is doing more work than it looks like. The model
+          decides whether to call a tool based almost entirely on that sentence.
+          Vague description, and it'll guess or skip it; sharp description with a
+          "use this when…" hint, and it reaches for the right tool at the right
+          time. Treat tool descriptions like prompt engineering, because they are.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            <code>eval</code> is fine for a toy. The instant a tool touches the real
+            world &mdash; files, shell, HTTP &mdash; validate the input yourself before
+            running it. The model proposes; <b>your code disposes</b>. Never run a
+            tool argument you wouldn't run by hand.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 4 -->
+    <article class="hack" id="s4">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>The loop &mdash; run the tool, hand the result back. <span class="pill loop">the loop</span></h2>
+        <p>
+          Here's the heart of it. You send the message <em>with</em> the tools
+          attached. If the model just answers, you're done. If it asks for a tool,
+          its reply comes back with <code>stop_reason == "tool_use"</code>. You find
+          the tool-use blocks, run them, and append the results as a new
+          <code>user</code> message. Then you call again. That append-and-call-again
+          is the loop.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">agent.py — the core</span>
+          </div>
+<pre><span class="key">from</span> tools <span class="key">import</span> TOOLS, DISPATCH
+
+messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"What is 18% of 250, plus 12?"</span>}]
+
+resp = client.messages.<span class="fn">create</span>(
+    model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">1024</span>,
+    tools=TOOLS, messages=messages,
+)
+
+<span class="key">if</span> resp.stop_reason == <span class="str">"tool_use"</span>:
+    <span class="cmt"># 1. keep the model's turn in the history (required!)</span>
+    messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: resp.content})
+
+    <span class="cmt"># 2. run every tool it asked for, collect the results</span>
+    results = []
+    <span class="key">for</span> block <span class="key">in</span> resp.content:
+        <span class="key">if</span> block.type == <span class="str">"tool_use"</span>:
+            output = DISPATCH[block.name](**block.input)
+            results.<span class="fn">append</span>({
+                <span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+                <span class="str">"tool_use_id"</span>: block.id,   <span class="cmt"># must match the request</span>
+                <span class="str">"content"</span>: <span class="fn">str</span>(output),
+            })
+
+    <span class="cmt"># 3. hand results back as a user turn, ask again</span>
+    messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: results})
+    resp = client.messages.<span class="fn">create</span>(
+        model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">1024</span>,
+        tools=TOOLS, messages=messages,
+    )
+
+<span class="fn">print</span>(resp.content[<span class="amb">0</span>].text)
+<span class="out"># → "18% of 250 is 45, plus 12 is 57."</span></pre>
+        </div>
+
+        <p>
+          Read step 1 again, because it's the bug everyone hits: you have to append
+          the model's <em>own</em> tool-request turn to the history before you append
+          your results. Skip it and the API rejects the next call &mdash; a
+          <code>tool_result</code> has to answer a <code>tool_use</code> that's
+          actually in the transcript. The <code>tool_use_id</code> is the thread that
+          ties them together.
+        </p>
+
+        <p class="scribble">that's a working agent. one tool, one round-trip. everything after this is making it loop and behave.</p>
+      </div>
+    </article>
+
+    <!-- STEP 5 -->
+    <article class="hack" id="s5">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Let it chain &mdash; turn the if into a while. <span class="pill loop">the loop</span></h2>
+        <p>
+          Step 03 handled one tool call. Real tasks need several in a row &mdash;
+          read a file, <em>then</em> count something, <em>then</em> answer. The fix is
+          almost too simple: replace the <code>if</code> with a <code>while</code>.
+          Keep calling and feeding results back until the model stops asking for
+          tools. Now it can plan its own multi-step path.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">agent.py — the real loop</span>
+          </div>
+<pre><span class="key">def</span> <span class="fn">run_agent</span>(task: str) -> str:
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: task}]
+
+    <span class="key">while</span> <span class="amb">True</span>:
+        resp = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">1024</span>,
+            tools=TOOLS, messages=messages,
+        )
+
+        <span class="cmt"># no tool requested → the model is done talking</span>
+        <span class="key">if</span> resp.stop_reason != <span class="str">"tool_use"</span>:
+            <span class="key">return</span> resp.content[<span class="amb">0</span>].text
+
+        messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: resp.content})
+
+        results = []
+        <span class="key">for</span> block <span class="key">in</span> resp.content:
+            <span class="key">if</span> block.type == <span class="str">"tool_use"</span>:
+                <span class="fn">print</span>(<span class="str">f"  🔧 {block.name}({block.input})"</span>)  <span class="cmt"># watch it think</span>
+                output = DISPATCH[block.name](**block.input)
+                results.<span class="fn">append</span>({
+                    <span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+                    <span class="str">"tool_use_id"</span>: block.id,
+                    <span class="str">"content"</span>: <span class="fn">str</span>(output),
+                })
+
+        messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: results})</pre>
+        </div>
+
+        <p>
+          That <code>print</code> line is doing a lot for fifty characters. Watching
+          the tool calls scroll by is how you learn what the model is actually
+          reasoning about &mdash; and it's the first thing you'll reach for when an
+          agent does something weird. Cheap observability beats clever debugging.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Add a second tool &mdash; a <code>read_file(path)</code> &mdash; to your
+            <code>TOOLS</code> list and <code>DISPATCH</code>. Then ask:
+            <i>"How many import lines are in agent.py?"</i> Watch it read, then count.
+            That two-step with zero extra orchestration is the whole point.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 6 -->
+    <article class="hack" id="s6">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Stop conditions &mdash; because <code>while True</code> is a loaded gun. <span class="pill concept">concept</span></h2>
+        <p>
+          An unbounded loop plus a model that can get confused equals a meter that
+          spins forever. Three guardrails turn the toy into something you'd
+          actually leave running: a hard step cap, a missing-tool guard so a typo'd
+          tool name doesn't crash you, and a try/except so one broken tool becomes
+          feedback instead of a stack trace.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">guardrails</span>
+          </div>
+<pre><span class="key">def</span> <span class="fn">run_agent</span>(task: str, max_steps: int = <span class="amb">10</span>) -> str:
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: task}]
+
+    <span class="key">for</span> step <span class="key">in</span> <span class="fn">range</span>(max_steps):           <span class="cmt"># ← hard cap, not while True</span>
+        resp = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">1024</span>,
+            tools=TOOLS, messages=messages,
+        )
+        <span class="key">if</span> resp.stop_reason != <span class="str">"tool_use"</span>:
+            <span class="key">return</span> resp.content[<span class="amb">0</span>].text
+
+        messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: resp.content})
+        results = []
+        <span class="key">for</span> block <span class="key">in</span> resp.content:
+            <span class="key">if</span> block.type != <span class="str">"tool_use"</span>:
+                <span class="key">continue</span>
+            <span class="key">try</span>:
+                fn = DISPATCH.<span class="fn">get</span>(block.name)
+                <span class="key">if</span> fn <span class="key">is</span> <span class="amb">None</span>:
+                    out = <span class="str">f"Error: no tool named {block.name}"</span>
+                <span class="key">else</span>:
+                    out = <span class="fn">str</span>(fn(**block.input))
+            <span class="key">except</span> Exception <span class="key">as</span> e:
+                out = <span class="str">f"Error: {e}"</span>          <span class="cmt"># hand the error back as feedback</span>
+            results.<span class="fn">append</span>({<span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+                            <span class="str">"tool_use_id"</span>: block.id, <span class="str">"content"</span>: out})
+        messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: results})
+
+    <span class="key">return</span> <span class="str">"Hit the step limit without finishing."</span></pre>
+        </div>
+
+        <p>
+          The quietly clever bit: when a tool throws, you don't crash &mdash; you pass
+          the error message back as the tool result. The model reads
+          <i>"Error: file not found"</i> and adjusts, often retrying with a corrected
+          path. Errors become part of the conversation. That single habit is what
+          makes agents feel resilient instead of brittle.
+        </p>
+      </div>
+    </article>
+
+    <!-- STEP 7 -->
+    <article class="hack" id="s7">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Structured output &mdash; get JSON you can actually parse. <span class="pill code">code</span></h2>
+        <p>
+          Sometimes you don't want a chat &mdash; you want clean data. The reliable way
+          isn't "please reply in JSON" and hope. It's to define a tool whose schema
+          <em>is</em> your data shape, then force the model to call it with
+          <code>tool_choice</code>. Now the SDK hands you a validated object every
+          time, not a string you have to regex.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">extract.py</span>
+          </div>
+<pre>SCHEMA = [{
+    <span class="str">"name"</span>: <span class="str">"save_contact"</span>,
+    <span class="str">"description"</span>: <span class="str">"Record the structured contact details."</span>,
+    <span class="str">"input_schema"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {
+            <span class="str">"name"</span>:  {<span class="str">"type"</span>: <span class="str">"string"</span>},
+            <span class="str">"email"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>},
+            <span class="str">"role"</span>:  {<span class="str">"type"</span>: <span class="str">"string"</span>},
+        },
+        <span class="str">"required"</span>: [<span class="str">"name"</span>, <span class="str">"email"</span>],
+    },
+}]
+
+resp = client.messages.<span class="fn">create</span>(
+    model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">512</span>,
+    tools=SCHEMA,
+    tool_choice={<span class="str">"type"</span>: <span class="str">"tool"</span>, <span class="str">"name"</span>: <span class="str">"save_contact"</span>},  <span class="cmt"># force it</span>
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>:
+        <span class="str">"Hi, I'm Dana Reyes, lead PM, dana@acme.co"</span>}],
+)
+
+data = resp.content[<span class="amb">0</span>].input   <span class="cmt"># already a dict, schema-validated</span>
+<span class="fn">print</span>(data)
+<span class="out"># → {'name': 'Dana Reyes', 'email': 'dana@acme.co', 'role': 'lead PM'}</span></pre>
+        </div>
+
+        <p>
+          This is the move that turns an LLM into a parser you can wire into real
+          pipelines &mdash; messy email in, typed record out. Same trick scales to
+          classification, data cleanup, pulling fields out of PDFs. Whenever you
+          catch yourself about to write "respond only with JSON," reach for a
+          forced tool instead.
+        </p>
+      </div>
+    </article>
+
+    <!-- STEP 8 -->
+    <article class="hack" id="s8">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The open notebook &mdash; a scratch harness you keep open. <span class="pill concept">concept</span></h2>
+        <p>
+          This is the habit that made me actually fast: a tiny test file I run on
+          every change, with a few fixed prompts and a clock. Not a unit-test
+          suite &mdash; a notebook. It tells me at a glance whether a tweak to a tool
+          description helped or quietly broke something. Cheap, ugly, indispensable.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">scratch.py</span>
+          </div>
+<pre><span class="key">import</span> time
+<span class="key">from</span> agent <span class="key">import</span> run_agent
+
+CASES = [
+    (<span class="str">"What is 18% of 250, plus 12?"</span>,            <span class="str">"57"</span>),
+    (<span class="str">"How many import lines in agent.py?"</span>,        <span class="amb">None</span>),
+    (<span class="str">"Read tools.py and list the tool names."</span>,    <span class="str">"calculate"</span>),
+]
+
+<span class="key">for</span> prompt, expect <span class="key">in</span> CASES:
+    t = time.<span class="fn">perf_counter</span>()
+    out = <span class="fn">run_agent</span>(prompt)
+    dt = time.<span class="fn">perf_counter</span>() - t
+    hit = <span class="str">"·"</span> <span class="key">if</span> expect <span class="key">is</span> <span class="amb">None</span> <span class="key">else</span> (<span class="str">"✓"</span> <span class="key">if</span> expect <span class="key">in</span> out <span class="key">else</span> <span class="str">"✗"</span>)
+    <span class="fn">print</span>(<span class="str">f"{hit}  {dt:4.1f}s  {prompt[:38]:38}  → {out[:46]}"</span>)</pre>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">$ python scratch.py</span>
+          </div>
+<pre><span class="out">✓   1.2s  What is 18% of 250, plus 12?            → 18% of 250 is 45, plus 12 is 57.</span>
+<span class="out">·   2.8s  How many import lines in agent.py?      → There are 2 import lines.</span>
+<span class="out">✓   3.1s  Read tools.py and list the tool names.  → The tools are: calculate, read_file.</span></pre>
+        </div>
+
+        <p>
+          Run this after every change. When a "tiny" edit to a tool description
+          flips a <code>✓</code> to <code>✗</code>, you'll catch it in seconds instead
+          of in production. The timer column is a bonus &mdash; it's how you notice
+          you accidentally put the slow model on the hot path. Keep the notebook
+          open in a split pane and let it be your conscience.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Models aren't perfectly deterministic, so an occasional flake is normal
+            &mdash; don't chase a single <code>✗</code> on a fuzzy case. Watch the
+            <i>pattern</i> across runs, and reserve hard assertions for the cases
+            that genuinely should be stable (like the math).
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 9 -->
+    <article class="hack" id="s9">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Stream it &mdash; make the wait feel like thinking, not lag. <span class="pill code">code</span></h2>
+        <p>
+          A four-second silent pause feels broken. The same four seconds with text
+          appearing word by word feels alive. Streaming is a one-line change to how
+          you read the response &mdash; use <code>messages.stream()</code> and print the
+          text deltas as they arrive.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">streaming a reply</span>
+          </div>
+<pre><span class="key">with</span> client.messages.<span class="fn">stream</span>(
+    model=<span class="str">"claude-sonnet-4-6"</span>, max_tokens=<span class="amb">1024</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Explain the agent loop to a 12-year-old."</span>}],
+) <span class="key">as</span> stream:
+    <span class="key">for</span> text <span class="key">in</span> stream.text_stream:
+        <span class="fn">print</span>(text, end=<span class="str">""</span>, flush=<span class="amb">True</span>)   <span class="cmt"># tokens land as they come</span>
+
+final = stream.<span class="fn">get_final_message</span>()      <span class="cmt"># full object after, for the loop</span></pre>
+        </div>
+
+        <p>
+          For a tool-using agent you mostly stream the <em>final</em> answer &mdash; the
+          one after the tools have run &mdash; while keeping the intermediate
+          tool-handling exactly as before. <code>get_final_message()</code> hands you
+          the same complete object the non-streaming call returned, so the loop
+          logic from step 05 doesn't change at all. You're only changing how the
+          last turn is rendered.
+        </p>
+
+        <p class="scribble">streaming is pure UX. the model isn't faster — it just stops feeling stuck.</p>
+      </div>
+    </article>
+
+    <!-- STEP 10 -->
+    <article class="hack" id="s10">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Wrap it as a CLI &mdash; from script to thing you actually use. <span class="pill loop">ship it</span></h2>
+        <p>
+          The last yard is making it runnable without editing the file. Forty lines
+          of glue: a system prompt that sets the agent's job, an input loop, and a
+          way to quit. This is the version that lives in my <code>~/bin</code> and gets
+          used on real Tuesdays.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cli.py</span>
+          </div>
+<pre><span class="key">import</span> sys
+<span class="key">from</span> agent <span class="key">import</span> run_agent
+
+SYSTEM = (
+    <span class="str">"You are a terse local assistant with file and math tools. "</span>
+    <span class="str">"Prefer using a tool over guessing. Show your final answer plainly."</span>
+)
+
+<span class="key">def</span> <span class="fn">main</span>():
+    <span class="fn">print</span>(<span class="str">"agent ready — Ctrl-C to quit\n"</span>)
+    <span class="key">while</span> <span class="amb">True</span>:
+        <span class="key">try</span>:
+            task = <span class="fn">input</span>(<span class="str">"you › "</span>).strip()
+        <span class="key">except</span> (EOFError, KeyboardInterrupt):
+            <span class="fn">print</span>(<span class="str">"\nbye"</span>); <span class="key">return</span>
+        <span class="key">if</span> <span class="key">not</span> task:
+            <span class="key">continue</span>
+        answer = <span class="fn">run_agent</span>(task, system=SYSTEM)
+        <span class="fn">print</span>(<span class="str">f"\nai  › {answer}\n"</span>)
+
+<span class="key">if</span> __name__ == <span class="str">"__main__"</span>:
+    <span class="fn">main</span>()</pre>
+        </div>
+
+        <p>
+          Pass that <code>system</code> string into your <code>messages.create</code>
+          calls via the <code>system=</code> parameter &mdash; it's the agent's job
+          description and the cheapest lever you have on behavior. Then
+          <code>chmod +x</code>, drop a shebang on top, symlink it into your path, and
+          you've got a personal agent you built end to end and understand every
+          line of.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Once this is a habit, add <b>prompt caching</b>: mark your big static
+            system prompt and tool definitions with
+            <code>"cache_control": {"type": "ephemeral"}</code>. The model re-reads
+            them every loop turn &mdash; caching makes that cheap and fast. It's the
+            single highest-leverage optimization for a chatty agent.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole agent, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The mental model</h4>
+          <ul>
+            <li><code>agent</code><span>= while loop + tools</span></li>
+            <li><code>you</code><span>carry the message history</span></li>
+            <li><code>tool</code><span>= a JSON-described function</span></li>
+            <li><code>tool_use</code><span>model asks; you run it</span></li>
+            <li><code>tool_result</code><span>your answer, back to it</span></li>
+            <li><code>stop_reason</code><span>not "tool_use" → done</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The loop, in order</h4>
+          <ul>
+            <li><code>1</code><span>send task + tools</span></li>
+            <li><code>2</code><span>tool_use? append assistant turn</span></li>
+            <li><code>3</code><span>run tools, collect results</span></li>
+            <li><code>4</code><span>append results as user turn</span></li>
+            <li><code>5</code><span>call again — repeat</span></li>
+            <li><code>6</code><span>else: return the text</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Don't-skip guardrails</h4>
+          <ul>
+            <li><code>max_steps</code><span>cap the loop, never while True</span></li>
+            <li><code>try/except</code><span>errors → feedback, not crash</span></li>
+            <li><code>.get(name)</code><span>guard unknown tool names</span></li>
+            <li><code>validate</code><span>check args before running</span></li>
+            <li><code>print 🔧</code><span>log every tool call</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Level-ups</h4>
+          <ul>
+            <li><code>tool_choice</code><span>force structured JSON out</span></li>
+            <li><code>scratch.py</code><span>a notebook you run every change</span></li>
+            <li><code>.stream()</code><span>make waits feel alive</span></li>
+            <li><code>system=</code><span>the agent's job description</span></li>
+            <li><code>cache_control</code><span>cache prompt + tools</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-01</small>
+      </div>
+      <div class="end">
+        next entry · <code>giving your agent memory</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

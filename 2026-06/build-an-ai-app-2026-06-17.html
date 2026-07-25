@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Build an AI App in an Afternoon — Frontend + Model, the Non-Dev Way · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: nine steps for wiring a real frontend to a real AI model — prompt to PageConfig to a styled, streaming app. Claude and Gemini, side by side." />
+  <meta property="og:title" content="Build an AI App in an Afternoon — Frontend + Model, the Non-Dev Way" />
+  <meta property="og:description" content="Nine steps from a one-line idea to a streaming, styled AI app. The contract, the prompt, the stream, the design pass — Claude and Gemini compared." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* STEP BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.terminal { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.design  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.model { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Compare cards (Claude vs Gemini) */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+    .compare .card {
+      border-radius: var(--radius-md);
+      padding: 0.95rem 1.05rem;
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .compare .card.claude { background: var(--amber-wash); border-color: oklch(0.82 0.07 70); }
+    .compare .card.gemini { background: var(--accent-wash); border-color: oklch(0.82 0.05 250); }
+    .compare .card h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .compare .card.claude h4 { color: oklch(0.42 0.13 68); }
+    .compare .card.gemini h4 { color: var(--accent-ink); }
+    .compare .card p { font-size: 0.9rem; color: var(--ink-soft); }
+    .compare .card p + p { margin-top: 0.5rem; }
+    .compare .card b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 42ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Step ladder (intro) */
+    .ladder {
+      display: grid;
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+    .ladder .rung {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.6rem;
+      align-items: baseline;
+      font-size: 0.92rem;
+      color: var(--ink-soft);
+    }
+    .ladder .rung b { color: var(--ink); }
+    .ladder .rung .n {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 17</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;17</span>
+        <span class="tag">build</span>
+        <span class="tag">ai-app</span>
+      </div>
+
+      <h1>Build an AI app in an <span class="accent">afternoon</span> &mdash; frontend + model, the non-dev way.</h1>
+
+      <p class="deck">
+        Past notebooks were about the model in a chat box. This one is about the
+        model behind glass &mdash; wired into a real interface that streams, renders,
+        and looks like you meant it. Nine steps from a one-line idea to a styled,
+        working app. No CS degree. A model that does the heavy lifting, and a
+        contract that keeps it honest.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~15 min</span>
+        <span><b>Stack</b> · Next.js + Tailwind + a model API</span>
+        <span><b>Assumes</b> · you can run <code>npm</code></span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The thing nobody tells you when you're not a developer: the model is the
+          easy part. The model has been trained to write your function. What it
+          can't read your mind about is the <em>shape</em> of what comes back, and
+          where on the page it lands. So that's where I learned to spend my effort
+          &mdash; not on the AI, on the contract around it.
+        </p>
+        <p>
+          I built three of these before it clicked. Every time I tried to design the
+          screen first and bolt the model on later, I'd end up with a beautiful box
+          that received an unpredictable blob of text. The flip &mdash; decide the
+          data shape first, make the model promise to fill it, <em>then</em> design
+          around that shape &mdash; is the whole trick. Roma Armstrong calls the shape
+          a <b>PageConfig</b>. I just call it the contract.
+        </p>
+        <p>
+          Here's the order I follow now. Steal the steps that fit; the closer to the
+          top, the more it matters if you skip it.
+        </p>
+
+        <div class="ladder" aria-hidden="true">
+          <div class="rung"><span class="n">01–03</span><span><b>The contract</b> — idea, JSON shape, the prompt that fills it</span></div>
+          <div class="rung"><span class="n">04–06</span><span><b>The wiring</b> — server route, the stream, render the shape</span></div>
+          <div class="rung"><span class="n">07–09</span><span><b>The polish</b> — design pass, the empty/error states, ship it</span></div>
+        </div>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#h1">One sentence, then scope it down</a></li>
+          <li><a href="#h2">Decide the shape first (the contract)</a></li>
+          <li><a href="#h3">Write the prompt that fills the shape</a></li>
+          <li><a href="#h4">A server route that holds the key</a></li>
+          <li><a href="#h5">Stream it, don't make them wait</a></li>
+          <li><a href="#h6">Render the shape into panels</a></li>
+          <li><a href="#h7">The design pass — Claude vs Gemini</a></li>
+          <li><a href="#h8">Empty, loading, broken — the unglamorous states</a></li>
+          <li><a href="#h9">Ship it free, share the link</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- STEP 1 -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Say it in one sentence &mdash; then cut it in half. <span class="pill">scope</span></h2>
+        <p>
+          Every app I've actually finished started as a sentence I could say out loud.
+          "A page where I paste a job description and it spits back three resume
+          bullet points." Notice what that sentence does: it names <b>one input</b>,
+          <b>one model call</b>, and <b>one shaped output</b>. That's an afternoon.
+        </p>
+        <p>
+          The version that never ships sounds like "a career platform with profiles
+          and saved history and a dashboard." Same idea, fifty times the surface.
+          The cut is the skill. For a first build, if your sentence has the word
+          "and" twice, delete one.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">scoping out loud</span>
+          </div>
+<pre><span class="cmt"># too big — three apps wearing a trenchcoat</span>
+<span class="out">"a tool that writes posts AND schedules them AND tracks analytics"</span>
+
+<span class="cmt"># right size — one input, one call, one output</span>
+<span class="key">input</span>    → a rough idea + a platform (X / LinkedIn)
+<span class="key">call</span>     → one model request
+<span class="key">output</span>   → 3 drafts in that platform's voice</pre>
+        </div>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Write your idea as <b>input → call → output</b> on one line. If you can't,
+            you don't have an app yet &mdash; you have a category. Narrow until it fits.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Decide the output <em>shape</em> before you design anything. <span class="pill model">contract</span></h2>
+        <p>
+          This is the step I skipped for months and the one that changed everything.
+          Before I touch a single pixel, I write down the exact JSON the model has to
+          return. Not the prose &mdash; the <b>structure</b>. Once that shape exists, the
+          UI almost designs itself, because every field is a thing on the screen.
+        </p>
+        <p>
+          Roma's PageConfig idea is just this taken seriously: the model doesn't
+          return text, it returns a typed object, and your frontend is a renderer for
+          that object. The model becomes a content database that thinks.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the-shape.ts</span>
+          </div>
+<pre><span class="cmt">// the contract. write this first, by hand.</span>
+<span class="key">type</span> <span class="amb">Draft</span> = {
+  platform: <span class="str">"x"</span> | <span class="str">"linkedin"</span>;
+  drafts: {
+    hook: <span class="key">string</span>;       <span class="cmt">// the first line</span>
+    body: <span class="key">string</span>;
+    charCount: <span class="key">number</span>;   <span class="cmt">// so the UI can warn on limits</span>
+  }[];
+}</pre>
+        </div>
+
+        <p>
+          Notice <code>charCount</code> is in there even though the model doesn't
+          strictly need it. I put it in because the <em>screen</em> needs it &mdash; I want
+          a little "248 / 280" counter under each draft. Designing the shape <em>is</em>
+          designing the app. You just don't know it yet.
+        </p>
+
+        <p class="scribble">if a field isn't going to show up on screen, ask why the model is returning it.</p>
+      </div>
+    </article>
+
+    <!-- STEP 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Write the prompt that <em>fills</em> the shape, not one that "writes posts." <span class="pill model">model</span></h2>
+        <p>
+          Now the prompt has an easy job. It isn't being asked to be creative in a
+          vacuum &mdash; it's being asked to fill in a form you already drew. I give the
+          model the schema, one good example, and a hard rule: return only the JSON.
+          Both Claude and Gemini have a real <b>JSON mode</b> for this; turn it on and
+          half your parsing bugs disappear.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the prompt</span>
+          </div>
+<pre><span class="cmt">// system</span>
+<span class="out">You turn a rough idea into 3 social drafts.
+Return ONLY valid JSON matching this shape:</span>
+{ platform, drafts: [{ hook, body, charCount }] }
+
+<span class="cmt">// rules that save you later</span>
+- <span class="key">charCount</span> must be the real length of <span class="key">body</span>
+- <span class="key">hook</span> is one line, no hashtags
+- if the idea is empty, return drafts: []   <span class="cmt">← defines the edge case now</span></pre>
+        </div>
+
+        <p>
+          That last rule is doing a lot of quiet work. By telling the model what to
+          do with bad input <em>in the prompt</em>, I've defined my empty state before I
+          ever build it (see step 8). The prompt and the contract are the same
+          document seen from two sides.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Ask for JSON and you'll still get a model that occasionally wraps it in
+            <code>```json</code> fences or a "Sure! Here you go:". Strip fences and
+            <code>JSON.parse</code> inside a <code>try/catch</code>. Never trust the first
+            token to be <code>{</code>.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Put the API key on a server route &mdash; never in the browser. <span class="pill terminal">wiring</span></h2>
+        <p>
+          The one rule that isn't optional. Your model API key is a password to your
+          credit card. If it ships to the browser, anyone who opens DevTools can read
+          it and spend your money. So the call happens on a server route; the browser
+          talks to <em>your</em> route, your route talks to the model.
+        </p>
+        <p>
+          In Next.js that's one file. The key lives in <code>.env.local</code>, which
+          never leaves your machine and never gets committed.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">app/api/draft/route.ts</span>
+          </div>
+<pre><span class="key">import</span> { NextRequest } <span class="key">from</span> <span class="str">"next/server"</span>;
+
+<span class="key">export async function</span> <span class="amb">POST</span>(req: NextRequest) {
+  <span class="key">const</span> { idea, platform } = <span class="key">await</span> req.json();
+
+  <span class="key">const</span> res = <span class="key">await</span> fetch(<span class="str">"https://api.anthropic.com/v1/messages"</span>, {
+    method: <span class="str">"POST"</span>,
+    headers: {
+      <span class="str">"x-api-key"</span>: process.env.<span class="key">ANTHROPIC_API_KEY</span>!,  <span class="cmt">// stays server-side</span>
+      <span class="str">"anthropic-version"</span>: <span class="str">"2023-06-01"</span>,
+      <span class="str">"content-type"</span>: <span class="str">"application/json"</span>,
+    },
+    body: JSON.stringify({ model: <span class="str">"claude-..."</span>, max_tokens: 1024, messages: [...] }),
+  });
+
+  <span class="key">return new</span> Response(res.body);  <span class="cmt">// hand the stream straight back</span>
+}</pre>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Add <code>.env.local</code> to <code>.gitignore</code> <b>before</b> your first
+            commit, not after. A leaked key in git history is leaked forever, even if
+            you delete the file in the next commit. Rotate it immediately if it slips.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Stream the response &mdash; the wait is what makes it feel cheap. <span class="pill terminal">wiring</span></h2>
+        <p>
+          A model call takes a few seconds. If your app shows a dead spinner the whole
+          time, it feels broken even when it's working. The fix is streaming: the
+          model sends tokens as it writes them, and you paint them as they arrive.
+          Same total time, completely different feeling &mdash; the difference between
+          "is this thing on?" and "oh, it's thinking."
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the browser side — read the stream</span>
+          </div>
+<pre><span class="key">const</span> res = <span class="key">await</span> fetch(<span class="str">"/api/draft"</span>, {
+  method: <span class="str">"POST"</span>,
+  body: JSON.stringify({ idea, platform }),
+});
+
+<span class="key">const</span> reader = res.body!.getReader();
+<span class="key">const</span> decoder = <span class="key">new</span> TextDecoder();
+<span class="key">let</span> buffer = <span class="str">""</span>;
+
+<span class="key">while</span> (<span class="key">true</span>) {
+  <span class="key">const</span> { done, value } = <span class="key">await</span> reader.read();
+  <span class="key">if</span> (done) <span class="key">break</span>;
+  buffer += decoder.decode(value);
+  setRawText(buffer);   <span class="cmt">// paint partial output live</span>
+}</pre>
+        </div>
+
+        <p>
+          For a structured-JSON app there's a wrinkle: half-streamed JSON isn't valid
+          JSON yet. So while it streams I show the raw text in a "thinking" panel,
+          and only parse into the real shape once <code>done</code> is true. Cal's
+          open-notebook move here is to just <code>console.log(buffer)</code> on every
+          chunk the first time, watch it fill in your terminal, and <em>then</em> decide
+          how to display it. See the machine work before you dress it up.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Before building any UI, log each chunk to the console and just watch the
+            text assemble itself. It's weirdly satisfying, and it tells you exactly
+            what your render code has to handle.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Render the shape into panels &mdash; one field, one element. <span class="pill design">render</span></h2>
+        <p>
+          Because you wrote the contract in step 2, this part is almost boring &mdash; in
+          the good way. You <code>.map()</code> over <code>drafts</code> and each field
+          becomes a thing you can see. The hook is a heading, the body is a paragraph,
+          the <code>charCount</code> is the little counter you planned for. No surprises,
+          because you decided the shape before the model ever ran.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">draft-list.tsx</span>
+          </div>
+<pre>{data.drafts.map((d, i) =&gt; (
+  &lt;<span class="amb">article</span> key={i} className=<span class="str">"rounded-xl border p-5"</span>&gt;
+    &lt;<span class="amb">h3</span> className=<span class="str">"font-semibold"</span>&gt;{d.hook}&lt;/<span class="amb">h3</span>&gt;
+    &lt;<span class="amb">p</span> className=<span class="str">"mt-2 text-neutral-700"</span>&gt;{d.body}&lt;/<span class="amb">p</span>&gt;
+    &lt;<span class="amb">span</span> className={d.charCount &gt; limit ? <span class="str">"text-red-600"</span> : <span class="str">"text-neutral-400"</span>}&gt;
+      {d.charCount} / {limit}
+    &lt;/<span class="amb">span</span>&gt;
+  &lt;/<span class="amb">article</span>&gt;
+))}</pre>
+        </div>
+
+        <p>
+          That's the whole render. The contract did the architecture; the JSX is just
+          reading it out loud. This is the moment the "model is the easy part" claim
+          from the intro pays off &mdash; you're not wrestling text, you're displaying a
+          known object.
+        </p>
+      </div>
+    </article>
+
+    <!-- STEP 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The design pass &mdash; and why Claude and Gemini feel different here. <span class="pill design">design</span></h2>
+        <p>
+          Now it works and looks like a homework assignment. The design pass is where
+          you hand the model your bare component and ask it to make it feel made. This
+          is also where the two big models show their personalities &mdash; and knowing
+          the difference saves you a lot of nudging.
+        </p>
+
+        <div class="compare">
+          <div class="card claude">
+            <h4>Claude leans warm + editorial</h4>
+            <p>
+              Reaches for <b>generous padding</b>, softer neutrals, real type hierarchy,
+              and restraint. Ask for "a clean tool" and you tend to get whitespace and
+              calm. Great default for anything content-shaped.
+            </p>
+            <p>
+              <b>Nudge it with:</b> "denser, more data per screen" when it gets too airy.
+            </p>
+          </div>
+          <div class="card gemini">
+            <h4>Gemini leans dense + structural</h4>
+            <p>
+              Reaches for <b>data-rich layouts</b> &mdash; tables, multi-panel grids, tight
+              rows, dashboard energy. Strong when your app is genuinely information-
+              heavy. Can feel cramped for a simple tool.
+            </p>
+            <p>
+              <b>Nudge it with:</b> "more breathing room, fewer elements" to loosen it up.
+            </p>
+          </div>
+        </div>
+
+        <p>
+          Whichever you use, give it the same guardrails I keep in my own design notes
+          so the output is consistent instead of vibes: a <b>4px spacing grid</b>
+          (8 / 16 / 32 / 64), a <b>1200px max content width</b>, body text contrast at
+          <b>4.5:1</b>, and <b>44px touch targets</b>. Hand those numbers to the model and
+          "make it nicer" stops being a coin flip.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the design-pass prompt</span>
+          </div>
+<pre><span class="out">Restyle this component. Constraints, not suggestions:</span>
+- spacing on a 4px grid (8 / 16 / 32 / 64 only)
+- max content width 1200px, centered
+- text contrast &gt;= 4.5:1, interactive targets &gt;= 44px
+- one accent color, light mode, mobile-first
+<span class="out">Keep the markup and props identical. Style only.</span></pre>
+        </div>
+
+        <p class="scribble">"keep the markup identical, style only" stops the model from quietly rewriting your working logic.</p>
+      </div>
+    </article>
+
+    <!-- STEP 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Build the unglamorous states &mdash; empty, loading, broken. <span class="pill design">render</span></h2>
+        <p>
+          This is the gap between a demo and a thing people can actually use. A demo
+          handles the happy path. An app handles the moment the model returns nothing,
+          times out, or sends back garbage. The good news: you defined two of these
+          back in step 3, so you're just building what the contract already promised.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the three states you owe the user</span>
+          </div>
+<pre><span class="cmt">// 1. empty — they haven't run it yet</span>
+<span class="key">if</span> (!data &amp;&amp; !loading)  → <span class="str">"Paste an idea above to get started."</span>
+
+<span class="cmt">// 2. loading — the stream is mid-flight</span>
+<span class="key">if</span> (loading)           → show the partial text + a soft pulse
+
+<span class="cmt">// 3. broken — parse failed or the API errored</span>
+<span class="key">catch</span> (e)              → <span class="str">"That didn't come back clean. Try again?"</span>
+                          + a retry button, not a stack trace</pre>
+        </div>
+
+        <p>
+          The error message is a copy decision, not just an engineering one. "That
+          didn't come back clean. Try again?" tells a real person what to do.
+          <code>Error: SyntaxError unexpected token &lt;</code> tells them your app is
+          broken and they should leave. Same failure, opposite outcome.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Test the broken path on purpose: unplug your wifi mid-request, or feed the
+            model an empty idea. If your app explodes, your users found the bug before
+            you did. Break it yourself first.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- STEP 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Ship it free, get the link, send it to one person. <span class="pill terminal">ship</span></h2>
+        <p>
+          The last 10% that never happens for most people. A project on your laptop
+          isn't real until someone else can open it. Push to GitHub, point Vercel at
+          the repo, paste your key into their environment variables UI (not the repo),
+          and you get a live URL in about two minutes.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">ship it</span>
+          </div>
+<pre><span class="prompt">$</span> git init &amp;&amp; git add . &amp;&amp; git commit -m <span class="str">"first draft"</span>
+<span class="prompt">$</span> gh repo create my-draft-tool --public --source=. --push
+
+<span class="cmt"># then on vercel.com:</span>
+<span class="cmt">#   New Project → import the repo → add ANTHROPIC_API_KEY</span>
+<span class="cmt">#   in Settings → Environment Variables → Deploy</span>
+
+<span class="out">✓ https://my-draft-tool.vercel.app  — live, shareable, free tier</span></pre>
+        </div>
+
+        <p>
+          Then do the part that actually matters: send the link to <em>one</em> person who
+          fits the use case and watch them use it without explaining anything. Every
+          place they hesitate is your real next step &mdash; not the feature you imagined,
+          the friction they hit. That's how an afternoon project becomes a second one.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Set the key in <b>Vercel's environment variables</b>, never in the code.
+            Same rule as step 4, one layer up: the platform holds the secret, the repo
+            stays clean enough to make public.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole build, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The contract (do first)</h4>
+          <ul>
+            <li><code>1</code><span>one sentence: input → call → output</span></li>
+            <li><code>2</code><span>write the JSON shape by hand</span></li>
+            <li><code>3</code><span>prompt fills the shape, JSON mode on</span></li>
+            <li><code>·</code><span>define the empty case in the prompt</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>The wiring</h4>
+          <ul>
+            <li><code>4</code><span>key on a server route, never browser</span></li>
+            <li><code>·</code><span><code>.env.local</code> in <code>.gitignore</code> first</span></li>
+            <li><code>5</code><span>stream tokens, paint as they arrive</span></li>
+            <li><code>6</code><span>map the shape → one field, one element</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Design constraints</h4>
+          <ul>
+            <li><code>grid</code><span>4px base — 8 / 16 / 32 / 64</span></li>
+            <li><code>width</code><span>1200px max, centered</span></li>
+            <li><code>a11y</code><span>4.5:1 text, 44px targets</span></li>
+            <li><code>style</code><span>"keep markup, style only"</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Model personalities</h4>
+          <ul>
+            <li><code>claude</code><span>warm, airy, editorial — content tools</span></li>
+            <li><code>gemini</code><span>dense, structural — data dashboards</span></li>
+            <li><code>states</code><span>empty / loading / broken — owe all 3</span></li>
+            <li><code>ship</code><span>Vercel + env var, link to one human</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-17</small>
+      </div>
+      <div class="end">
+        next entry · <code>the contract is the app</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

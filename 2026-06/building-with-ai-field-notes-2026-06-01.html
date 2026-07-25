@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt to Product — Ten Moves for Building Real Frontends with Claude &amp; Gemini · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: going from a one-line prompt to a designed, working AI frontend — Artifacts, the design knobs, PageConfig JSON, streaming with the AI SDK, and the eval loop that keeps it honest." />
+  <meta property="og:title" content="Prompt to Product — Ten Moves for Building Real Frontends with Claude & Gemini" />
+  <meta property="og:description" content="From a sentence to a shipped app — Artifacts as a canvas, Claude vs Gemini design, wiring a model into a React frontend, and testing it like an engineer." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-pink:  oklch(0.80 0.12 350);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MOVE BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.terminal { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.gemini   { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.claude   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.engineer { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.ship     { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .pnk { color: var(--code-pink); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Model picker / compare */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+    .compare .card {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1rem;
+    }
+    .compare .card.warm  { border-top: 3px solid var(--amber); }
+    .compare .card.cool  { border-top: 3px solid var(--accent); }
+    .compare .card h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .compare .card.warm h4 { color: oklch(0.42 0.13 68); }
+    .compare .card.cool h4 { color: var(--accent-ink); }
+    .compare .card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+    .compare .card li {
+      font-size: 0.9rem; color: var(--ink-soft);
+      padding-left: 1.1rem; position: relative;
+    }
+    .compare .card li::before {
+      content: '›'; position: absolute; left: 0; color: var(--ink-mute);
+    }
+
+    /* knob row */
+    .knobs { display: grid; gap: 0.5rem; }
+    .knob {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+      gap: 0.85rem;
+      align-items: baseline;
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .knob .lbl { font-family: 'Geist Mono', monospace; font-size: 0.82rem; color: var(--ink); font-weight: 600; }
+    .knob .desc { font-size: 0.9rem; color: var(--ink-soft); }
+    @media (max-width: 560px) { .knob { grid-template-columns: 1fr; gap: 0.25rem; } }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 40ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it above your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 07</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;01</span>
+        <span class="tag">ai</span>
+        <span class="tag">build</span>
+      </div>
+
+      <h1>Prompt to product &mdash; <span class="accent">ten moves</span> for building real frontends with Claude &amp; Gemini.</h1>
+
+      <p class="deck">
+        The GitHub notebooks were about the tools. This one is about the loop &mdash;
+        how a single sentence becomes a designed, working AI app. Artifacts as a
+        canvas, the design knobs that make Claude output feel warm, Gemini turning
+        a prompt into a React panel, and the wiring + eval habits that keep the
+        thing honest once it leaves the chat window. Learned hands-on, written down
+        so the next person skips the flailing.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~16 min</span>
+        <span><b>Surface</b> · Claude · Gemini · the AI SDK</span>
+        <span><b>Assumes</b> · you can read JS, not write models</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          I am not a developer. I orchestrate. So everything in here is written
+          from the seat of someone who describes what they want, watches a model
+          build it, and then learns just enough to wire it together and ship.
+          Turns out that seat is a great place to build from in 2026 &mdash; the gap
+          between &ldquo;I have an idea&rdquo; and &ldquo;it&rsquo;s on the internet&rdquo; has never been thinner.
+        </p>
+        <p>
+          The trick nobody tells you: building <em>with</em> an AI model is a different
+          skill than prompting one for an answer. It&rsquo;s a loop. Describe &rarr; look &rarr;
+          adjust one thing &rarr; look again. The people who are fast at it aren&rsquo;t
+          smarter &mdash; they just have the loop wired into muscle memory.
+        </p>
+        <p>
+          Format below mirrors the last few notebooks: each move gets a number, a
+          one-line claim, a real demo, and a crumb you can try in the next ten
+          minutes. Top of the list is where you start; bottom is where you ship.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#m1">Pick your partner — warmth vs. density</a></li>
+          <li><a href="#m2">Write the prompt like a spec</a></li>
+          <li><a href="#m3">Artifacts as a live canvas</a></li>
+          <li><a href="#m4">The design knobs that make it feel made</a></li>
+          <li><a href="#m5">Gemini: prompt → <code>PageConfig</code> → Next.js</a></li>
+          <li><a href="#m6">Wire the model in — streaming</a></li>
+          <li><a href="#m7">The open notebook — a local test script</a></li>
+          <li><a href="#m8">Iterate by screenshot</a></li>
+          <li><a href="#m9">The eval loop — stay honest</a></li>
+          <li><a href="#m10">Ship the thing</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="m1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Pick your partner &mdash; warmth vs. density. <span class="pill design">design</span></h2>
+        <p>
+          Before any code, one decision saves you an hour of fighting the output:
+          which model are you handing the wheel? They have personalities. After a
+          few dozen builds you start reaching for them like different pens. This is
+          the breakdown I&rsquo;d give a friend over coffee, not a benchmark table.
+        </p>
+
+        <div class="compare">
+          <div class="card warm">
+            <h4>Reach for Claude when</h4>
+            <ul>
+              <li>You want it to <b>look designed</b> — padding, warmth, editorial type</li>
+              <li>The surface is an Artifact, a landing page, a polished component</li>
+              <li>You care about taste defaults more than raw data plumbing</li>
+              <li>You&rsquo;re iterating on <em>feel</em>: &ldquo;softer,&rdquo; &ldquo;more whitespace,&rdquo; &ldquo;less corporate&rdquo;</li>
+            </ul>
+          </div>
+          <div class="card cool">
+            <h4>Reach for Gemini when</h4>
+            <ul>
+              <li>You&rsquo;re building <b>data-dense</b> UI — dashboards, tables, multi-panel</li>
+              <li>You want structured output: JSON configs, schemas, typed arrays</li>
+              <li>You need a giant context window or native image/video in the loop</li>
+              <li>The job is &ldquo;turn this spec into scaffolding&rdquo; more than &ldquo;make it pretty&rdquo;</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          This isn&rsquo;t loyalty, it&rsquo;s casting. I&rsquo;ll draft a layout in Claude because its
+          default spacing and type already feel human, then hand the data wiring to
+          Gemini when there&rsquo;s a wall of structured records to model. Same project,
+          two pens.
+        </p>
+
+        <p class="scribble">Luis P&rsquo;s whole beat is this: Claude manages warmth &amp; grid; Gemini wins on data structure. Watch one comparison and you&rsquo;ll feel it.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="m2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Write the prompt like a spec, not a wish. <span class="pill claude">claude</span></h2>
+        <p>
+          The single biggest upgrade to my output wasn&rsquo;t a better model &mdash; it was
+          writing the ask like a brief. &ldquo;Make me a dashboard&rdquo; gets you a generic
+          dashboard. A model can only be as specific as you are. So I front-load
+          four things: <b>what it is</b>, <b>who it&rsquo;s for</b>, <b>the constraints</b>, and
+          <b>the vibe</b>. Then I let it build.
+        </p>
+
+        <div class="term" role="img" aria-label="A structured build prompt">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the spec-prompt skeleton</span>
+          </div>
+<pre><span class="cmt"># WHAT</span>
+Build a single-file React component: a habit tracker.
+
+<span class="cmt"># WHO / JOB</span>
+For someone checking off 5 daily habits on their phone.
+Mobile-first. Glanceable in under 2 seconds.
+
+<span class="cmt"># CONSTRAINTS</span>
+- No external libraries except React.
+- State in useState, no backend. Persist to localStorage.
+- Tap a habit to toggle. Long streaks get a subtle flame.
+
+<span class="cmt"># VIBE</span>
+Warm, calm, light mode. Generous whitespace. Rounded.
+Think paper journal, not SaaS dashboard. One accent color.</pre>
+        </div>
+
+        <p>
+          Notice there&rsquo;s zero code in that prompt. I&rsquo;m describing the <em>destination</em>,
+          not the route. The model is better than me at the route. My job is to be
+          unmistakably clear about where we&rsquo;re going &mdash; especially the vibe line,
+          which is the part most people skip and then wonder why everything looks
+          like a default Bootstrap template.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Take any &ldquo;build me X&rdquo; idea in your head and force it through those four
+            headers before you hit enter. <b>WHAT / WHO / CONSTRAINTS / VIBE.</b> The
+            first build will land 80% closer. That&rsquo;s the whole game.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="m3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Artifacts as a live canvas &mdash; iterate in the panel, not the codebase. <span class="pill claude">claude</span></h2>
+        <p>
+          When Claude builds you something in an Artifact, it renders live in a
+          side panel next to the chat. That panel is the whole point. You&rsquo;re not
+          copying code into an editor and refreshing &mdash; you&rsquo;re looking at the running
+          thing and talking to it. The loop tightens to seconds.
+        </p>
+        <p>
+          The mistake beginners make is asking for the whole app to be rebuilt every
+          turn. Don&rsquo;t. Change <em>one</em> thing and let it surgically edit. The model keeps
+          the Artifact in context, so &ldquo;make the cards 20% bigger and the streak flame
+          orange&rdquo; updates exactly that and nothing else.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">an iteration session, abridged</span>
+          </div>
+<pre><span class="prompt">you ›</span> build the habit tracker from the spec above
+<span class="out">       → renders in the panel. close, but cramped.</span>
+
+<span class="prompt">you ›</span> more vertical breathing room between habits,
+        and round the corners more
+<span class="out">       → edits spacing + radius only. better.</span>
+
+<span class="prompt">you ›</span> the checked state is too loud. make it a soft
+        fill, not a hard green
+<span class="out">       → one visual tweak. now it feels calm.</span>
+
+<span class="prompt">you ›</span> add a tiny streak counter under each habit name
+<span class="out">       → adds the feature, keeps everything else.</span></pre>
+        </div>
+
+        <p>
+          Four turns, four small asks, and the thing is real. Each one is a sentence.
+          You are art-directing, not coding. When it&rsquo;s right, the &ldquo;copy code&rdquo; button
+          hands you the whole file &mdash; which is where moves 6 through 10 pick up.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            One concept per turn. If you batch &ldquo;bigger cards, dark mode, add a
+            calendar view, and fix the font&rdquo; into one message, you lose the ability
+            to tell <em>which</em> change broke the thing you liked. Slow is smooth; smooth
+            is fast.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="m4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>The design knobs that make it feel made, not generated. <span class="pill design">design</span></h2>
+        <p>
+          &ldquo;Make it look better&rdquo; is a wish. These are the actual dials. When something
+          feels AI-generated, it&rsquo;s almost always one of these knobs left on default.
+          I keep this list next to me and turn them one at a time.
+        </p>
+
+        <div class="knobs">
+          <div class="knob">
+            <span class="lbl">whitespace</span>
+            <span class="desc">The #1 tell. Ask for &ldquo;more breathing room&rdquo; — generous padding reads as intentional. Cramped reads as a template.</span>
+          </div>
+          <div class="knob">
+            <span class="lbl">type scale</span>
+            <span class="desc">One display face, one body face, real size jumps. &ldquo;Editorial typography&rdquo; is a phrase models understand — use it.</span>
+          </div>
+          <div class="knob">
+            <span class="lbl">one accent</span>
+            <span class="desc">Pick a single accent color and let everything else be ink + paper. Three accent colors = it looks like a draft.</span>
+          </div>
+          <div class="knob">
+            <span class="lbl">grid as anchor</span>
+            <span class="desc">Ask it to align everything to a visible or implied grid. Off-grid elements are what make a page feel sloppy.</span>
+          </div>
+          <div class="knob">
+            <span class="lbl">radius + shadow</span>
+            <span class="desc">Consistent corner radius, soft single-direction shadows. Mixed radii are a dead giveaway.</span>
+          </div>
+          <div class="knob">
+            <span class="lbl">warmth</span>
+            <span class="desc">Pure #fff / #000 feels cold. Ask for off-white paper and near-black ink. This alone is half of &ldquo;why does Claude&rsquo;s output feel nicer.&rdquo;</span>
+          </div>
+        </div>
+
+        <p>
+          The vocabulary matters. Models respond to the words designers use:
+          <em>warmth, padding, editorial, grid, hierarchy, restraint</em>. If you say
+          &ldquo;more professional&rdquo; you get more corporate. If you say &ldquo;more editorial,
+          one accent, generous whitespace&rdquo; you get something with taste.
+        </p>
+
+        <p class="scribble">this page is the demo. Off-white paper, ink not black, one warm accent, everything on a 32px ruled grid.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="m5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Gemini: prompt &rarr; <code>PageConfig</code> &rarr; styled Next.js. <span class="pill gemini">gemini</span></h2>
+        <p>
+          When the job is data-shaped, I flip to a different pattern: don&rsquo;t ask for
+          a component, ask for a <b>config</b>. Have the model emit structured JSON
+          that describes the page, then render that config with code you control.
+          You get AI flexibility on content and deterministic control on layout.
+          This is Roma Armstrong&rsquo;s whole move and it scales beautifully.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">ask for the shape, then render it</span>
+          </div>
+<pre><span class="cmt">// 1. Gemini returns a typed config, not markup</span>
+<span class="key">type</span> <span class="amb">PageConfig</span> = {
+  <span class="key">title</span>: <span class="amb">string</span>
+  <span class="key">sections</span>: { <span class="key">kind</span>: <span class="str">'hero'</span> | <span class="str">'grid'</span> | <span class="str">'cta'</span>; <span class="key">props</span>: <span class="amb">Record</span>&lt;<span class="amb">string</span>, <span class="amb">unknown</span>&gt; }[]
+}
+
+<span class="cmt">// 2. You own a tiny renderer — one switch, fully styled by you</span>
+<span class="key">function</span> <span class="pnk">Page</span>({ config }: { config: <span class="amb">PageConfig</span> }) {
+  <span class="key">return</span> config.sections.map((s, i) =&gt; {
+    <span class="key">switch</span> (s.kind) {
+      <span class="key">case</span> <span class="str">'hero'</span>: <span class="key">return</span> &lt;<span class="amb">Hero</span> key={i} {...s.props} /&gt;
+      <span class="key">case</span> <span class="str">'grid'</span>: <span class="key">return</span> &lt;<span class="amb">CardGrid</span> key={i} {...s.props} /&gt;
+      <span class="key">case</span> <span class="str">'cta'</span>:  <span class="key">return</span> &lt;<span class="amb">CallToAction</span> key={i} {...s.props} /&gt;
+    }
+  })
+}</pre>
+        </div>
+
+        <p>
+          The win: the model never touches your CSS. It decides <em>what</em> goes on the
+          page; your components decide <em>how</em> it looks. Dark mode, brand tokens,
+          responsive rules &mdash; all baked into the renderer once. The AI just fills the
+          slots. Regenerate the config a hundred times and every result is on-brand.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Next build, instead of &ldquo;make me a pricing page,&rdquo; ask for &ldquo;a JSON array
+            of pricing tiers with name, price, features[], highlighted.&rdquo; Then write
+            the <code>&lt;Tier&gt;</code> component yourself. You&rsquo;ll never go back to
+            asking for raw markup.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="m6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Wire the model in &mdash; streaming, the part that feels like magic. <span class="pill engineer">engineer</span></h2>
+        <p>
+          Eventually the app needs to <em>talk</em> to a model at runtime, not just be built
+          by one. This is where most no-code folks stall &mdash; and where it&rsquo;s genuinely
+          easier than it looks. The Vercel AI SDK gives you one hook on the frontend
+          and one function on the backend. Streaming, loading states, and message
+          history come free. Swap the provider import to switch between Claude and
+          Gemini.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">app/api/chat/route.ts — the backend</span>
+          </div>
+<pre><span class="key">import</span> { streamText } <span class="key">from</span> <span class="str">'ai'</span>
+<span class="key">import</span> { anthropic } <span class="key">from</span> <span class="str">'@ai-sdk/anthropic'</span>
+<span class="cmt">// swap line above for: import { google } from '@ai-sdk/google'</span>
+
+<span class="key">export async function</span> <span class="pnk">POST</span>(req: <span class="amb">Request</span>) {
+  <span class="key">const</span> { messages } = <span class="key">await</span> req.json()
+  <span class="key">const</span> result = streamText({
+    model: anthropic(<span class="str">'claude-sonnet-4-6'</span>),
+    system: <span class="str">'You are a calm, concise habit coach.'</span>,
+    messages,
+  })
+  <span class="key">return</span> result.toUIMessageStreamResponse()
+}</pre>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the frontend — one hook</span>
+          </div>
+<pre><span class="str">'use client'</span>
+<span class="key">import</span> { useChat } <span class="key">from</span> <span class="str">'@ai-sdk/react'</span>
+
+<span class="key">export default function</span> <span class="pnk">Coach</span>() {
+  <span class="key">const</span> { messages, sendMessage, status } = <span class="pnk">useChat</span>()
+  <span class="key">return</span> (
+    &lt;<span class="amb">div</span>&gt;
+      {messages.map(m =&gt; &lt;<span class="amb">p</span> key={m.id}&gt;&lt;<span class="amb">b</span>&gt;{m.role}&lt;/<span class="amb">b</span>&gt;: {m.parts.map(p =&gt; p.type === <span class="str">'text'</span> ? p.text : <span class="str">''</span>)}&lt;/<span class="amb">p</span>&gt;)}
+      {status === <span class="str">'streaming'</span> &amp;&amp; &lt;<span class="amb">span</span>&gt;…thinking&lt;/<span class="amb">span</span>&gt;}
+    &lt;/<span class="amb">div</span>&gt;
+  )
+}</pre>
+        </div>
+
+        <p>
+          That&rsquo;s a working chat app. The streaming text, the role labels, the
+          in-flight state &mdash; all handled. Dray&rsquo;s framing is the one that stuck with me:
+          &ldquo;an AI engineer is just a regular engineer who&rsquo;s comfortable with one
+          non-deterministic function call.&rdquo; This is that call. Everything around it
+          is the boring, knowable web you already understand.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Your API key lives in <code>.env.local</code> as
+            <code>ANTHROPIC_API_KEY</code> (or <code>GOOGLE_GENERATIVE_AI_API_KEY</code>),
+            and it stays server-side &mdash; in the <code>route.ts</code>, never the client
+            component. Ship a key to the browser and it&rsquo;s scraped within the hour.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="m7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The open notebook &mdash; a throwaway script to feel the model out. <span class="pill engineer">engineer</span></h2>
+        <p>
+          Before I wire a model into a UI, I sit with it in a plain script. No
+          frontend, no framework &mdash; just a file I run from the terminal and read the
+          output. This is Cal&rsquo;s open-notebook habit and it&rsquo;s the most underrated move
+          in here. You learn how the model actually behaves on <em>your</em> task before you
+          build anything around it.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">try.ts — run it, read it, tweak it</span>
+          </div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">'@anthropic-ai/sdk'</span>
+<span class="key">const</span> client = <span class="key">new</span> <span class="pnk">Anthropic</span>()  <span class="cmt">// reads ANTHROPIC_API_KEY from env</span>
+
+<span class="key">const</span> prompts = [
+  <span class="str">'Summarize this in one calm sentence: ...'</span>,
+  <span class="str">'Now do it for a 9-year-old.'</span>,
+  <span class="str">'Now as a haiku.'</span>,
+]
+
+<span class="key">for</span> (<span class="key">const</span> p <span class="key">of</span> prompts) {
+  <span class="key">const</span> msg = <span class="key">await</span> client.messages.create({
+    model: <span class="str">'claude-sonnet-4-6'</span>,
+    max_tokens: <span class="amb">300</span>,
+    messages: [{ role: <span class="str">'user'</span>, content: p }],
+  })
+  console.log(<span class="str">'\n— '</span> + p)
+  console.log(msg.content[<span class="amb">0</span>].text)
+}</pre>
+        </div>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">run it</span>
+          </div>
+<pre><span class="prompt">$</span> npx tsx try.ts
+<span class="out">— Summarize this in one calm sentence: ...
+A quiet recap, one breath long.
+
+— Now do it for a 9-year-old.
+Here&#39;s the short version, easy words only.
+
+— Now as a haiku.
+five seven five, done.</span></pre>
+        </div>
+
+        <p>
+          Fifteen lines, zero ceremony. I keep a <code>scratch/</code> folder full of
+          these &mdash; one per experiment, dated, never cleaned up. They&rsquo;re a logbook.
+          When a build later misbehaves, half the time the fix is something I already
+          learned in one of these tiny scripts and forgot. The notebook remembers.
+        </p>
+
+        <p class="scribble">Cal&rsquo;s rule, paraphrased: write the dumb script first. You can&rsquo;t design a system around a model you&rsquo;ve never actually watched answer.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="m8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Iterate by screenshot &mdash; the diary-style design pass. <span class="pill design">design</span></h2>
+        <p>
+          Here&rsquo;s a move that feels illegal the first time: when a layout is <em>almost</em>
+          right but you can&rsquo;t name what&rsquo;s off, screenshot it and paste the image back
+          to the model. &ldquo;Here&rsquo;s the current state. The spacing feels uneven and the
+          header competes with the hero &mdash; fix it.&rdquo; It can see what you see. This is
+          Sébastien Castiel&rsquo;s diary loop: build, screenshot, critique, repeat &mdash; and
+          you keep the screenshots as a visual changelog.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the visual iteration loop</span>
+          </div>
+<pre><span class="cmt"># the cycle, written out</span>
+1. build / render the current version
+2. screenshot it  (Cmd+Shift+4 on mac → drag)
+3. paste image back: "what&#39;s visually off here?"
+4. apply the ONE most important fix it names
+5. screenshot again → keep both, side by side
+6. repeat until you stop finding things
+
+<span class="cmt"># after 4–5 passes you have a filmstrip of the design</span>
+<span class="cmt"># evolving. that filmstrip IS the story you post.</span></pre>
+        </div>
+
+        <p>
+          Two things this unlocks. First, you fix problems you couldn&rsquo;t articulate &mdash;
+          the model names them for you, which teaches you the vocabulary from move 4.
+          Second, the screenshot trail is content. A before/after filmstrip of a
+          layout finding its form is one of the most-shared things you can post,
+          because it shows the work, not just the result.
+        </p>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Take a screenshot of any page you half-like and paste it with one
+            question: <b>&ldquo;What are the three biggest visual problems here, ranked?&rdquo;</b>
+            Fix only #1. Screenshot again. You&rsquo;ll learn more about design in five
+            loops than in five articles.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="m9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>The eval loop &mdash; the AI engineer&rsquo;s habit that keeps you honest. <span class="pill engineer">engineer</span></h2>
+        <p>
+          Here&rsquo;s the move that separates a demo from a product. A model&rsquo;s output is
+          non-deterministic, so &ldquo;it worked when I tried it&rdquo; is not the same as &ldquo;it
+          works.&rdquo; Before you ship anything that runs a prompt for real users, write
+          a handful of <b>checks</b> &mdash; inputs you know the answer to &mdash; and run them every
+          time you change the prompt. This is the whole discipline behind &ldquo;AI
+          engineering,&rdquo; demystified.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">evals.ts — five lines of insurance</span>
+          </div>
+<pre><span class="key">const</span> cases = [
+  { input: <span class="str">'I ran 3 miles today'</span>,      expect: <span class="str">'exercise'</span> },
+  { input: <span class="str">'skipped breakfast again'</span>,    expect: <span class="str">'nutrition'</span> },
+  { input: <span class="str">'in bed by 10, finally'</span>,      expect: <span class="str">'sleep'</span> },
+]
+
+<span class="key">let</span> pass = <span class="amb">0</span>
+<span class="key">for</span> (<span class="key">const</span> c <span class="key">of</span> cases) {
+  <span class="key">const</span> got = <span class="key">await</span> <span class="pnk">classify</span>(c.input)   <span class="cmt">// your prompt, wrapped in a fn</span>
+  <span class="key">const</span> ok = got === c.expect
+  console.log(ok ? <span class="str">'✓'</span> : <span class="str">'✗'</span>, c.input, <span class="str">'→'</span>, got)
+  <span class="key">if</span> (ok) pass++
+}
+console.log(<span class="str">`\n${pass}/${cases.length} passing`</span>)</pre>
+        </div>
+
+        <p>
+          That&rsquo;s it. Ten cases is plenty to start. Now when you &ldquo;improve&rdquo; the prompt
+          and three checks start failing, you catch it before your users do. I&rsquo;ve
+          shipped prompt changes that <em>felt</em> better and quietly broke a category &mdash;
+          this loop is the only reason I noticed. Treat the prompt like code, because
+          it is code now.
+        </p>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            You don&rsquo;t need a framework for this on day one. A loop and a counter beat
+            an elaborate eval harness you never run. Add the fancy tooling when ten
+            cases stops being enough, not before.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="m10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Ship the thing &mdash; the last mile is the shortest now. <span class="pill ship">ship</span></h2>
+        <p>
+          The hardest part used to be deployment. It&rsquo;s now the easiest. A Next.js app
+          with the AI SDK goes live in one command, with your env keys set in the
+          dashboard. The bottleneck is no longer infrastructure &mdash; it&rsquo;s your willingness
+          to put a v1 in front of someone. So ship the embarrassing version. The
+          screenshots from move 8 are your launch post.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompt → product, the last step</span>
+          </div>
+<pre><span class="prompt">$</span> npm i -g vercel
+<span class="prompt">$</span> vercel            <span class="cmt"># preview deploy, gives you a URL</span>
+<span class="prompt">$</span> vercel --prod     <span class="cmt"># promote it to production</span>
+
+<span class="cmt"># set your keys once, in the dashboard:</span>
+<span class="cmt">#   Settings → Environment Variables</span>
+<span class="cmt">#   ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY</span>
+
+<span class="out">✓ Production: https://your-habit-coach.vercel.app</span></pre>
+        </div>
+
+        <p>
+          That URL is the finish line for the loop we started ten moves ago: a
+          sentence became a spec, the spec became an Artifact, the Artifact became
+          a wired-up app with checks, and the app is now a link you can text to a
+          friend. None of it required being a developer. It required being clear,
+          iterating in small steps, and shipping before it felt ready.
+        </p>
+
+        <p class="scribble">every L is a W if you ship it and write down what broke. The notebook is the real product.</p>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole loop, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Model picker</h4>
+          <ul>
+            <li><code>claude</code><span>warmth, layout, Artifacts, feel</span></li>
+            <li><code>gemini</code><span>data, configs, structure, scale</span></li>
+            <li><code>spec first</code><span>WHAT / WHO / CONSTRAINTS / VIBE</span></li>
+            <li><code>one ask</code><span>change one thing per turn</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Design knobs</h4>
+          <ul>
+            <li><code>whitespace</code><span>the #1 tell — more breathing room</span></li>
+            <li><code>one accent</code><span>ink + paper + a single color</span></li>
+            <li><code>editorial</code><span>the magic word for type</span></li>
+            <li><code>grid</code><span>align everything to it</span></li>
+            <li><code>warmth</code><span>off-white, not #fff</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Wiring (AI SDK)</h4>
+          <ul>
+            <li><code>streamText</code><span>backend route.ts</span></li>
+            <li><code>useChat</code><span>frontend, one hook</span></li>
+            <li><code>@ai-sdk/anthropic</code><span>swap import to switch model</span></li>
+            <li><code>.env.local</code><span>keys server-side, always</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Stay honest + ship</h4>
+          <ul>
+            <li><code>try.ts</code><span>notebook script before UI</span></li>
+            <li><code>screenshot →</code><span>paste back for design fixes</span></li>
+            <li><code>evals.ts</code><span>10 checks, run on every change</span></li>
+            <li><code>vercel --prod</code><span>ship the embarrassing v1</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-01</small>
+      </div>
+      <div class="end">
+        next entry · <code>structured output &amp; tool use for non-devs</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

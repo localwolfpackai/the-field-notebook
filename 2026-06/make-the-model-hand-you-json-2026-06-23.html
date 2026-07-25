@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Make the Model Hand You JSON — Ten Moves for Turning a Prompt Into Typed UI · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: stop string-wrangling model output. Ask Claude or Gemini for a schema-shaped object, validate it, and render it straight into your UI. The contract, the schema, the validator, the fallback — side by side, both models." />
+  <meta property="og:title" content="Make the Model Hand You JSON — Ten Moves for Turning a Prompt Into Typed UI" />
+  <meta property="og:description" content="Prose is for humans. Your UI wants an object. Here's how to make a model return a clean, typed, validated JSON you can map straight into components — Claude and Gemini, move for move." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.backend  { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live demo panel (prompt → object → card) ─────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .demo .demo-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .demo .demo-split { grid-template-columns: 1fr; } }
+
+    .demo .raw {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      padding: 1rem 1.05rem;
+      margin: 0;
+      overflow-x: auto;
+      white-space: pre;
+      min-height: 14rem;
+      border-right: 1px solid oklch(0.18 0.01 60);
+    }
+    @media (max-width: 700px) { .demo .raw { border-right: none; border-bottom: 1px solid oklch(0.86 0.03 80); } }
+    .demo .raw .key { color: var(--code-violet); }
+    .demo .raw .str { color: var(--code-green); }
+    .demo .raw .num { color: var(--code-accent); }
+    .demo .raw .pun { color: var(--code-mute); }
+
+    /* the rendered card — the payoff */
+    .demo .render {
+      padding: 1.1rem 1.15rem;
+      min-height: 14rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pcard {
+      width: 100%;
+      max-width: 21rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 18px 40px -30px oklch(0.40 0.10 264 / 0.5);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.5s var(--ease-paper), transform 0.5s var(--ease-paper);
+    }
+    .pcard.in { opacity: 1; transform: none; }
+    .pcard .pc-top {
+      height: 5.5rem;
+      background:
+        radial-gradient(120% 140% at 0% 0%, var(--accent-wash), transparent 60%),
+        linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%);
+      position: relative;
+    }
+    .pcard .pc-tag {
+      position: absolute; top: 0.6rem; left: 0.7rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+      background: oklch(1 0 0 / 0.85); color: var(--accent-ink);
+      padding: 0.18em 0.55em; border-radius: 999px;
+    }
+    .pcard .pc-body { padding: 0.85rem 0.95rem 1rem; }
+    .pcard .pc-title { font-family: 'Geist', serif; font-weight: 700; font-size: 1.12rem; letter-spacing: -0.01em; }
+    .pcard .pc-sub { color: var(--ink-soft); font-size: 0.88rem; margin-top: 0.25rem; }
+    .pcard .pc-stats { display: flex; gap: 1rem; margin-top: 0.7rem; }
+    .pcard .pc-stats div { line-height: 1.1; }
+    .pcard .pc-stats .n { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 1rem; color: var(--ink); }
+    .pcard .pc-stats .l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute); }
+    .pcard .pc-cta {
+      margin-top: 0.85rem;
+      display: inline-block;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.82rem;
+      color: oklch(0.99 0 0); background: var(--accent);
+      padding: 0.45rem 0.95rem; border-radius: 999px; text-decoration: none;
+    }
+    .demo .render .empty {
+      color: var(--ink-mute);
+      font-family: 'Caveat', cursive;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.7rem 1.2rem 1rem;
+      flex-wrap: wrap;
+      border-top: 1px solid oklch(0.86 0.03 80);
+    }
+    .demo button {
+      font-family: 'Geist', sans-serif;
+      font-weight: 600;
+      font-size: 0.86rem;
+      color: oklch(0.99 0 0);
+      background: var(--accent);
+      border: none;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper);
+    }
+    .demo button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .demo button:active { transform: translateY(0); }
+    .demo button:disabled { opacity: 0.45; cursor: default; transform: none; filter: none; }
+    .demo button.ghost {
+      background: transparent;
+      color: var(--accent-ink);
+      border: 1px solid oklch(0.82 0.05 264);
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .pcard { animation: none; transition: none; }
+    }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .compare .col.claude h4 { color: var(--accent-ink); }
+    .compare .col.gemini h4 { color: oklch(0.45 0.13 300); }
+    .compare .col h4 .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .compare .col.claude h4 .dot { background: var(--accent); }
+    .compare .col.gemini h4 .dot { background: var(--violet); }
+
+    /* ── Mobile mock ─────────────────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 600px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .phone {
+      width: 218px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 30px;
+      padding: 9px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 264 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 20px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 12px 12px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background:
+        radial-gradient(120% 140% at 0% 0%, var(--accent-wash), transparent 60%),
+        linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%);
+      height: 120px;
+      padding: 1.6rem 1rem 0.7rem;
+      color: oklch(0.99 0 0);
+    }
+    .phone .s-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.15rem; margin-top: 0.15rem; }
+    .phone .s-list { padding: 0.7rem 0.8rem; display: grid; gap: 0.55rem; }
+    .phone .s-row {
+      display: grid; grid-template-columns: 28px 1fr auto; gap: 0.55rem; align-items: center;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: 10px;
+      padding: 0.5rem 0.6rem;
+    }
+    .phone .s-row .ico {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--accent-wash);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+    }
+    .phone .s-row .nm { font-size: 0.78rem; font-weight: 600; color: var(--ink); line-height: 1.2; }
+    .phone .s-row .ds { font-size: 0.64rem; color: var(--ink-mute); }
+    .phone .s-row .pr { font-family: 'Geist Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--accent-ink); }
+    .phone-cap { max-width: 40ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.10 264 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 23</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;23</span>
+        <span class="tag">build</span>
+        <span class="tag">json</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Make the model <span class="accent">hand you JSON</span> &mdash; ten moves for turning a prompt into typed UI.</h1>
+
+      <p class="deck">
+        Prose is for humans. Your interface wants an <em>object</em> &mdash; a title here,
+        a price there, a list it can <code>.map()</code> over. This notebook is the move
+        that stops you from regex-ing a paragraph apart: you ask Claude or Gemini for a
+        schema-shaped payload, validate it, and render it straight into components.
+        One schema, one validator, one fallback. Both models, side by side.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-messages.create-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude messages.create" />
+        <img src="https://img.shields.io/badge/Gemini-responseSchema-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini responseSchema" />
+        <img src="https://img.shields.io/badge/Zod-3.x-3E67B1?style=flat-square&logo=zod&logoColor=white" alt="Zod 3.x" />
+        <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript strict" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · one API route + a render fn</span>
+        <span><b>Assumes</b> · you've called a model once before</span>
+        <span><b>Pairs with</b> · Vol. 22 (streaming)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the trap I fell into on my first AI feature: I asked the model for a
+          product card and it gave me a <em>lovely paragraph</em>. Warm, fluent, useless.
+          Because a card isn't a paragraph &mdash; it's a title, a tagline, a price, and
+          a button. I spent an hour writing string-splitting code to claw those fields
+          back out of the prose, and it broke the moment the model phrased things
+          differently.
+        </p>
+        <p>
+          The fix isn't more clever parsing. It's asking the model to never produce prose
+          in the first place. Modern models will hand you a <em>typed object</em> that
+          matches a schema you define &mdash; Claude through a tool/JSON instruction,
+          Gemini through <code>responseSchema</code>. You stop reading the answer and start
+          <em>mapping</em> it.
+        </p>
+        <p>
+          Below: each move gets a number, a one-line claim, the actual code, and a try-it
+          crumb. The panel under this intro is real &mdash; hit the button and watch the
+          same JSON on the left become the card on the right. That's the whole job:
+          <strong>object in, component out.</strong>
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Stop parsing prose — ask for the object</a></li>
+          <li><a href="#h2">Write the schema first (it's the spec)</a></li>
+          <li><a href="#h3">Claude: tool-use as a JSON contract</a></li>
+          <li><a href="#h4">Gemini: responseSchema + JSON mode</a></li>
+          <li><a href="#h5">Validate at the door with Zod</a></li>
+          <li><a href="#h6">Map the object straight into UI</a></li>
+          <li><a href="#h7">The fallback when JSON breaks</a></li>
+          <li><a href="#h8">One enum saves you ten if-statements</a></li>
+          <li><a href="#h9">Stream JSON without the half-object flicker</a></li>
+          <li><a href="#h10">The trust test — would you ship it blind?</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="JSON to card demo">
+      <div class="demo-bar">
+        <span>the job · object in → component out</span>
+        <span class="live"><i></i> live</span>
+      </div>
+      <div class="demo-split">
+        <pre class="raw" id="raw"><span class="pun">// hit "Generate" — the model's payload lands here</span></pre>
+        <div class="render" id="render">
+          <span class="empty">the card renders here ↑<br>from the JSON, not the prose</span>
+        </div>
+      </div>
+      <div class="demo-foot">
+        <button id="gen">▶ Generate</button>
+        <button class="ghost" id="reset">Reset</button>
+        <span class="hint">same object, every time — that's the point ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Stop parsing prose &mdash; the cheapest reliability win is asking for the object, not the answer. <span class="pill model">model</span></h2>
+        <p>
+          The instinct is to ask "describe a product card for running shoes" and then
+          pull the pieces out of whatever comes back. Don't. Every sentence the model
+          writes is a sentence you have to reverse-engineer, and it'll phrase it
+          differently on every call. You're building a parser for free-form English,
+          which is a research project, not a feature.
+        </p>
+        <p>
+          Flip it. Tell the model: <em>return only a JSON object with these exact keys.</em>
+          Now the output isn't language you interpret &mdash; it's data you consume. The
+          model is doing the hard part (deciding the values); you're doing the easy part
+          (rendering known fields). That handoff is the entire move.
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>The words for this differ per vendor &mdash; <b>structured outputs</b>,
+          <b>JSON mode</b>, <b>tool use</b>, <b>function calling</b>, <b>responseSchema</b>.
+          They're the same idea wearing four hats: <i>you hand the model a shape, it fills it in.</i></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Write the schema first &mdash; it's not boilerplate, it's the spec for the whole feature. <span class="pill backend">design</span></h2>
+        <p>
+          Before you touch the prompt, write down the exact shape you want back. This is
+          the most important five minutes of the build, because the schema is simultaneously
+          the prompt's instruction, the validator's rulebook, and the UI's prop types. Get
+          it right once and three layers fall into place.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">schema.ts &mdash; the single source of truth</span></div>
+<pre><span class="cmt">// One shape. The prompt obeys it, the validator enforces it,</span>
+<span class="cmt">// the component reads it. Define it once, here.</span>
+<span class="key">type</span> ProductCard = {
+  title: <span class="vio">string</span>;        <span class="cmt">// "Trailblazer GTX"</span>
+  tagline: <span class="vio">string</span>;      <span class="cmt">// one line, &lt; 60 chars</span>
+  priceUsd: <span class="vio">number</span>;     <span class="cmt">// 139, not "$139.00"</span>
+  badge: <span class="str">"new"</span> | <span class="str">"sale"</span> | <span class="str">"none"</span>;  <span class="cmt">// an enum, not free text</span>
+  rating: <span class="vio">number</span>;       <span class="cmt">// 0–5</span>
+  reviews: <span class="vio">number</span>;
+  ctaLabel: <span class="vio">string</span>;     <span class="cmt">// "Add to bag"</span>
+};</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Make every field a <b>primitive or an enum</b> where you can. <code>priceUsd: number</code>
+          beats <code>price: string</code> every time &mdash; the model can't sneak a currency
+          symbol or "call for pricing" into a number.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Claude &mdash; use a tool as the JSON contract, so the model <em>has</em> to fill your shape. <span class="pill model">claude</span></h2>
+        <p>
+          The cleanest way to get strict JSON out of Claude is to define a tool whose
+          <code>input_schema</code> is your shape, then force the model to call it. Claude
+          doesn't write prose &mdash; it emits a tool call whose arguments are exactly your
+          object. You read <code>content[0].input</code> and you're done.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">route.ts &mdash; Claude, tool as schema</span></div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">"@anthropic-ai/sdk"</span>;
+<span class="key">const</span> client = <span class="key">new</span> Anthropic();
+
+<span class="key">const</span> msg = <span class="key">await</span> client.messages.create({
+  model: <span class="str">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="amb">512</span>,
+  <span class="cmt">// 1. describe the shape as a tool</span>
+  tools: [{
+    name: <span class="str">"emit_card"</span>,
+    description: <span class="str">"Return one product card."</span>,
+    input_schema: {
+      type: <span class="str">"object"</span>,
+      properties: {
+        title:    { type: <span class="str">"string"</span> },
+        tagline:  { type: <span class="str">"string"</span> },
+        priceUsd: { type: <span class="str">"number"</span> },
+        badge:    { type: <span class="str">"string"</span>, <span class="key">enum</span>: [<span class="str">"new"</span>,<span class="str">"sale"</span>,<span class="str">"none"</span>] },
+        rating:   { type: <span class="str">"number"</span> },
+        reviews:  { type: <span class="str">"number"</span> },
+        ctaLabel: { type: <span class="str">"string"</span> },
+      },
+      required: [<span class="str">"title"</span>,<span class="str">"tagline"</span>,<span class="str">"priceUsd"</span>,<span class="str">"badge"</span>,<span class="str">"ctaLabel"</span>],
+    },
+  }],
+  <span class="cmt">// 2. force the tool — no prose escape hatch</span>
+  tool_choice: { type: <span class="str">"tool"</span>, name: <span class="str">"emit_card"</span> },
+  messages: [{ role: <span class="str">"user"</span>, content: <span class="str">"Trail running shoe, premium."</span> }],
+});
+
+<span class="cmt">// 3. the object is right there — no parsing</span>
+<span class="key">const</span> block = msg.content.find(b =&gt; b.type === <span class="str">"tool_use"</span>);
+<span class="key">const</span> card = block.input;  <span class="cmt">// { title, tagline, priceUsd, ... }</span></pre>
+        </div>
+        <p class="scribble">forcing the tool is the trick — without <code>tool_choice</code> Claude might just chat.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Gemini &mdash; hand it a <code>responseSchema</code> and turn JSON mode on. Same idea, fewer moving parts. <span class="pill model">gemini</span></h2>
+        <p>
+          Gemini takes the schema directly in the generation config. You set
+          <code>responseMimeType</code> to JSON, pass your shape as
+          <code>responseSchema</code>, and the model is constrained to emit conforming JSON
+          as plain text &mdash; which you <code>JSON.parse()</code> on the way out. No tool
+          dance; the config <em>is</em> the contract.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">route.ts &mdash; Gemini, responseSchema</span></div>
+<pre><span class="key">import</span> { GoogleGenerativeAI, SchemaType } <span class="key">from</span> <span class="str">"@google/generative-ai"</span>;
+<span class="key">const</span> genAI = <span class="key">new</span> GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+<span class="key">const</span> model = genAI.getGenerativeModel({
+  model: <span class="str">"gemini-2.5-flash"</span>,
+  generationConfig: {
+    responseMimeType: <span class="str">"application/json"</span>,   <span class="cmt">// JSON mode on</span>
+    responseSchema: {
+      type: SchemaType.OBJECT,
+      properties: {
+        title:    { type: SchemaType.STRING },
+        tagline:  { type: SchemaType.STRING },
+        priceUsd: { type: SchemaType.NUMBER },
+        badge:    { type: SchemaType.STRING, <span class="key">enum</span>: [<span class="str">"new"</span>,<span class="str">"sale"</span>,<span class="str">"none"</span>] },
+        rating:   { type: SchemaType.NUMBER },
+        reviews:  { type: SchemaType.NUMBER },
+        ctaLabel: { type: SchemaType.STRING },
+      },
+      required: [<span class="str">"title"</span>,<span class="str">"tagline"</span>,<span class="str">"priceUsd"</span>,<span class="str">"badge"</span>,<span class="str">"ctaLabel"</span>],
+    },
+  },
+});
+
+<span class="key">const</span> res = <span class="key">await</span> model.generateContent(<span class="str">"Trail running shoe, premium."</span>);
+<span class="key">const</span> card = JSON.parse(res.response.text());  <span class="cmt">// guaranteed JSON text</span></pre>
+        </div>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>Claude</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Schema lives in a <b>tool</b>. Force it with <code>tool_choice</code>. Read <code>.input</code> — already an object, zero parsing.</p>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>Gemini</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Schema lives in <b>generationConfig</b>. Set JSON mime type. Read <code>.text()</code> and <code>JSON.parse</code> it once.</p>
+          </div>
+        </div>
+        <p class="scribble">your frontend doesn't care which one ran — it just gets a card object.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Validate at the door &mdash; "the model promised a schema" and "the bytes match it" are different facts. <span class="pill backend">backend</span></h2>
+        <p>
+          Constrained decoding is good, not perfect. A field can come back as a string
+          where you wanted a number, an enum can drift, a required key can go missing on a
+          weird prompt. Don't let unverified data reach a component &mdash; parse it through
+          a real validator and let <em>that</em> be your runtime type. Zod is the standard
+          move: one schema gives you validation <em>and</em> the TypeScript type for free.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">card.schema.ts &mdash; Zod is the bouncer</span></div>
+<pre><span class="key">import</span> { z } <span class="key">from</span> <span class="str">"zod"</span>;
+
+<span class="key">export const</span> Card = z.object({
+  title:    z.string().min(<span class="amb">1</span>),
+  tagline:  z.string().max(<span class="amb">80</span>),
+  priceUsd: z.number().positive(),
+  badge:    z.enum([<span class="str">"new"</span>, <span class="str">"sale"</span>, <span class="str">"none"</span>]),
+  rating:   z.number().min(<span class="amb">0</span>).max(<span class="amb">5</span>).default(<span class="amb">0</span>),
+  reviews:  z.number().int().nonnegative().default(<span class="amb">0</span>),
+  ctaLabel: z.string().default(<span class="str">"View"</span>),
+});
+
+<span class="key">export type</span> Card = z.infer&lt;<span class="key">typeof</span> Card&gt;;  <span class="cmt">// ← your real type, derived</span>
+
+<span class="cmt">// at the door:</span>
+<span class="key">const</span> parsed = Card.safeParse(rawFromModel);
+<span class="key">if</span> (!parsed.success) <span class="key">return</span> fallbackCard;  <span class="cmt">// never throw into the UI</span>
+<span class="key">const</span> card = parsed.data;                <span class="cmt">// typed + clean</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div><code>.default()</code> on the soft fields means a missing <code>rating</code> renders
+          a zero, not a crash. Validation isn't just rejection &mdash; it's where you set the
+          floor for "good enough to show."</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Map the object straight into UI &mdash; this is the moment the whole approach pays off. <span class="pill frontend">frontend</span></h2>
+        <p>
+          Once <code>card</code> is a validated, typed object, the component is boring &mdash;
+          and boring is the goal. No conditionals guessing whether a field exists, no string
+          surgery, no "if the model said X." You read known props. The same render function
+          works whether Claude or Gemini produced the data, because both produced the
+          <em>same shape</em>.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">ProductCard.tsx &mdash; object in, JSX out</span></div>
+<pre><span class="key">function</span> ProductCard({ card }: { card: Card }) {
+  <span class="key">return</span> (
+    &lt;article className=<span class="str">"card"</span>&gt;
+      {card.badge !== <span class="str">"none"</span> &amp;&amp; &lt;span className={<span class="str">`tag ${card.badge}`</span>}&gt;{card.badge}&lt;/span&gt;}
+      &lt;h3&gt;{card.title}&lt;/h3&gt;
+      &lt;p className=<span class="str">"sub"</span>&gt;{card.tagline}&lt;/p&gt;
+      &lt;div className=<span class="str">"stats"</span>&gt;
+        &lt;b&gt;${card.priceUsd}&lt;/b&gt;
+        &lt;span&gt;★ {card.rating} · {card.reviews} reviews&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;button&gt;{card.ctaLabel}&lt;/button&gt;
+    &lt;/article&gt;
+  );
+}</pre>
+        </div>
+        <p class="scribble">notice: zero parsing in the component. that's the whole win.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The fallback when JSON breaks &mdash; design the sad path before you need it. <span class="pill polish">polish</span></h2>
+        <p>
+          A stray token, a truncated response, a model that decided to wrap your JSON in a
+          <code>```json</code> fence &mdash; it happens. The difference between a toy and a
+          product is whether that turns into a white screen or a graceful card. Three layers,
+          cheap to add: strip fences, try-parse, validate, and if any step fails, show a
+          designed empty state instead of an exception.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">safeCard.ts &mdash; never throw into the render tree</span></div>
+<pre><span class="key">export function</span> safeCard(raw: <span class="vio">string</span> | <span class="vio">object</span>): Card | <span class="key">null</span> {
+  <span class="key">try</span> {
+    <span class="cmt">// 1. some models fence JSON in ```json … ``` — strip it</span>
+    <span class="key">const</span> text = <span class="key">typeof</span> raw === <span class="str">"string"</span>
+      ? raw.replace(/^```(json)?|```$/g, <span class="str">""</span>).trim()
+      : <span class="key">null</span>;
+    <span class="key">const</span> obj = text ? JSON.parse(text) : raw;
+
+    <span class="cmt">// 2. validate — the bouncer from move 05</span>
+    <span class="key">const</span> parsed = Card.safeParse(obj);
+    <span class="key">return</span> parsed.success ? parsed.data : <span class="key">null</span>;
+  } <span class="key">catch</span> {
+    <span class="key">return</span> <span class="key">null</span>;  <span class="cmt">// 3. caller renders the empty state</span>
+  }
+}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>A <code>null</code> return is a <b>feature</b>, not a failure. It hands the UI a
+          clean signal — "render the placeholder" — instead of an exception three components
+          deep. Your render path should always have an answer for <i>nothing came back</i>.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>One enum saves you ten if-statements &mdash; constrain the choice, not just the type. <span class="pill design">design</span></h2>
+        <p>
+          The single highest-leverage field in a schema is an <code>enum</code>. The moment
+          you write <code>badge: "new" | "sale" | "none"</code> instead of
+          <code>badge: string</code>, three things happen: the model can't invent a fourth
+          option, your CSS only needs three classes, and TypeScript will scream if you forget
+          a case. You've moved a whole branch of "what could the model possibly say" out of
+          your runtime and into the contract.
+        </p>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>free string — chaos</h4>
+            <div class="term" style="font-size:0.78rem;">
+              <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="label">unbounded</span></div>
+<pre>badge: <span class="vio">string</span>
+<span class="cmt">// model returns: "New!", "ON SALE",</span>
+<span class="cmt">// "limited", "🔥", "best seller"…</span>
+<span class="cmt">// now style all of them. good luck.</span></pre>
+            </div>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>enum — calm</h4>
+            <div class="term" style="font-size:0.78rem;">
+              <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="label">bounded</span></div>
+<pre>badge: <span class="str">"new"</span>|<span class="str">"sale"</span>|<span class="str">"none"</span>
+<span class="cmt">// model must pick one of three.</span>
+<span class="cmt">// .tag.new / .tag.sale — done.</span>
+<span class="cmt">// exhaustive, stylable, safe.</span></pre>
+            </div>
+          </div>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Anywhere your UI has a finite set of states &mdash; status, tier, category, tone &mdash;
+          make it an <b>enum in the schema</b>. You're not just typing the field; you're
+          deciding the model's whole option space.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Stream JSON without the half-object flicker &mdash; wait for whole, render once. <span class="pill frontend">frontend</span></h2>
+        <p>
+          Vol. 22 was about streaming prose so the app breathes. JSON is the exception that
+          proves the rule: a half-parsed object is <em>worse</em> than a spinner, because
+          <code>{ "title": "Trail</code> is not valid JSON and your render explodes. With
+          structured output, you usually want to stream the tokens to a buffer, show a skeleton
+          while it fills, and only swap in the real card when the object closes and validates.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">useCard.ts &mdash; buffer, then commit</span></div>
+<pre><span class="key">let</span> buf = <span class="str">""</span>;
+setLoading(<span class="key">true</span>);              <span class="cmt">// show the skeleton, not a partial card</span>
+
+<span class="key">for await</span> (<span class="key">const</span> delta <span class="key">of</span> stream) {
+  buf += delta;                  <span class="cmt">// accumulate raw text — don't render it</span>
+}
+
+<span class="key">const</span> card = safeCard(buf);     <span class="cmt">// parse + validate the *whole* thing</span>
+setCard(card);                   <span class="cmt">// one clean swap, no flicker</span>
+setLoading(<span class="key">false</span>);</pre>
+        </div>
+        <div class="scribble">prose streams character-by-character. objects stream then snap into place. different jobs.</div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>The trust test &mdash; would you render this object on a real page without reading it first? <span class="pill polish">polish</span></h2>
+        <p>
+          Here's the bar. If you'd happily pipe the model's output straight into production
+          UI without eyeballing it &mdash; because the schema constrains it, the validator
+          catches the strays, and the fallback handles the rest &mdash; you've built it right.
+          If you still feel the urge to <code>console.log</code> and squint before trusting
+          it, a layer is missing. Find which one.
+        </p>
+        <div class="phone-wrap">
+          <div class="phone" aria-label="mobile preview of model-generated cards">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">model · structured</div>
+                <div class="t">Today's picks</div>
+              </div>
+              <div class="s-list">
+                <div class="s-row">
+                  <div class="ico">👟</div>
+                  <div><div class="nm">Trailblazer GTX</div><div class="ds">grip for wet rock · new</div></div>
+                  <div class="pr">$139</div>
+                </div>
+                <div class="s-row">
+                  <div class="ico">🧥</div>
+                  <div><div class="nm">Stormshell Lite</div><div class="ds">packs to a fist · sale</div></div>
+                  <div class="pr">$88</div>
+                </div>
+                <div class="s-row">
+                  <div class="ico">🎒</div>
+                  <div><div class="nm">Summit 24L</div><div class="ds">frameless daypack</div></div>
+                  <div class="pr">$64</div>
+                </div>
+                <div class="s-row">
+                  <div class="ico">🧦</div>
+                  <div><div class="nm">Merino Crew ×3</div><div class="ds">no-blister wool</div></div>
+                  <div class="pr">$29</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-cap">
+            <p>
+              Every row on this screen is one validated object the model returned &mdash; same
+              schema, mapped into the same row component. The model chose the names, taglines,
+              and prices. The <em>layout</em> was never the model's job, and that's exactly why
+              it looks intentional instead of generated.
+            </p>
+            <p class="scribble">model picks the values. you own the frame. that's the deal.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>One-page cheat sheet ✦</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The pipeline</h4>
+          <ul>
+            <li><code>1</code><span>write the schema (the spec)</span></li>
+            <li><code>2</code><span>ask the model for that shape</span></li>
+            <li><code>3</code><span>validate at the door (Zod)</span></li>
+            <li><code>4</code><span>map object → component</span></li>
+            <li><code>5</code><span>fallback for the sad path</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Claude</h4>
+          <ul>
+            <li><code>tool</code><span>schema is the <code>input_schema</code></span></li>
+            <li><code>force</code><span><code>tool_choice: { type:"tool" }</code></span></li>
+            <li><code>read</code><span><code>content.find(tool_use).input</code></span></li>
+            <li><code>parse</code><span>none — already an object</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Gemini</h4>
+          <ul>
+            <li><code>mime</code><span><code>application/json</code></span></li>
+            <li><code>schema</code><span><code>responseSchema</code> in config</span></li>
+            <li><code>read</code><span><code>res.response.text()</code></span></li>
+            <li><code>parse</code><span><code>JSON.parse()</code> once</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The trust test</h4>
+          <ul>
+            <li><code>enum</code><span>finite states, not free string</span></li>
+            <li><code>number</code><span>not <code>"$139.00"</code></span></li>
+            <li><code>buffer</code><span>stream JSON whole, then commit</span></li>
+            <li><code>null</code><span>fallback, never throw</span></li>
+            <li><code>ship</code><span>render blind? then it's done</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 23 · 2026-06-23</small>
+      </div>
+      <div class="end">
+        next entry · <code>the eval harness: grading the model's output before your users do</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live "prompt → object → card" demo ────────────────────────────
+    (function () {
+      var rawEl = document.getElementById("raw");
+      var renderEl = document.getElementById("render");
+      var genBtn = document.getElementById("gen");
+      var resetBtn = document.getElementById("reset");
+      if (!rawEl || !genBtn) return;
+
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // The "model's" structured payload — the same object every time.
+      // That determinism IS the point of the whole notebook.
+      var CARD = {
+        title: "Trailblazer GTX",
+        tagline: "Grip that holds on wet rock.",
+        priceUsd: 139,
+        badge: "new",
+        rating: 4.7,
+        reviews: 318,
+        ctaLabel: "Add to bag"
+      };
+
+      // syntax-highlight a JSON string into spans
+      function colorJSON(obj) {
+        var json = JSON.stringify(obj, null, 2);
+        return json
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"([^"]+)":/g, '<span class="key">"$1"</span><span class="pun">:</span>')
+          .replace(/: "([^"]*)"/g, ': <span class="str">"$1"</span>')
+          .replace(/: (-?\d+\.?\d*)/g, ': <span class="num">$1</span>')
+          .replace(/([{}\[\],])/g, '<span class="pun">$1</span>');
+      }
+
+      function buildCard(c) {
+        var badge = c.badge !== "none"
+          ? '<span class="pc-tag">' + c.badge + '</span>' : '';
+        return ''
+          + '<div class="pcard" id="pcard">'
+          +   '<div class="pc-top">' + badge + '</div>'
+          +   '<div class="pc-body">'
+          +     '<div class="pc-title">' + c.title + '</div>'
+          +     '<div class="pc-sub">' + c.tagline + '</div>'
+          +     '<div class="pc-stats">'
+          +       '<div><div class="n">$' + c.priceUsd + '</div><div class="l">price</div></div>'
+          +       '<div><div class="n">' + c.rating + ' ★</div><div class="l">' + c.reviews + ' reviews</div></div>'
+          +     '</div>'
+          +     '<a class="pc-cta" href="#h6" onclick="return false">' + c.ctaLabel + '</a>'
+          +   '</div>'
+          + '</div>';
+      }
+
+      var typeTimer = null;
+
+      function reset() {
+        if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
+        rawEl.innerHTML = '<span class="pun">// hit "Generate" — the model\'s payload lands here</span>';
+        renderEl.innerHTML = '<span class="empty">the card renders here ↑<br>from the JSON, not the prose</span>';
+        genBtn.disabled = false;
+      }
+
+      function generate() {
+        genBtn.disabled = true;
+        renderEl.innerHTML = '<span class="empty">validating…</span>';
+
+        var full = colorJSON(CARD);
+
+        if (reduce) {
+          rawEl.innerHTML = full;
+          commit();
+          return;
+        }
+
+        // "type" the JSON in, line by line, like a payload arriving
+        var lines = full.split("\n");
+        var i = 0;
+        rawEl.innerHTML = "";
+        (function feed() {
+          if (i < lines.length) {
+            rawEl.innerHTML += (i ? "\n" : "") + lines[i];
+            rawEl.scrollTop = rawEl.scrollHeight;
+            i++;
+            typeTimer = setTimeout(feed, 70);
+          } else {
+            typeTimer = setTimeout(commit, 280);
+          }
+        })();
+      }
+
+      function commit() {
+        // object validated → swap in the real card (move 09: render once)
+        renderEl.innerHTML = buildCard(CARD);
+        requestAnimationFrame(function () {
+          var pc = document.getElementById("pcard");
+          if (pc) pc.classList.add("in");
+        });
+        genBtn.disabled = false;
+      }
+
+      genBtn.addEventListener("click", generate);
+      resetBtn.addEventListener("click", reset);
+    })();
+  </script>
+</body>
+</html>

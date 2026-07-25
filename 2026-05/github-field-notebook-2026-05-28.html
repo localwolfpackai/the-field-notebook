@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GitHub Field Notebook — Twelve Habits That Actually Stick · Lupo · The Mess is the Method</title>
+  <meta name="description" content="An open-notebook walkthrough of GitHub for AI-era beginners: gh CLI, branches, PRs, Claude Code workflows. Step-by-step, casual, no fluff." />
+  <meta property="og:title" content="GitHub Field Notebook — Twelve Habits That Actually Stick" />
+  <meta property="og:description" content="Open-notebook style. Twelve GitHub habits walked through with the gh CLI and Claude Code, written for AI-era beginners." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Notebook palette — warmer, paper-leaning */
+      --ink:        oklch(0.20 0.01 60);     /* ≈ #2a261f */
+      --ink-soft:   oklch(0.42 0.015 60);    /* ≈ #5a544a */
+      --ink-mute:   oklch(0.60 0.012 60);    /* ≈ #8a837a */
+      --paper:      oklch(0.985 0.012 85);   /* ≈ #fbf8f1 — cream notebook */
+      --paper-alt:  oklch(0.96 0.018 85);    /* ≈ #f3eee2 */
+      --paper-deep: oklch(0.93 0.022 85);    /* ≈ #e8e0cd */
+      --rule:       oklch(0.86 0.04 230);    /* faint blue rule lines */
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);     /* red margin line */
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);    /* studio blue */
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);    /* highlighter green */
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);     /* highlighter yellow */
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        /* horizontal notebook rules */
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        /* vertical red margin */
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.1em 0.45em;
+      border-radius: 5px;
+      font-size: 0.82em;
+      color: var(--ink-soft);
+      box-shadow: inset 0 -1px 0 oklch(0.92 0.01 80);
+    }
+
+    /* ── shell ─────────────────────────────────────────── */
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(2rem, 5vw, 4rem) clamp(1.2rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem) max(2.5rem, 8vw);
+    }
+
+    /* ── masthead ──────────────────────────────────────── */
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid var(--ink);
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .masthead .stamp {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      transform: rotate(-3deg);
+      position: absolute;
+      top: -0.2rem;
+      right: 0;
+      border: 2px solid var(--margin);
+      padding: 0.1rem 0.7rem;
+      border-radius: 4px;
+      opacity: 0.85;
+      letter-spacing: 0.02em;
+    }
+    .masthead .meta {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .masthead h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.6rem);
+      max-width: 22ch;
+    }
+    .masthead h1 .accent { color: var(--accent-ink); }
+    .masthead .dek {
+      font-size: clamp(1.05rem, 0.9rem + 0.5vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.6rem;
+    }
+    .byline {
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+      margin-top: 1rem;
+    }
+    .byline strong { color: var(--accent-ink); font-weight: 600; }
+
+    /* ── intro grid ────────────────────────────────────── */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3.5rem;
+    }
+    @container (min-width: 720px) { .intro-grid { grid-template-columns: 5fr 4fr; } }
+    @media (min-width: 760px) { .intro-grid { grid-template-columns: 5fr 4fr; gap: 2.5rem; } }
+
+    .intro-body p + p { margin-top: 1rem; }
+    .intro-body p { max-width: var(--measure); }
+
+    .toc-card {
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      box-shadow: 2px 3px 0 var(--paper-deep);
+    }
+    .toc-card h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      margin-bottom: 0.7rem;
+      font-weight: 500;
+    }
+    .toc-card ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .toc-card li {
+      counter-increment: toc;
+      font-size: 0.96rem;
+      padding-left: 2.2rem;
+      position: relative;
+    }
+    .toc-card li::before {
+      content: counter(toc, decimal-leading-zero);
+      position: absolute;
+      left: 0;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--margin);
+      font-weight: 600;
+      top: 0.18em;
+    }
+    .toc-card a { color: var(--ink); text-decoration: none; }
+    .toc-card a:hover { color: var(--accent-ink); text-decoration: underline; }
+
+    /* ── entry blocks ──────────────────────────────────── */
+    .entry {
+      margin: 0 0 3.2rem;
+      max-width: 980px;
+    }
+    .entry-head {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.78 0.02 80);
+      margin-bottom: 1.4rem;
+    }
+    .entry-num {
+      font-family: 'Caveat', cursive;
+      font-size: 2.6rem;
+      color: var(--margin);
+      line-height: 1;
+      transform: rotate(-4deg);
+      display: inline-block;
+    }
+    .entry-head h2 {
+      font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.05rem);
+      flex: 1;
+      min-width: 12ch;
+    }
+    .entry-tag {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid oklch(0.85 0.06 250);
+    }
+    .entry-tag.sage { background: var(--sage-wash); color: oklch(0.32 0.10 145); border-color: oklch(0.84 0.06 145); }
+    .entry-tag.amber { background: var(--amber-wash); color: oklch(0.42 0.15 68); border-color: oklch(0.84 0.08 80); }
+
+    .entry-body { display: grid; gap: 1rem; max-width: var(--measure); }
+    .entry-body p { max-width: var(--measure); }
+
+    /* ── code block (terminal) ─────────────────────────── */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 1.15rem 1.3rem;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      box-shadow: 3px 4px 0 oklch(0.18 0.01 60 / 0.18);
+      margin: 0.4rem 0;
+      position: relative;
+    }
+    .term::before {
+      content: "▌ terminal";
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--code-mute);
+      margin-bottom: 0.7rem;
+    }
+    .term pre {
+      margin: 0;
+      white-space: pre;
+      font-family: 'Geist Mono', monospace;
+    }
+    .term .prompt { color: var(--code-accent); user-select: none; }
+    .term .cmt { color: var(--code-mute); }
+    .term .out { color: oklch(0.82 0.02 80); }
+    .term .ok  { color: oklch(0.78 0.13 145); }
+    .term .err { color: oklch(0.72 0.16 27); }
+
+    /* ── callout / sticky note ─────────────────────────── */
+    .note {
+      background: var(--amber-wash);
+      border-left: 3px solid var(--amber);
+      padding: 0.95rem 1.1rem;
+      border-radius: 4px 10px 10px 4px;
+      font-size: 0.96rem;
+      box-shadow: 2px 2px 0 oklch(0.86 0.06 80);
+      max-width: var(--measure);
+    }
+    .note .label {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: oklch(0.42 0.15 68);
+      display: block;
+      margin-bottom: 0.2rem;
+      line-height: 1;
+    }
+    .note.sage {
+      background: var(--sage-wash);
+      border-left-color: var(--sage);
+      box-shadow: 2px 2px 0 oklch(0.84 0.06 145);
+    }
+    .note.sage .label { color: oklch(0.36 0.10 145); }
+
+    /* ── inline list with checkmarks ───────────────────── */
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0.4rem 0;
+      display: grid;
+      gap: 0.5rem;
+      max-width: var(--measure);
+    }
+    .checklist li {
+      padding-left: 2rem;
+      position: relative;
+      line-height: 1.55;
+    }
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0.4rem;
+      top: 0;
+      font-family: 'Caveat', cursive;
+      font-weight: 600;
+      color: var(--sage);
+      font-size: 1.4rem;
+      line-height: 1.2;
+    }
+
+    /* ── before/after diff ─────────────────────────────── */
+    .diff {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+      margin: 0.6rem 0;
+    }
+    @media (min-width: 720px) { .diff { grid-template-columns: 1fr 1fr; gap: 1rem; } }
+    .diff .col {
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+    .diff .before {
+      background: oklch(0.96 0.04 27 / 0.55);
+      border: 1px dashed oklch(0.78 0.12 27);
+      color: oklch(0.38 0.12 27);
+    }
+    .diff .after {
+      background: var(--sage-wash);
+      border: 1px dashed var(--sage);
+      color: oklch(0.32 0.10 145);
+    }
+    .diff .label {
+      font-family: 'Caveat', cursive;
+      font-size: 1.1rem;
+      display: block;
+      margin-bottom: 0.3rem;
+      line-height: 1;
+    }
+    .diff .before .label { color: oklch(0.48 0.16 27); }
+    .diff .after  .label { color: oklch(0.36 0.10 145); }
+
+    /* ── small flow diagram ────────────────────────────── */
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+      padding: 1rem;
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      border-radius: var(--radius-md);
+      margin: 0.6rem 0;
+      max-width: var(--measure);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.85rem;
+    }
+    .flow .pill {
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.02 80);
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      color: var(--ink);
+    }
+    .flow .pill.live { background: var(--accent-wash); border-color: oklch(0.78 0.08 250); color: var(--accent-ink); }
+    .flow .arrow { color: var(--ink-mute); }
+
+    /* ── footer ────────────────────────────────────────── */
+    .signoff {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 980px;
+    }
+    .signoff .scribble {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      color: var(--accent-ink);
+      line-height: 1.1;
+      transform: rotate(-2deg);
+      display: inline-block;
+    }
+    .signoff .meta {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── reduced motion ───────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* ── narrow screens: relax the margin ─────────────── */
+    @media (max-width: 600px) {
+      body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 29px, var(--rule-soft) 29px, var(--rule-soft) 30px); }
+      .masthead .stamp { font-size: 1.25rem; top: -0.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <main class="shell">
+
+    <!-- ─── masthead ─── -->
+    <header class="masthead">
+      <span class="stamp" aria-hidden="true">Field Notes</span>
+      <p class="meta">Vol. 03 · 2026-05-28 · —Lupo · The Mess is the Method</p>
+      <h1>GitHub Field Notebook — <span class="accent">twelve habits</span> that actually stick.</h1>
+      <p class="dek">Open notebook. Daily-driver workflows. Real commands, not abstractions. Written for the non-developer who already lives inside Claude Code and just wants GitHub to stop feeling like a wall of menus.</p>
+      <p class="byline">— scribbled by <strong>Lupo</strong>, somewhere between coffee #2 and the first commit of the day.</p>
+    </header>
+
+    <!-- ─── intro ─── -->
+    <section class="intro-grid">
+      <div class="intro-body">
+        <p>I'm not a developer. I orchestrate. The first time I opened the GitHub dashboard I saw seventeen tabs and closed the tab. That was 2024. Now I push code daily and the only command I actually type by hand is <code>gh pr create</code>. Everything else gets delegated.</p>
+        <p>What follows is the field notebook — the twelve habits that took me from <em>refusing to look at it</em> to <em>shipping pull requests in a week</em>. Each one is short. Each one comes with the exact command. No theory unless the theory unblocks the move.</p>
+        <p>I write it casual because that's how I learned it — from Cal's open notebooks, Ashi's modular breakdowns, Bailey's step-by-step prototyping. So this is mine, in that lineage. Steal what works.</p>
+      </div>
+
+      <aside class="toc-card" aria-label="Table of contents">
+        <h4>Today's pages</h4>
+        <ol>
+          <li><a href="#h1">Install the CLI, skip the web</a></li>
+          <li><a href="#h2">Auth once, forget forever</a></li>
+          <li><a href="#h3">Clone like a grown-up</a></li>
+          <li><a href="#h4">Branches are scratch paper</a></li>
+          <li><a href="#h5">Commit small, commit often</a></li>
+          <li><a href="#h6">The status / diff / log triad</a></li>
+          <li><a href="#h7">PRs from the terminal</a></li>
+          <li><a href="#h8">Let Claude write the PR body</a></li>
+          <li><a href="#h9">.gitignore before your first push</a></li>
+          <li><a href="#h10">Stash beats panic</a></li>
+          <li><a href="#h11">Aliases for the lazy</a></li>
+          <li><a href="#h12">Read the diff before you ship</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- ═══════════════ ENTRY 01 ═══════════════ -->
+    <article class="entry" id="h1">
+      <header class="entry-head">
+        <span class="entry-num">01</span>
+        <h2>Install the CLI, skip the web.</h2>
+        <span class="entry-tag">setup</span>
+      </header>
+      <div class="entry-body">
+        <p>The browser dashboard is a museum. The CLI is the workshop. Install <code>gh</code> once and 80% of the buttons disappear.</p>
+        <div class="term" role="region" aria-label="Install gh CLI on macOS">
+<pre><span class="prompt">$</span> brew install gh
+<span class="cmt"># …a few seconds later…</span>
+<span class="prompt">$</span> gh --version
+<span class="out">gh version 2.62.0</span></pre>
+        </div>
+        <p>That's it. You now have a tiny machine that talks to GitHub on your behalf. Everything below builds on it.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 02 ═══════════════ -->
+    <article class="entry" id="h2">
+      <header class="entry-head">
+        <span class="entry-num">02</span>
+        <h2>Auth once, then forget about it forever.</h2>
+        <span class="entry-tag">setup</span>
+      </header>
+      <div class="entry-body">
+        <p>Personal access tokens, SSH keys, browser logins — three different rabbit holes. Skip them. <code>gh auth login</code> bundles all of it into one walkthrough.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> gh auth login
+<span class="out">? Where do you use GitHub?</span>  GitHub.com
+<span class="out">? Preferred protocol?</span>        HTTPS
+<span class="out">? Authenticate Git?</span>           Yes
+<span class="out">? How would you like to auth?</span> Login with a web browser
+<span class="cmt"># copy the one-time code, paste in the browser, done.</span>
+<span class="ok">✓ Logged in as your-username</span></pre>
+        </div>
+        <div class="note sage">
+          <span class="label" aria-hidden="true">why this matters →</span>
+          You just told <em>both</em> the CLI and <code>git</code> itself how to push. No more "permission denied" errors at the worst possible moment.
+        </div>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 03 ═══════════════ -->
+    <article class="entry" id="h3">
+      <header class="entry-head">
+        <span class="entry-num">03</span>
+        <h2>Clone like a grown-up.</h2>
+        <span class="entry-tag">setup</span>
+      </header>
+      <div class="entry-body">
+        <p>Stop copy-pasting URLs. Use the CLI to grab any repo you can see. You can also clone with HTTPS or SSH without remembering which is which — <code>gh</code> figures it out.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> gh repo clone anthropics/anthropic-cookbook
+<span class="prompt">$</span> cd anthropic-cookbook
+<span class="prompt">$</span> ls
+<span class="out">README.md  misc/  multimodal/  skills/  third_party/ …</span></pre>
+        </div>
+        <p>For your own repos: <code>gh repo create my-experiment --public --clone</code> creates and clones in one shot. The next paragraph of your morning is a working folder.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 04 ═══════════════ -->
+    <article class="entry" id="h4">
+      <header class="entry-head">
+        <span class="entry-num">04</span>
+        <h2>Branches are scratch paper.</h2>
+        <span class="entry-tag sage">daily driver</span>
+      </header>
+      <div class="entry-body">
+        <p>Mental model: <code>main</code> is the published version of the book. A branch is a sticky note you slap on the desk while you try things. If the experiment works, you fold it back into the book. If it doesn't, you throw the sticky note away — the book is fine.</p>
+        <div class="flow" aria-hidden="true">
+          <span class="pill live">main</span>
+          <span class="arrow">→</span>
+          <span class="pill">checkout -b feature/new-hero</span>
+          <span class="arrow">→</span>
+          <span class="pill">commit</span>
+          <span class="pill">commit</span>
+          <span class="pill">commit</span>
+          <span class="arrow">→</span>
+          <span class="pill">merge back</span>
+        </div>
+        <div class="term">
+<pre><span class="prompt">$</span> git checkout -b feature/landing-tweak
+<span class="cmt"># …make changes, save files…</span>
+<span class="prompt">$</span> git checkout main          <span class="cmt"># bail out, no harm done</span>
+<span class="prompt">$</span> git branch -D feature/landing-tweak  <span class="cmt"># throw the sticky note away</span></pre>
+        </div>
+        <div class="note">
+          <span class="label" aria-hidden="true">rule of thumb →</span>
+          One branch per <em>thought</em>, not per feature. If you change direction halfway through, start a new branch. It's free.
+        </div>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 05 ═══════════════ -->
+    <article class="entry" id="h5">
+      <header class="entry-head">
+        <span class="entry-num">05</span>
+        <h2>Commit small, commit often.</h2>
+        <span class="entry-tag sage">daily driver</span>
+      </header>
+      <div class="entry-body">
+        <p>A commit is a save point in a video game. The cost of a save is zero. The cost of <em>not</em> having a save when something breaks is the rest of your afternoon.</p>
+        <div class="diff">
+          <div class="col before">
+            <span class="label" aria-hidden="true">don't do this</span>
+            git commit -m "stuff"<br>
+            git commit -m "more stuff"<br>
+            git commit -m "fixed everything"
+          </div>
+          <div class="col after">
+            <span class="label" aria-hidden="true">do this</span>
+            git commit -m "add hero copy"<br>
+            git commit -m "swap CTA color to sky"<br>
+            git commit -m "fix mobile h1 wrap"
+          </div>
+        </div>
+        <p>Subject in the imperative mood: <em>add</em>, <em>fix</em>, <em>remove</em>. Read it as "If applied, this commit will …". Then it scans correctly in <code>git log</code> six months later when past-you is a stranger.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 06 ═══════════════ -->
+    <article class="entry" id="h6">
+      <header class="entry-head">
+        <span class="entry-num">06</span>
+        <h2>The status / diff / log triad.</h2>
+        <span class="entry-tag sage">daily driver</span>
+      </header>
+      <div class="entry-body">
+        <p>Three commands. Memorize them. They answer 90% of the questions you'll have inside a repo.</p>
+        <ul class="checklist">
+          <li><code>git status</code> — what files have I changed?</li>
+          <li><code>git diff</code> — what's different inside those files?</li>
+          <li><code>git log --oneline -10</code> — what did I (or someone else) do recently?</li>
+        </ul>
+        <div class="term">
+<pre><span class="prompt">$</span> git status
+<span class="out">On branch feature/landing-tweak
+Changes not staged for commit:
+  modified:   site/index.html
+  modified:   site/styles.css</span>
+
+<span class="prompt">$</span> git diff site/styles.css
+<span class="cmt"># scrollable side-by-side of every line you touched</span>
+
+<span class="prompt">$</span> git log --oneline -5
+<span class="out">a3f1d20 add hero copy
+b22ee01 swap CTA color to sky
+…</span></pre>
+        </div>
+        <div class="note sage">
+          <span class="label" aria-hidden="true">tiny upgrade →</span>
+          Add <code>--graph</code> to <code>git log</code> to see branches as ASCII art. Strangely satisfying once you spot the merges.
+        </div>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 07 ═══════════════ -->
+    <article class="entry" id="h7">
+      <header class="entry-head">
+        <span class="entry-num">07</span>
+        <h2>Pull requests, straight from the terminal.</h2>
+        <span class="entry-tag">PR flow</span>
+      </header>
+      <div class="entry-body">
+        <p>The web UI for opening a PR is twelve clicks. The CLI is one command. Ship the branch, open the PR, all in one breath.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> git push -u origin feature/landing-tweak
+<span class="out">remote: Resolving deltas …</span>
+<span class="ok">branch 'feature/landing-tweak' set up to track 'origin/feature/landing-tweak'</span>
+
+<span class="prompt">$</span> gh pr create --fill --web
+<span class="cmt"># --fill auto-uses your commit history as the PR title/body
+# --web opens the draft in the browser for review</span></pre>
+        </div>
+        <p>Skip <code>--web</code> if you're already happy with the title/body and just want it created. Add <code>--draft</code> if it's not ready to be reviewed — keeps reviewers off your back until you're ready.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 08 ═══════════════ -->
+    <article class="entry" id="h8">
+      <header class="entry-head">
+        <span class="entry-num">08</span>
+        <h2>Let Claude write the PR body.</h2>
+        <span class="entry-tag amber">AI workflow</span>
+      </header>
+      <div class="entry-body">
+        <p>Half the friction of opening a PR is staring at the empty description box. So don't. Pipe the diff to Claude Code (or whatever you have wired in) and let it draft the prose. You edit, you ship.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> git diff main...HEAD | pbcopy
+<span class="cmt"># paste into Claude:</span>
+<span class="cmt"># "Write a PR description: summary, test plan, anything worth flagging.
+#  Two bullets max per section. Imperative mood."</span>
+<span class="prompt">$</span> gh pr create --title "Landing page: tighten hero copy" --body-file /tmp/pr.md</pre>
+        </div>
+        <div class="note">
+          <span class="label" aria-hidden="true">why it works →</span>
+          The diff is the source of truth. You're not asking the model to invent — you're asking it to summarize what's already there. That's its strongest mode. Always read the draft before posting; you're still the author.
+        </div>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 09 ═══════════════ -->
+    <article class="entry" id="h9">
+      <header class="entry-head">
+        <span class="entry-num">09</span>
+        <h2>.gitignore before your first push. Always.</h2>
+        <span class="entry-tag amber">safety</span>
+      </header>
+      <div class="entry-body">
+        <p>The single most public mistake a beginner makes: pushing <code>.env</code> with an API key in it. Once it's on GitHub, treat that key as burned even if you delete the commit. Set the gitignore <em>before</em> you push, not after.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> cat &gt; .gitignore &lt;&lt;'EOF'
+<span class="out">.env
+.env.local
+.env.*.local
+node_modules/
+.DS_Store
+*.log
+.next/
+dist/
+build/
+.vscode/
+.idea/</span>
+<span class="out">EOF</span>
+<span class="prompt">$</span> git status   <span class="cmt"># confirm .env is no longer listed</span></pre>
+        </div>
+        <p>If you <em>already</em> committed a secret — rotate the key first, then scrub. Order matters. Tools: <code>git filter-repo</code> for the scrub, the provider's dashboard for the rotate. Don't do this from memory at midnight.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 10 ═══════════════ -->
+    <article class="entry" id="h10">
+      <header class="entry-head">
+        <span class="entry-num">10</span>
+        <h2>Stash beats panic.</h2>
+        <span class="entry-tag">recovery</span>
+      </header>
+      <div class="entry-body">
+        <p>You're mid-experiment on Branch A. Slack pings — urgent fix needed on <code>main</code>. You have uncommitted changes. Panic? No. Stash.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> git stash push -m "wip: hero layout exploration"
+<span class="ok">Saved working directory and index state On feature/hero: wip: hero layout exploration</span>
+
+<span class="cmt"># …go fix the thing on main, push, return to your branch…</span>
+<span class="prompt">$</span> git stash list
+<span class="out">stash@{0}: On feature/hero: wip: hero layout exploration</span>
+
+<span class="prompt">$</span> git stash pop
+<span class="out">On branch feature/hero
+Changes not staged for commit:
+  modified: site/index.html</span></pre>
+        </div>
+        <p>Stash is the universal pause button. Anything you weren't ready to commit, you can shelve, switch branches, and pop back exactly where you were. It has saved me more afternoons than coffee.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 11 ═══════════════ -->
+    <article class="entry" id="h11">
+      <header class="entry-head">
+        <span class="entry-num">11</span>
+        <h2>Aliases for the lazy (recommended).</h2>
+        <span class="entry-tag">setup</span>
+      </header>
+      <div class="entry-body">
+        <p>I type these phrases 30 times a day. Why type them in full? Drop these into <code>~/.gitconfig</code> once.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> git config --global alias.s "status -sb"
+<span class="prompt">$</span> git config --global alias.lg "log --oneline --graph --decorate -20"
+<span class="prompt">$</span> git config --global alias.co "checkout"
+<span class="prompt">$</span> git config --global alias.cm "commit -m"
+<span class="prompt">$</span> git config --global alias.last "log -1 HEAD --stat"
+<span class="cmt"># now:</span>
+<span class="prompt">$</span> git s
+<span class="prompt">$</span> git lg
+<span class="prompt">$</span> git cm "fix mobile h1 wrap"</pre>
+        </div>
+        <div class="note sage">
+          <span class="label" aria-hidden="true">bonus →</span>
+          Add a shell alias too: <code>alias gp='git push'</code>, <code>alias gpl='git pull --rebase'</code>. Past-you will thank present-you within a week.
+        </div>
+      </div>
+    </article>
+
+    <!-- ═══════════════ ENTRY 12 ═══════════════ -->
+    <article class="entry" id="h12">
+      <header class="entry-head">
+        <span class="entry-num">12</span>
+        <h2>Read the diff before you ship. Every time.</h2>
+        <span class="entry-tag amber">safety</span>
+      </header>
+      <div class="entry-body">
+        <p>This is the rule that separates a habit from a hobby. Before you push, before you open the PR — open the diff. Scroll through it. Read it like a stranger would.</p>
+        <div class="term">
+<pre><span class="prompt">$</span> git diff --stat origin/main...HEAD
+<span class="out"> site/index.html | 12 +++++++-----
+ site/styles.css | 24 ++++++++++++++----------
+ 2 files changed, 21 insertions(+), 15 deletions(-)</span>
+
+<span class="prompt">$</span> git diff origin/main...HEAD
+<span class="cmt"># the full prose of every line you've changed.
+# scroll. read. delete debug lines you forgot. ship.</span></pre>
+        </div>
+        <div class="diff">
+          <div class="col before">
+            <span class="label" aria-hidden="true">often slips through</span>
+            console.log("here")<br>
+            console.log(data)<br>
+            // TEMP — remove me
+          </div>
+          <div class="col after">
+            <span class="label" aria-hidden="true">what you ship</span>
+            <em>(nothing — that's the point.)</em>
+          </div>
+        </div>
+        <p>Reading the diff is also where you catch the typo, the unused import, the file you committed by accident. It takes 60 seconds. The alternative is a public commit history that documents your fumbling. Choose the 60 seconds.</p>
+      </div>
+    </article>
+
+    <!-- ═══════════════ closing notes ─── -->
+    <article class="entry" id="closer" style="border-top: 1px dashed oklch(0.78 0.02 80); padding-top: 2rem; margin-top: 1rem;">
+      <header class="entry-head">
+        <span class="entry-num">★</span>
+        <h2>Notes in the margin.</h2>
+        <span class="entry-tag">closing</span>
+      </header>
+      <div class="entry-body">
+        <p>None of this is impressive to a senior engineer. That's the point. These twelve habits aren't ceiling — they're the floor. Build them in once and the platform stops being scary. Then you can pay attention to the actual work: the code, the design, the idea you're trying to ship.</p>
+        <p>I learned most of this from people who showed their work in public — Cal's open notebooks, Bailey's prototyping walkthroughs, Ashi's modular breakdowns, Dray's "AI Engineer" language. The pattern is always the same: someone shows you the exact command they typed, and the mystery evaporates.</p>
+        <p>So here's the same pact. The exact commands are above. Steal them. Try one tomorrow. Throw away the branch if it doesn't work — that's literally what branches are for.</p>
+        <p>— Lupo</p>
+      </div>
+    </article>
+
+    <footer class="signoff" role="contentinfo">
+      <span class="scribble" aria-hidden="true">— The Mess is the Method</span>
+      <span class="meta">Field Notebook · 2026-05-28 · open notebook, no gatekeeping.</span>
+    </footer>
+
+  </main>
+</body>
+</html>

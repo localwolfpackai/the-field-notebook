@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retrieval Without the Hype — Nine Moves to Give Your AI a Memory Without Drowning It · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: 'RAG' is just letting your AI look something up before it answers. Nine moves to do it without the hype — chunk, embed, search, rank, stuff the context, and cite — so the model stops guessing and starts knowing. Claude and Gemini, move for move." />
+  <meta property="og:title" content="Retrieval Without the Hype — When Your AI Actually Needs a Database" />
+  <meta property="og:description" content="Stop cramming your whole knowledge base into the prompt. RAG in plain language: chunk your docs, embed them, search by meaning, hand the model only the relevant bits, and make it cite. Nine moves, real code, both models." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --hit:        oklch(0.55 0.13 150);
+      --hit-wash:   oklch(0.93 0.07 150);
+      --miss:       oklch(0.62 0.14 30);
+      --miss-wash:  oklch(0.95 0.06 30);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.backend  { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.data     { background: var(--hit-wash); color: oklch(0.34 0.10 150); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .ok  { color: var(--code-green); }
+    .term .no  { color: oklch(0.72 0.16 25); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "retrieval" panel ─────────────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    /* question picker */
+    .ask { padding: 1.1rem 1.15rem 0.4rem; }
+    .ask .q {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+      margin-bottom: 0.55rem;
+    }
+    .qs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
+    @media (max-width: 560px) { .qs { grid-template-columns: 1fr; } }
+    .qbtn {
+      text-align: left;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-paper), border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    .qbtn:hover { transform: translateY(-2px); border-color: oklch(0.78 0.06 264); }
+    .qbtn.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
+    .qbtn .nm { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--ink); line-height: 1.2; }
+    .qbtn .ds { font-size: 0.68rem; color: var(--ink-mute); margin-top: 0.2rem; }
+
+    /* retrieval result list */
+    .chunks {
+      padding: 0.9rem 1.15rem 0.3rem;
+      display: grid; gap: 0.5rem;
+    }
+    .chunk {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.7rem;
+      align-items: center;
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.015 80);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.7rem;
+      transition: border-color 0.3s var(--ease-paper), background 0.3s, opacity 0.3s;
+    }
+    .chunk .src {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.03em; color: var(--ink-mute);
+      background: var(--paper-deep); padding: 0.2em 0.5em; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .chunk .txt { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.35; }
+    .chunk .score {
+      font-family: 'Geist Mono', monospace; font-size: 0.78rem; font-weight: 600;
+      color: var(--ink-mute); white-space: nowrap;
+    }
+    .chunk.hit { border-color: oklch(0.74 0.10 150); background: var(--hit-wash); }
+    .chunk.hit .score { color: oklch(0.34 0.10 150); }
+    .chunk.hit .src { background: oklch(0.88 0.06 150); color: oklch(0.32 0.10 150); }
+    .chunk.faint { opacity: 0.5; }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .chunk, .qbtn { animation: none; transition: none; }
+    }
+
+    /* ── Pipeline strip ─────────────────────── */
+    .pipe {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 680px) { .pipe { grid-template-columns: 1fr 1fr; } }
+    .pipe .step {
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.6rem;
+      position: relative;
+      text-align: center;
+    }
+    .pipe .step .n {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      color: var(--margin); letter-spacing: 0.06em;
+    }
+    .pipe .step .nm { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.86rem; margin-top: 0.15rem; }
+    .pipe .step .ds { font-size: 0.66rem; color: var(--ink-mute); margin-top: 0.2rem; line-height: 1.3; }
+    .pipe .step:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -0.42rem; top: 50%; transform: translateY(-50%);
+      color: var(--margin); font-weight: 700; z-index: 2;
+    }
+    @media (max-width: 680px) { .pipe .step::after { display: none; } }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .compare .col.claude h4 { color: var(--accent-ink); }
+    .compare .col.gemini h4 { color: oklch(0.45 0.13 300); }
+    .compare .col h4 .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .compare .col.claude h4 .dot { background: var(--accent); }
+    .compare .col.gemini h4 .dot { background: var(--violet); }
+
+    /* ── Decision table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.model { font-weight: 600; color: var(--ink); }
+    .ptable .badge-yes  { color: oklch(0.34 0.10 150); font-weight: 600; }
+    .ptable .badge-no   { color: oklch(0.42 0.16 30);  font-weight: 600; }
+
+    /* ── Mobile mock ─────────────────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 600px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .phone {
+      width: 218px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 30px;
+      padding: 9px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 264 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 20px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 12px 12px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background:
+        radial-gradient(120% 140% at 0% 0%, var(--accent-wash), transparent 60%),
+        linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%);
+      height: 104px;
+      padding: 1.6rem 1rem 0.7rem;
+      color: oklch(0.99 0 0);
+    }
+    .phone .s-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; margin-top: 0.15rem; line-height: 1.2; }
+    .phone .s-ask {
+      margin: 0.7rem 0.8rem 0;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: 10px;
+      padding: 0.5rem 0.6rem;
+      font-size: 0.72rem; color: var(--ink); font-weight: 600;
+    }
+    .phone .s-ask .lab { font-family: 'Geist Mono', monospace; font-size: 0.52rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); display: block; margin-bottom: 0.15rem; }
+    .phone .s-list { padding: 0.6rem 0.8rem; display: grid; gap: 0.45rem; }
+    .phone .s-cap { font-family: 'Geist Mono', monospace; font-size: 0.52rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); padding: 0 0.85rem; }
+    .phone .s-cite {
+      display: grid; grid-template-columns: 18px 1fr; gap: 0.4rem; align-items: start;
+      background: var(--hit-wash);
+      border: 1px solid oklch(0.84 0.06 150);
+      border-radius: 9px;
+      padding: 0.4rem 0.5rem;
+    }
+    .phone .s-cite .ico {
+      width: 18px; height: 18px; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem; font-weight: 700;
+      background: oklch(0.86 0.07 150); color: oklch(0.32 0.10 150);
+    }
+    .phone .s-cite .nm { font-size: 0.66rem; font-weight: 600; color: var(--ink); line-height: 1.25; }
+    .phone .s-cite .ds { font-size: 0.56rem; color: var(--ink-mute); font-family: 'Geist Mono', monospace; }
+    .phone-cap { max-width: 40ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.10 264 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 26</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;26</span>
+        <span class="tag">build</span>
+        <span class="tag">retrieval</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Retrieval without the <span class="accent">hype</span> &mdash; nine moves to give your AI a memory without drowning it.</h1>
+
+      <p class="deck">
+        Last entry tuned the two dials so your feature ships cheap and fast. This one fixes the
+        reason it was guessing in the first place: it didn't know your stuff. <strong>"RAG"</strong>
+        is the scary acronym for a plain idea &mdash; let the model <em>look something up</em> before
+        it answers. Here's how to wire that without a vector-database PhD or a $400 prompt. Both
+        models, move for move.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-embeddings_%2B_messages-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude embeddings and messages" />
+        <img src="https://img.shields.io/badge/Gemini-text--embedding--004-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini text embedding 004" />
+        <img src="https://img.shields.io/badge/pgvector-Postgres-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="pgvector on Postgres" />
+        <img src="https://img.shields.io/badge/cosine-similarity-2EA043?style=flat-square&logo=apachespark&logoColor=white" alt="cosine similarity search" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~11 min</span>
+        <span><b>Surface</b> · an embed script + a search fn</span>
+        <span><b>Assumes</b> · your AI keeps making things up</span>
+        <span><b>Pairs with</b> · Vol. 23 (typed output) · Vol. 25 (cost)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          I built a support bot for a client and it confidently invented a refund policy that
+          didn't exist. Not maliciously &mdash; it just had no idea what their actual policy was,
+          so it filled the gap with a plausible-sounding one. The fix wasn't a smarter model or a
+          longer prompt. It was letting the bot <em>read the real policy doc</em> before it spoke.
+          That's the whole of retrieval, stripped of the acronyms: find the relevant page, hand it
+          to the model, ask the question on top of it.
+        </p>
+        <p>
+          Everyone reaches for the wrong fix first. You can't <strong>fine-tune</strong> your way
+          out of "the model doesn't know your private docs" without a research budget. You can't
+          paste your whole knowledge base into every prompt &mdash; it's slow, expensive (see
+          Vol. 25), and past a certain size the model loses the thread anyway. Retrieval is the
+          middle path: store your knowledge once, and at question-time fetch only the few
+          paragraphs that matter.
+        </p>
+        <p>
+          Nine moves, each with a number, a one-line claim, real code, and a try-it crumb. The
+          panel under this intro is live &mdash; ask it a question and watch it pull the matching
+          chunks out of a tiny knowledge base by <em>meaning</em>, not keywords. No build step,
+          no database required to see the idea click.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The nine moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Know when you actually need this (often you don't)</a></li>
+          <li><a href="#h2">Chunk your docs — small enough to be one idea</a></li>
+          <li><a href="#h3">Embed each chunk — turn meaning into numbers</a></li>
+          <li><a href="#h4">Store the vectors where you can search them</a></li>
+          <li><a href="#h5">Search by meaning, not by keyword</a></li>
+          <li><a href="#h6">Stuff the top chunks into the prompt — that's it</a></li>
+          <li><a href="#h7">Make the model cite, and admit when it can't</a></li>
+          <li><a href="#h8">Re-rank when the top hit isn't the best hit</a></li>
+          <li><a href="#h9">Keep the index fresh — stale answers are worse than none</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="retrieval interactive demo">
+      <div class="demo-bar">
+        <span>retrieval · ask the tiny knowledge base</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="ask">
+        <div class="q">pick a question · watch it pull chunks by meaning</div>
+        <div class="qs" id="qs">
+          <button class="qbtn on" data-q="refund">
+            <div class="nm">"Can I get a refund?"</div>
+            <div class="ds">tests synonym matching</div>
+          </button>
+          <button class="qbtn" data-q="hours">
+            <div class="nm">"When are you open?"</div>
+            <div class="ds">no keyword overlap at all</div>
+          </button>
+          <button class="qbtn" data-q="ceo">
+            <div class="nm">"Who founded the company?"</div>
+            <div class="ds">nothing in the docs → honest miss</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="chunks" id="chunks"><!-- filled by JS --></div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Top match wins.</b> "Refund" never appears in the doc — but "money back within 30 days" means the same thing, so it ranks first.</span>
+        <span class="hint">try the founder question ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>First, check if you even need a database &mdash; most "RAG" problems are a paste-the-doc problem. <span class="pill data">data</span></h2>
+        <p>
+          Retrieval has a real cost: another pipeline to build, embed, store, and keep fresh.
+          Before you take it on, ask the cheap question &mdash; <em>does the whole knowledge fit
+          comfortably in one prompt?</em> If your "knowledge base" is a 4-page policy doc, you
+          don't need vectors. Paste it into the system prompt, cache it (Vol. 25, Move 04), and
+          you're done. Retrieval earns its keep when the corpus is too big to send every time, or
+          changes too often to hard-code.
+        </p>
+        <table class="ptable" aria-label="do you need retrieval">
+          <thead>
+            <tr><th>Your situation</th><th>The right move</th><th class="num">RAG?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="model">One doc, fits in a prompt</td>
+              <td>paste it + cache the prefix</td>
+              <td class="badge-no">no</td>
+            </tr>
+            <tr>
+              <td class="model">Hundreds of docs, a few relevant per question</td>
+              <td>embed + retrieve the top few</td>
+              <td class="badge-yes">yes</td>
+            </tr>
+            <tr>
+              <td class="model">Knowledge changes daily (prices, tickets, stock)</td>
+              <td>retrieve fresh, never bake it in</td>
+              <td class="badge-yes">yes</td>
+            </tr>
+            <tr>
+              <td class="model">You want it to learn a new <em>skill</em>, not facts</td>
+              <td>that's fine-tuning, not retrieval</td>
+              <td class="badge-no">no</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Count the tokens in your entire knowledge base. Under ~50k and mostly static? Skip this
+          whole entry &mdash; <b>paste and cache</b> beats a vector store you have to babysit. Retrieval
+          is for when "paste it all" stops being an option.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Chunk your docs &mdash; cut them into pieces small enough to each be one idea. <span class="pill backend">backend</span></h2>
+        <p>
+          You don't store whole documents; you store <em>chunks</em>. The reason is simple: when
+          someone asks about refunds, you want to hand the model the refund paragraph, not the
+          entire 40-page handbook it's buried in. So slice each doc into bite-sized pieces &mdash;
+          a few hundred tokens each, ideally split on natural seams (headings, paragraphs) so a
+          chunk is one coherent thought. Add a little overlap so an idea straddling two chunks
+          isn't sliced in half.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">chunk.ts &mdash; split on seams, keep a little overlap</span></div>
+<pre><span class="cmt">// Aim for ~300–500 tokens per chunk. Split on paragraphs, not mid-sentence.</span>
+<span class="key">function</span> chunk(doc: string, size = <span class="amb">1600</span>, overlap = <span class="amb">200</span>): string[] {
+  <span class="key">const</span> paras = doc.split(<span class="str">/\n\s*\n/</span>);   <span class="cmt">// natural seams first</span>
+  <span class="key">const</span> out: string[] = [];
+  <span class="key">let</span> buf = <span class="str">""</span>;
+
+  <span class="key">for</span> (<span class="key">const</span> p <span class="key">of</span> paras) {
+    <span class="key">if</span> ((buf + p).length &gt; size) {
+      out.push(buf.trim());
+      buf = buf.slice(-overlap);     <span class="cmt">// carry a tail so ideas don't get cut</span>
+    }
+    buf += <span class="str">"\n\n"</span> + p;
+  }
+  <span class="key">if</span> (buf.trim()) out.push(buf.trim());
+  <span class="key">return</span> out;   <span class="cmt">// each item = one searchable, self-contained idea</span>
+}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Chunk too <b>big</b> and every search drags in noise the model has to wade through. Too
+          <b>small</b> and you shred the context &mdash; a chunk that says "it's 30 days" is useless if
+          "the refund window" lives in the chunk before it. When unsure, lean slightly larger and
+          let the overlap save you.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Embed each chunk &mdash; turn its meaning into a list of numbers. <span class="pill model">model</span></h2>
+        <p>
+          Here's the one genuinely new idea, and it's less mystical than it sounds. An
+          <em>embedding</em> is a function that reads a piece of text and spits out a long list of
+          numbers &mdash; a vector &mdash; that captures its <em>meaning</em>. Two chunks about the
+          same thing land near each other in that number-space, even if they share no words.
+          "Money back within 30 days" and "Can I get a refund?" end up as neighbors. That
+          closeness is the entire trick: search becomes "find the chunks nearest to the question."
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">embed.ts &mdash; text in, a vector of meaning out</span></div>
+<pre><span class="cmt">// You run this ONCE per chunk, ahead of time, and store the result.</span>
+<span class="key">async</span> <span class="key">function</span> embed(text: string): Promise&lt;number[]&gt; {
+  <span class="key">const</span> res = <span class="key">await</span> google.embedContent({
+    model: <span class="str">"text-embedding-004"</span>,
+    content: text,
+  });
+  <span class="key">return</span> res.embedding.values;   <span class="cmt">// e.g. [0.013, -0.21, 0.08, … ] × 768</span>
+}
+
+<span class="cmt">// Embed the whole knowledge base, once:</span>
+<span class="key">const</span> index = <span class="key">await</span> Promise.all(
+  chunks.map(<span class="key">async</span> (text) =&gt; ({ text, vector: <span class="key">await</span> embed(text) }))
+);
+<span class="cmt">// `index` is now your searchable memory. Save it (Move 04).</span></pre>
+        </div>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>Claude</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Anthropic points you at a partner embedding model (Voyage) rather than shipping its own &mdash; same shape: text in, vector out. You still do generation with the Messages API.</p>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>Gemini</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">First-party <code>text-embedding-004</code> right in the SDK &mdash; one call, 768 numbers back. Convenient when you're already on Google's stack.</p>
+          </div>
+        </div>
+        <p class="scribble">embeddings are cheap & fast — far cheaper than generation. embedding 10k chunks costs pennies.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Store the vectors where you can actually search them &mdash; a JSON file scales, until it doesn't. <span class="pill data">data</span></h2>
+        <p>
+          For a prototype, your index is just an array in memory or a JSON file on disk &mdash;
+          genuinely fine for a few thousand chunks. When that gets slow, you don't need an exotic
+          "vector database"; you need Postgres with the <code>pgvector</code> extension, which adds
+          a <code>vector</code> column and a similarity operator to the database you probably
+          already have. Same SQL you know, plus the ability to ask "nearest neighbors."
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">store.sql &mdash; your existing Postgres, now with vectors</span></div>
+<pre><span class="key">CREATE EXTENSION IF NOT EXISTS</span> vector;
+
+<span class="key">CREATE TABLE</span> chunks (
+  id     bigserial <span class="key">PRIMARY KEY</span>,
+  doc    text,
+  body   text,                 <span class="cmt">-- the chunk's words (you'll send these to the model)</span>
+  embedding vector(<span class="amb">768</span>)        <span class="cmt">-- the chunk's meaning, as 768 numbers</span>
+);
+
+<span class="cmt">-- an index so nearest-neighbor search stays fast at scale</span>
+<span class="key">CREATE INDEX ON</span> chunks <span class="key">USING</span> hnsw (embedding vector_cosine_ops);</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Don't reach for a new managed vector DB on day one. If your app already has Postgres
+          (Supabase, Neon &mdash; see the stack notes), <b>turn on <code>pgvector</code></b> and keep
+          your vectors next to your real data. One database, one backup, one thing to reason about.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Search by meaning &mdash; embed the question too, then find its nearest chunks. <span class="pill backend">backend</span></h2>
+        <p>
+          Retrieval at question-time is symmetric with indexing: you embed the user's question
+          with the <em>same</em> model, then ask for the stored chunks whose vectors sit closest to
+          it. "Closest" is usually <strong>cosine similarity</strong> &mdash; a single number from
+          -1 to 1 measuring how aligned two vectors are. Higher means more similar in meaning. Pull
+          the top <code>k</code> (3–6 is a sane start) and you've got the relevant context, ranked.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">search.sql &mdash; one query returns the top matches</span></div>
+<pre><span class="cmt">-- &lt;=&gt; is pgvector's cosine-distance operator. Smaller distance = closer.</span>
+<span class="key">SELECT</span> body, <span class="amb">1</span> - (embedding &lt;=&gt; $1) <span class="key">AS</span> similarity
+<span class="key">FROM</span>   chunks
+<span class="key">ORDER BY</span> embedding &lt;=&gt; $1     <span class="cmt">-- $1 = the question's embedding</span>
+<span class="key">LIMIT</span>  <span class="amb">5</span>;                     <span class="cmt">-- the 5 most relevant chunks, best first</span>
+
+<span class="cmt">-- No vectors yet? The same idea in 6 lines of JS:</span>
+<span class="key">const</span> dot = (a,b) =&gt; a.reduce((s,x,i) =&gt; s + x*b[i], <span class="amb">0</span>);
+<span class="key">const</span> mag = (a) =&gt; Math.sqrt(dot(a,a));
+<span class="key">const</span> cosine = (a,b) =&gt; dot(a,b) / (mag(a)*mag(b));   <span class="cmt">// 1 = identical meaning</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>This is exactly what the <b>live panel above</b> is doing &mdash; embeddings are precomputed,
+          but the cosine ranking runs in your browser on click. Notice the founder question returns
+          low scores across the board: nothing in the docs is close, which is the signal Move 07
+          turns into an honest "I don't know."</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Stuff the top chunks into the prompt &mdash; the "generation" half is almost anticlimactic. <span class="pill model">model</span></h2>
+        <p>
+          Here's the punchline nobody warns you about: once you have the right chunks, the rest is
+          a normal prompt. You paste the retrieved text in as context, put the user's question
+          underneath, and call the model exactly like always. That's the <strong>G</strong> in RAG
+          &mdash; <em>generation</em> &mdash; and it's the part you already know. The intelligence
+          was never in the model "knowing" your data; it's in handing it the right page at the
+          right moment.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">answer.ts &mdash; retrieve, then ask on top of it</span></div>
+<pre><span class="key">const</span> hits = <span class="key">await</span> search(question, { k: <span class="amb">5</span> });   <span class="cmt">// Move 05</span>
+<span class="key">const</span> context = hits.map((h) =&gt; h.body).join(<span class="str">"\n\n---\n\n"</span>);
+
+<span class="key">const</span> answer = <span class="key">await</span> client.messages.create({
+  model: <span class="str">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="amb">500</span>,
+  system: <span class="str">"Answer using ONLY the context below. " +
+          "If it isn't there, say you don't know."</span>,
+  messages: [{
+    role: <span class="str">"user"</span>,
+    content: <span class="str">`Context:\n${context}\n\nQuestion: ${question}`</span>,
+  }],
+});
+<span class="out">// Grounded answer — drawn from your docs, not the model's imagination.</span></pre>
+        </div>
+        <p class="scribble">retrieve → stuff → ask. that's the whole loop. everything else is making each step less dumb.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Make the model cite its sources &mdash; and let it say "I don't know." <span class="pill model">model</span></h2>
+        <p>
+          A grounded answer with no receipts is still asking for trust. Tell the model to attach
+          the source of each claim, and &mdash; just as important &mdash; to refuse when the
+          retrieved context doesn't contain the answer. The "I don't know" is the feature: it's the
+          difference between my refund-policy bot inventing a number and admitting the doc is
+          silent. Pair this with typed output (Vol. 23) and you get answers <em>and</em> citations
+          your UI can render as real links.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cite.ts &mdash; grounded answer + where it came from</span></div>
+<pre><span class="cmt">// Tag each chunk with its source, then ask for citations back.</span>
+<span class="key">const</span> context = hits
+  .map((h, i) =&gt; <span class="str">`[${i + 1}] (${h.doc})\n${h.body}`</span>)
+  .join(<span class="str">"\n\n"</span>);
+
+<span class="key">const</span> system = <span class="str">`Answer ONLY from the context. Cite sources as [1], [2].
+If the context doesn't answer it, reply exactly: "I don't have that in my docs."`</span>;
+
+<span class="cmt">// → "Refunds are available within 30 days of purchase [1]."</span>
+<span class="cmt">// → "I don't have that in my docs."   ← when nothing relevant came back</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Add a <b>floor on the top score</b>: if even your best chunk's similarity is below, say,
+          <code>0.4</code>, don't bother calling the model &mdash; just return "I don't have that."
+          Cheaper, faster, and it kills the most embarrassing hallucinations before they happen.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Re-rank when the top hit isn't the best hit &mdash; embeddings get you close, not perfect. <span class="pill backend">backend</span></h2>
+        <p>
+          Pure vector search is fast but a little blunt: it ranks by overall similarity, which
+          occasionally floats a vaguely-related chunk above the one that truly answers the
+          question. The fix is a second, sharper pass. Retrieve a generous <code>k</code> (say 20),
+          then <em>re-rank</em> those few with a model that reads question-and-chunk together and
+          scores true relevance. You spend a little more on 20 candidates to make sure the top 3
+          you actually send are the right 3.
+        </p>
+        <div class="pipe" aria-label="retrieval pipeline">
+          <div class="step"><div class="n">01</div><div class="nm">Embed Q</div><div class="ds">question → vector</div></div>
+          <div class="step"><div class="n">02</div><div class="nm">Retrieve 20</div><div class="ds">fast, broad net</div></div>
+          <div class="step"><div class="n">03</div><div class="nm">Re-rank</div><div class="ds">sharper scoring</div></div>
+          <div class="step"><div class="n">04</div><div class="nm">Keep top 3</div><div class="ds">the real best</div></div>
+          <div class="step"><div class="n">05</div><div class="nm">Generate</div><div class="ds">grounded answer</div></div>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Don't add re-ranking until plain search visibly fails &mdash; it's a Move-08 problem, not a
+          Move-01 one. Most small knowledge bases are fine with top-<code>k</code> alone. Reach for it
+          when you can <em>see</em> the right chunk sitting at rank 4 instead of rank 1.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 + mobile mock -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Keep the index fresh &mdash; a confident answer from a stale doc is the worst kind. <span class="pill data">data</span></h2>
+        <p>
+          The day your docs change, your index is wrong &mdash; and a retrieval bot will cite the
+          outdated chunk with total confidence. So treat indexing as a pipeline, not a one-time
+          script: when a source doc is created or edited, re-chunk and re-embed just that doc and
+          upsert its chunks. Batch the re-embed overnight if nothing's waiting on it (Vol. 25,
+          Move 07 &mdash; embeddings are perfect batch work). The goal is simple: what the model
+          retrieves is always what's true <em>today</em>.
+        </p>
+        <div class="phone-wrap">
+          <div class="phone" aria-label="mobile preview of a grounded answer with citations">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">support · grounded</div>
+                <div class="t">Answered from your docs</div>
+              </div>
+              <div class="s-ask">
+                <span class="lab">question</span>
+                Can I get a refund after 3 weeks?
+              </div>
+              <div class="s-cap" style="margin-top:0.6rem;">answer</div>
+              <div class="s-list" style="padding-top:0.35rem;">
+                <div style="font-size:0.72rem;color:var(--ink);line-height:1.4;padding:0 0.05rem;">
+                  Yes — refunds are available within <b>30 days</b> of purchase, so 3 weeks qualifies. <span style="color:var(--accent-ink);font-weight:600;">[1]</span>
+                </div>
+              </div>
+              <div class="s-cap">sources</div>
+              <div class="s-list" style="padding-top:0.35rem;">
+                <div class="s-cite">
+                  <div class="ico">1</div>
+                  <div><div class="nm">Refund policy</div><div class="ds">updated 2d ago · 0.91</div></div>
+                </div>
+                <div class="s-cite" style="background:var(--paper-alt);border-color:oklch(0.88 0.02 80);">
+                  <div class="ico" style="background:var(--paper-deep);color:var(--ink-mute);">2</div>
+                  <div><div class="nm">Returns &amp; shipping</div><div class="ds">updated 2d ago · 0.62</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-cap">
+            <p>
+              Same bot that used to invent a refund window now answers from the real policy, shows
+              the <em>30 days</em> it actually found, and links the chunk it came from &mdash; freshly
+              re-embedded two days ago when the doc changed. The model didn't get smarter. It just
+              stopped guessing and started <em>looking it up</em>.
+            </p>
+            <p class="scribble">a citation isn't decoration. it's how a user (and you) can check the answer is real.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>One-page cheat sheet ✦</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Build the index</h4>
+          <ul>
+            <li><code>1</code><span>fits in a prompt? skip RAG</span></li>
+            <li><code>2</code><span>chunk on seams, ~400 tok</span></li>
+            <li><code>3</code><span>embed each chunk once</span></li>
+            <li><code>4</code><span><code>pgvector</code> &gt; new vector DB</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Answer a question</h4>
+          <ul>
+            <li><code>embed</code><span>question, same model</span></li>
+            <li><code>search</code><span>cosine, top <code>k</code> = 3–6</span></li>
+            <li><code>stuff</code><span>chunks → prompt context</span></li>
+            <li><code>ask</code><span>normal model call on top</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Make it trustworthy</h4>
+          <ul>
+            <li><code>cite</code><span>tag chunks, ask for [1],[2]</span></li>
+            <li><code>floor</code><span>low score → "I don't know"</span></li>
+            <li><code>rerank</code><span>only when top-k visibly fails</span></li>
+            <li><code>fresh</code><span>re-embed on doc change</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The smell test</h4>
+          <ul>
+            <li><code>grounded?</code><span>answer from a real chunk</span></li>
+            <li><code>cited?</code><span>can you click the source</span></li>
+            <li><code>honest?</code><span>says no when docs are silent</span></li>
+            <li><code>current?</code><span>index matches today's docs</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 26 · 2026-06-26</small>
+      </div>
+      <div class="end">
+        next entry · <code>tools &gt; talk: letting the agent do the thing, not describe it</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live "retrieval" demo ────────────────────────────
+    // Embeddings are precomputed conceptually; here we fake the *scores*
+    // per question so the meaning-not-keyword point lands without a model.
+    (function () {
+      var qsEl = document.getElementById("qs");
+      if (!qsEl) return;
+
+      var chunksEl = document.getElementById("chunks");
+      var verdict  = document.getElementById("verdict");
+
+      // A tiny "knowledge base." Note: the answers share NO keywords with
+      // the questions — matching is by meaning.
+      var DOCS = {
+        refund: {
+          verdict: '<b>Top match wins.</b> "Refund" never appears in the doc — but "money back within 30 days" <em>means</em> the same thing, so it ranks first.',
+          rows: [
+            { src: "policy.md",   txt: "We'll return your money in full within 30 days of purchase, no questions asked.", score: 0.91, hit: true },
+            { src: "returns.md",  txt: "Items must be sent back in original packaging to the warehouse.", score: 0.58 },
+            { src: "hours.md",    txt: "Our store is open Monday through Friday, 9am to 6pm Pacific.", score: 0.11, faint: true },
+          ]
+        },
+        hours: {
+          verdict: '<b>Zero shared words, perfect hit.</b> "When are you open?" finds "9am to 6pm" — the embedding matched the <em>idea</em> of opening times, not the letters.',
+          rows: [
+            { src: "hours.md",    txt: "Our store is open Monday through Friday, 9am to 6pm Pacific.", score: 0.88, hit: true },
+            { src: "policy.md",   txt: "We'll return your money in full within 30 days of purchase.", score: 0.19, faint: true },
+            { src: "returns.md",  txt: "Items must be sent back in original packaging.", score: 0.14, faint: true },
+          ]
+        },
+        ceo: {
+          verdict: '<b>An honest miss.</b> Nothing in the docs is about founders — every score is low. That low ceiling is the cue to answer <em>"I don\'t have that"</em> (Move 07).',
+          rows: [
+            { src: "policy.md",   txt: "We'll return your money in full within 30 days of purchase.", score: 0.27, faint: true },
+            { src: "hours.md",    txt: "Our store is open Monday through Friday, 9am to 6pm Pacific.", score: 0.22, faint: true },
+            { src: "returns.md",  txt: "Items must be sent back in original packaging.", score: 0.18, faint: true },
+          ]
+        }
+      };
+
+      function render(key) {
+        var d = DOCS[key];
+        chunksEl.innerHTML = d.rows.map(function (r) {
+          var cls = "chunk" + (r.hit ? " hit" : "") + (r.faint ? " faint" : "");
+          return '<div class="' + cls + '">'
+               +   '<span class="src">' + r.src + '</span>'
+               +   '<span class="txt">' + r.txt + '</span>'
+               +   '<span class="score">' + r.score.toFixed(2) + '</span>'
+               + '</div>';
+        }).join("");
+        verdict.innerHTML = d.verdict;
+      }
+
+      var buttons = Array.prototype.slice.call(qsEl.querySelectorAll(".qbtn"));
+      buttons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          buttons.forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+          render(b.getAttribute("data-q"));
+        });
+      });
+
+      render("refund");   // initial
+    })();
+  </script>
+</body>
+</html>

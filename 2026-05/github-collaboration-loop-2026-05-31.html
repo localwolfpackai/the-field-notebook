@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Collaboration Loop — Shipping Code With Other Humans · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: the fork → branch → PR → review → merge loop, the part of GitHub nobody teaches beginners. Eleven moves for working on code with other people, every command adversarially verified." />
+  <meta property="og:title" content="The Collaboration Loop — Shipping Code With Other Humans" />
+  <meta property="og:description" content="Your first PR to someone else's repo. Forking, upstream vs origin, keeping a fork in sync, surviving review, and reviewing back. Eleven moves, calm and concrete." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.52 0.11 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.62 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --danger:     oklch(0.55 0.18 27);
+      --danger-wash:oklch(0.95 0.045 27);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.66 0.015 80);
+      --code-accent:oklch(0.80 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.82 0.14 145);
+      --code-red:   oklch(0.74 0.16 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.9em;
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.1rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+      max-width: 17ch;
+    }
+    h1 .arrow {
+      display: inline-block;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .dek {
+      font-size: clamp(1.08rem, 1rem + 0.5vw, 1.32rem);
+      color: var(--ink-soft);
+      max-width: 58ch;
+      line-height: 1.5;
+    }
+    .scrawl {
+      font-family: 'Caveat', cursive;
+      font-size: 1.5rem;
+      color: var(--margin);
+      transform: rotate(-1.5deg);
+      line-height: 1.2;
+    }
+    .byline {
+      display: flex;
+      gap: 0.9rem;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.86rem;
+      color: var(--ink-mute);
+      font-family: 'Geist Mono', monospace;
+      margin-top: 0.4rem;
+    }
+    .byline .pill {
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      padding: 0.2em 0.7em;
+      border-radius: 999px;
+    }
+    .byline .pill.verified { color: var(--sage); border-color: var(--sage-wash); background: var(--sage-wash); }
+
+    /* INTRO — the loop ------------------------------------ */
+    .lede {
+      margin: 0 0 3rem;
+      max-width: var(--measure);
+      display: grid;
+      gap: 1.1rem;
+    }
+    .lede p { color: var(--ink-soft); font-size: 1.06rem; }
+    .lede strong { color: var(--ink); font-weight: 600; }
+
+    .loopbox {
+      margin-top: 0.6rem;
+      border: 1.5px solid var(--accent-wash);
+      background: linear-gradient(180deg, var(--accent-wash), var(--paper));
+      border-radius: var(--radius-lg);
+      padding: 1.3rem 1.5rem;
+      display: grid;
+      gap: 1rem;
+      max-width: var(--measure);
+    }
+    .loopbox h3 {
+      font-size: 1.05rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      color: var(--accent-ink);
+    }
+    .loop {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.55rem;
+    }
+    .loop .stn {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      background: var(--paper);
+      border: 1px solid var(--paper-deep);
+      color: var(--ink);
+      padding: 0.34em 0.7em;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .loop .stn b { color: var(--accent-ink); font-weight: 600; }
+    .loop .sep { color: var(--accent); font-weight: 700; font-family: 'Geist Mono', monospace; }
+    .loop .loopback {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      transform: rotate(-2deg);
+      margin-left: 0.2rem;
+    }
+    .loopbox .caption { font-size: 0.92rem; color: var(--ink-soft); margin: 0; }
+    .loopbox .caption code { font-size: 0.85em; }
+
+    /* SECTION LABELS -------------------------------------- */
+    .section-rule {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 3.2rem 0 1.8rem;
+    }
+    .section-rule .num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-rule .line { flex: 1; height: 1px; background: var(--rule); }
+
+    /* CARDS ----------------------------------------------- */
+    .cards { display: grid; gap: 1.7rem; }
+
+    .card {
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.2rem, 2.5vw, 1.9rem);
+      position: relative;
+      box-shadow: 0 1px 2px oklch(0.5 0.02 80 / 0.05), 0 8px 26px -18px oklch(0.4 0.05 60 / 0.4);
+      scroll-margin-top: 1.5rem;
+    }
+    .card::before {
+      content: attr(data-n);
+      position: absolute;
+      top: -0.7rem; left: 1.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--paper);
+      background: var(--ink);
+      padding: 0.2em 0.7em;
+      border-radius: 999px;
+    }
+    .oops {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.18em 0.6em;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .label.cat   { color: var(--accent-ink); background: var(--accent-wash); border: 1px solid oklch(0.87 0.04 250); }
+    .label.sage  { color: var(--sage);       background: var(--sage-wash);   border: 1px solid oklch(0.85 0.06 145); }
+    .label.amber { color: oklch(0.48 0.12 68); background: var(--amber-wash); border: 1px solid oklch(0.85 0.08 80); }
+    .card h3 {
+      font-size: clamp(1.25rem, 1.05rem + 1vw, 1.7rem);
+      margin: 0.15rem 0 0.7rem;
+    }
+    .what {
+      color: var(--ink-soft);
+      font-size: 0.99rem;
+      max-width: var(--measure);
+      margin-bottom: 1.1rem;
+    }
+
+    /* TERMINAL block -------------------------------------- */
+    .terminal {
+      background: var(--code-bg);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 14px 40px -22px oklch(0.2 0.02 60 / 0.7);
+      margin-bottom: 1.1rem;
+    }
+    .terminal .bar {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid oklch(0.30 0.012 60);
+    }
+    .terminal .bar i {
+      width: 11px; height: 11px; border-radius: 50%;
+      display: inline-block;
+    }
+    .terminal .bar i.r { background: oklch(0.65 0.18 25); }
+    .terminal .bar i.y { background: oklch(0.78 0.14 80); }
+    .terminal .bar i.g { background: oklch(0.72 0.16 145); }
+    .terminal .bar .title {
+      margin-left: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--code-mute);
+      letter-spacing: 0.03em;
+    }
+    .terminal .body {
+      padding: 0.95rem 1.1rem 1.05rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    .terminal .ln { display: block; margin: 0 0 0.85rem; }
+    .terminal .ln:last-child { margin-bottom: 0; }
+    .terminal .cmd { color: var(--code-ink); white-space: pre-wrap; word-break: break-word; }
+    .terminal .cmd .p { color: var(--code-green); user-select: none; }
+    .terminal .cmd .g { color: var(--code-blue); }
+    .terminal .cmd .f { color: var(--code-accent); }
+    .terminal .cmd .s { color: var(--code-red); }
+    .terminal .note {
+      display: block;
+      color: var(--code-mute);
+      font-size: 0.78rem;
+      margin-top: 0.18rem;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .terminal .note::before {
+      content: '#';
+      position: absolute; left: 0;
+      color: oklch(0.5 0.012 80);
+    }
+
+    /* FOOTGUN + TIP --------------------------------------- */
+    .strip {
+      display: grid;
+      gap: 0.8rem;
+    }
+    .footgun, .tip {
+      border-radius: var(--radius-md);
+      padding: 0.8rem 1rem 0.8rem 1.05rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      position: relative;
+    }
+    .footgun {
+      background: var(--danger-wash);
+      border: 1px solid oklch(0.88 0.05 27);
+      color: oklch(0.32 0.07 27);
+    }
+    .footgun b, .tip b {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-right: 0.4rem;
+    }
+    .footgun b { color: var(--danger); }
+    .tip {
+      background: var(--accent-wash);
+      border: 1px solid oklch(0.88 0.04 250);
+      color: var(--accent-ink);
+    }
+    .tip b { color: var(--accent); }
+    .footgun code, .tip code {
+      background: oklch(1 0 0 / 0.5);
+      border-color: oklch(0.8 0.02 60 / 0.4);
+    }
+
+    .tldr {
+      margin: 1.4rem 0 0;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.85 0.06 145);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.2rem;
+      font-size: 0.92rem;
+      color: oklch(0.3 0.06 145);
+    }
+    .tldr b { font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+
+    /* CLOSING --------------------------------------------- */
+    .closing {
+      margin-top: 3.5rem;
+      border-top: 2px solid var(--margin-soft);
+      padding-top: 2rem;
+      max-width: var(--measure);
+      display: grid;
+      gap: 1.1rem;
+    }
+    .closing h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); }
+    .closing p { color: var(--ink-soft); }
+    .closing .mantra {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      color: var(--margin);
+      transform: rotate(-1deg);
+      line-height: 1.25;
+    }
+    .signoff {
+      margin-top: 1.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.84rem;
+      color: var(--ink-mute);
+      display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
+    }
+    .signoff .name {
+      font-family: 'Geist', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    ::selection { background: var(--margin-soft); }
+    @media (max-width: 560px) {
+      .oops { gap: 0.4rem; }
+      .terminal .body { font-size: 0.79rem; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>FIELD NOTES</span><span class="dot">●</span>
+        <span>GIT &amp; GITHUB</span><span class="dot">●</span>
+        <span>2026-05-31</span>
+        <span class="tag">no. 08</span>
+      </div>
+      <h1>The Collaboration Loop <span class="arrow">⇄</span></h1>
+      <p class="scrawl">your first PR to someone else's repo, without the cold sweat</p>
+      <p class="dek">Every guide before this one taught Git as a solo sport — your laptop, your repo, your commits. But the moment a second person shows up, a new map appears: <strong>forks, upstream, pull requests, review.</strong> Eleven moves for shipping code <em>with</em> people instead of just near them.</p>
+      <div class="byline">
+        <span class="pill verified">verified</span>
+        <span>Open notebook · keep it bookmarked · every command adversarially verified</span>
+      </div>
+    </header>
+
+    <section class="lede">
+      <p>The first time I sent a pull request to a repo I didn't own, I froze. Solo Git I had down — branch, commit, push, done. But this had <em>two</em> copies of everything and a word I'd never used as a verb: "upstream." I clicked Fork, then sat there not knowing what I'd actually just made.</p>
+      <p>Here's the whole thing in one breath. Collaboration on GitHub is a <strong>loop</strong>, and once you can see it, every command lands in a slot. You take a copy (fork), do your work on a branch, push it to <em>your</em> copy, and open a pull request that asks the original repo to pull your work in. People review, you adjust, it merges. Then you sync your copy back up and go again.</p>
+
+      <div class="loopbox">
+        <h3>🔁 The loop, one lap</h3>
+        <div class="loop">
+          <span class="stn"><b>fork</b> their repo</span><span class="sep">→</span>
+          <span class="stn"><b>branch</b> for the change</span><span class="sep">→</span>
+          <span class="stn"><b>push</b> to your fork</span><span class="sep">→</span>
+          <span class="stn">open <b>PR</b></span><span class="sep">→</span>
+          <span class="stn"><b>review</b> + adjust</span><span class="sep">→</span>
+          <span class="stn"><b>merge</b></span><span class="sep">→</span>
+          <span class="stn"><b>sync</b> your fork</span>
+          <span class="loopback">↩ back to top</span>
+        </div>
+        <p class="caption">Two remotes hold the whole mental model: <code>origin</code> is <strong>your</strong> fork (where you push), <code>upstream</code> is <strong>their</strong> original (where updates come from). Get those two straight and the rest is just steps around the circle.</p>
+      </div>
+    </section>
+
+    <div class="section-rule">
+      <span class="num">// the eleven moves</span>
+      <span class="line"></span>
+    </div>
+
+    <div class="cards">
+
+      <!-- 01 -->
+      <article class="card" data-n="01" id="fork">
+        <div class="oops"><span class="label cat">the move · fork</span></div>
+        <h3>Take your own copy of someone else's repo</h3>
+        <p class="what">You usually can't push directly to a repo you don't own — you don't have write access, and that's by design. A <strong>fork</strong> is your personal copy living under your account, that you <em>can</em> push to. One <code>gh</code> command forks it, clones the fork to your machine, and wires up both remotes for you, so you skip the part everyone fumbles by hand.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">fork + clone + wire remotes in one shot</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> repo fork owner/their-repo <span class="f">--clone</span></span><span class="note">Forks it to your account, clones that fork locally, and adds an 'upstream' remote pointing at the original.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span>cd their-repo</span><span class="note">Drop into the freshly cloned folder.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> remote -v</span><span class="note">Sanity check: 'origin' = your fork, 'upstream' = the original. This is the whole map.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>A fork is a <em>snapshot in time</em> — the second the original gets new commits, your fork is stale. It won't update itself. That's what move 04 is for. Also: forking is for repos you don't own. If you have write access already, skip the fork entirely and just branch in the real repo.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"confirm my git remotes are wired right for a fork workflow"</em> — it reads <code>git remote -v</code> and tells you whether origin and upstream point where they should before you waste a push.</p>
+        </div>
+      </article>
+
+      <!-- 02 -->
+      <article class="card" data-n="02" id="remotes">
+        <div class="oops"><span class="label cat">the move · remotes</span></div>
+        <h3>origin vs upstream — the only model you need</h3>
+        <p class="what">This one idea unlocks everything else. A <strong>remote</strong> is just a nickname for a repo URL. You keep two: <code>origin</code> points at your fork (you have write access — you push here), and <code>upstream</code> points at the original (you only read — you pull updates from here). If you cloned with plain <code>git</code> instead of <code>gh</code>, upstream won't exist yet. Add it once and forget it.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">add upstream by hand (only if it's missing)</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> remote add upstream https://github.com/owner/their-repo.git</span><span class="note">Names the ORIGINAL repo 'upstream'. Swap in the real owner/repo from the project's GitHub page.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> remote -v</span><span class="note">You should now see four lines: origin (fetch + push) and upstream (fetch + push).</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Trying to <code>git push upstream</code> and getting "permission denied" isn't a bug — you don't own upstream, so you can't push to it. That's the entire point of the fork. You push to <strong>origin</strong>; the pull request is how your work reaches upstream. If push asks for a password and fails, it's almost always this confusion.</p>
+          <p class="tip"><b>◆ claude code</b>Paste a "permission denied" or "remote rejected" error and it'll tell you whether you're pushing to the wrong remote — the single most common first-PR mistake.</p>
+        </div>
+      </article>
+
+      <!-- 03 -->
+      <article class="card" data-n="03" id="branch">
+        <div class="oops"><span class="label cat">the move · branch</span></div>
+        <h3>Never do the work on main</h3>
+        <p class="what">It's tempting to just edit files on your fork's <code>main</code> and push. Don't. <code>main</code> is the clean line you sync from upstream (move 04) — if your changes live there, every future sync turns into a tangle. Make a fresh branch named for the change instead. One branch, one pull request, one idea. It keeps the review readable and your <code>main</code> pristine.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">branch off main for the actual work</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch main</span><span class="note">Start from a clean, synced main (see move 04 for keeping it fresh).</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -c fix-readme-typo</span><span class="note">New branch named for the change. -c means 'create'. Now do your edits here.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> add . &amp;&amp; <span class="g">git</span> commit -m <span class="s">"fix: correct install command in README"</span></span><span class="note">Small, focused, conventional message. Future reviewers (and you) will thank you.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Committing straight onto your fork's <code>main</code> is the slow-motion mistake — it works today, then move 04's sync wants to fast-forward main and can't, because main has diverged. Keep main as a mirror of upstream, always. Real work lives on branches, every time.</p>
+          <p class="tip"><b>◆ claude code</b>Ask it to <em>"branch off a clean main and commit these changes with a conventional message"</em> — it stages, names the branch sensibly, and writes the commit so the PR reads well later.</p>
+        </div>
+      </article>
+
+      <!-- 04 -->
+      <article class="card" data-n="04" id="sync">
+        <div class="oops"><span class="label cat">the move · sync</span></div>
+        <h3>Keep your fork from drifting into last month</h3>
+        <p class="what">While your fork sat there, the original kept moving. A stale fork is the number-one source of "why is my PR full of conflicts." The fix: pull upstream's latest into your <code>main</code>, regularly. Easiest is one <code>gh</code> command; the manual version is worth knowing so you understand what it does — fetch upstream, fast-forward your main, push that to your fork.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">two ways to catch your fork up</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> repo sync your-name/their-repo <span class="f">--branch</span> main</span><span class="note">The one-liner: pulls upstream/main into your fork's main, on GitHub and locally if it's clean.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> fetch upstream</span><span class="note">--- or do it by hand --- download upstream's latest, without changing your files yet.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch main &amp;&amp; <span class="g">git</span> merge upstream/main</span><span class="note">Fast-forward your main up to upstream. Clean because you never commit to main (move 03).</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> push origin main</span><span class="note">Push the caught-up main back to your fork so GitHub shows it as current too.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Forgetting to update your <em>working branch</em> after syncing main. Syncing only catches up main — your feature branch is still based on the old code. Rebase it forward with <code>git switch fix-readme-typo</code> then <code>git rebase main</code> so your PR sits cleanly on top of the latest. Sync before you branch, and again right before you open the PR.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"my fork is behind upstream, catch it up and rebase my branch on top"</em> — it runs the fetch/merge/rebase in order and pauses if a real conflict needs your eyes.</p>
+        </div>
+      </article>
+
+      <!-- 05 -->
+      <article class="card" data-n="05" id="pr">
+        <div class="oops"><span class="label cat">the move · pull request</span></div>
+        <h3>Push, then open the pull request</h3>
+        <p class="what">A pull request is you saying "here's a change — please pull it into your repo." First push your branch to <em>your</em> fork (origin), then open the PR against upstream. The <code>gh</code> CLI does it without leaving the terminal. The PR <strong>body</strong> is the part beginners skip and reviewers live by: what changed, why, and how to test it. That paragraph is the difference between a fast merge and silence.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">branch → fork → pull request</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> push <span class="f">-u</span> origin fix-readme-typo</span><span class="note">Push your branch to your fork. -u links them so future pushes are just 'git push'.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr create <span class="f">--fill</span></span><span class="note">Opens a PR against upstream, using your commit message as the title + body. Fastest path.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr create <span class="f">--web</span></span><span class="note">Or open the PR form in your browser to write a fuller body and add screenshots.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr view <span class="f">--web</span></span><span class="note">Pop the live PR open anytime to watch checks, comments, and the merge button.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>One giant PR with twelve unrelated changes is where review goes to die — nobody wants to approve a change they can't fully read. Keep each PR to one idea. And check the base: <code>gh pr create</code> defaults to upstream's default branch, which is usually right, but confirm it's targeting <code>main</code> and not some release branch.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"write a PR body from my diff — what changed, why, how to test"</em> and it drafts the description from the actual commits, then you run <code>gh pr create --body-file</code>. Best-spent thirty seconds in the whole loop.</p>
+        </div>
+      </article>
+
+      <!-- 06 -->
+      <article class="card" data-n="06" id="review-response">
+        <div class="oops"><span class="label cat">the move · respond</span></div>
+        <h3>They requested changes — you don't start over</h3>
+        <p class="what">This is the part that surprised me most: when a reviewer asks for changes, you do <strong>not</strong> open a new PR. A pull request tracks a <em>branch</em>, not a snapshot. So you just keep committing to the same branch and push — the open PR updates itself, live, with your new commits stacked on. The conversation stays in one place and the reviewer sees exactly what moved.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">address feedback — same branch, same PR</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch fix-readme-typo</span><span class="note">Make sure you're back on the PR's branch before editing.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> add -p</span><span class="note">Stage your edits chunk by chunk so the new commit is exactly the fix they asked for.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> commit -m <span class="s">"review: rename var for clarity"</span> &amp;&amp; <span class="g">git</span> push</span><span class="note">Push to the same branch. The PR picks up the new commit automatically — no new PR needed.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr comment <span class="f">--body</span> <span class="s">"Done — renamed and added the test you flagged."</span></span><span class="note">Tell the reviewer you addressed it, so they know to look again.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Reaching for <code>--amend</code> + <code>--force-with-lease</code> to "keep history clean" mid-review. Resist it — adding plain commits lets the reviewer see <em>just</em> what changed since they last looked. Save the tidy-up (squash) for the merge button, which most repos offer. Force-pushing a branch someone's actively reviewing scrambles their view.</p>
+          <p class="tip"><b>◆ claude code</b>Paste the review comment and the file — it makes the exact change requested and writes a commit message that references the feedback, so the thread reads as a clean back-and-forth.</p>
+        </div>
+      </article>
+
+      <!-- 07 -->
+      <article class="card" data-n="07" id="reviewing">
+        <div class="oops"><span class="label sage">flip sides · review</span></div>
+        <h3>Now you're the reviewer — read with your hands</h3>
+        <p class="what">Collaboration runs both ways, and reviewing well is half of being trusted on a team. The trick nobody tells beginners: don't review from the diff alone — <strong>check the branch out and run it</strong>. The <code>gh</code> CLI pulls someone's PR onto your machine in one command, so you can actually exercise the change before you bless it. Then leave a review: approve, comment, or request changes.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">pull a PR down, run it, leave a verdict</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr list</span><span class="note">See open PRs with their numbers. Pick the one to review.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr checkout 42</span><span class="note">Checks out PR #42's branch locally — now run it, test it, poke at it for real.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr diff 42</span><span class="note">Read the full change in the terminal, colored, without opening a browser.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr review 42 <span class="f">--approve</span> <span class="f">-b</span> <span class="s">"Tested locally, ships clean. Nice fix."</span></span><span class="note">Or --request-changes -b "..." to ask for edits, or --comment -b "..." for a non-blocking note.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Approving from the diff without running it. Diffs hide whole categories of problems — does it actually build, does the test pass, does the button work. If you can't run it, say so in the review rather than rubber-stamping. A review that says "looks right but I didn't run it" is honest and useful; a blind approval isn't.</p>
+          <p class="tip"><b>◆ claude code</b>After <code>gh pr checkout 42</code>, ask it to <em>"review this PR for correctness and edge cases"</em> — it reads the diff in repo context and flags risky spots, giving you a second set of eyes before you sign off.</p>
+        </div>
+      </article>
+
+      <!-- 08 -->
+      <article class="card" data-n="08" id="conflicts">
+        <div class="oops"><span class="label amber">the scary one · conflicts</span></div>
+        <h3>"This branch has conflicts with the base"</h3>
+        <p class="what">GitHub greys out the merge button and says your branch conflicts with the base. It's not broken — while your PR sat in review, the base branch (<code>main</code> on upstream) moved, and both sides touched the same lines. Git won't guess which wins. The web editor handles tiny conflicts; for anything real, resolve it locally. Pull the base in, fix the marked spots, push — the PR re-checks itself and the button lights up.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">resolve a PR conflict against the base, locally</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch fix-readme-typo</span><span class="note">Be on your PR's branch.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> fetch upstream</span><span class="note">Grab the latest base branch you'll be merged into.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> merge upstream/main</span><span class="note">Pull the base into your branch. Git stops at the conflicting files and marks them.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> add . &amp;&amp; <span class="g">git</span> commit &amp;&amp; <span class="g">git</span> push</span><span class="note">After you delete the &lt;&lt;&lt; === &gt;&gt;&gt; markers and keep the right lines, this finishes it and updates the PR.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Two traps. First: leaving even one conflict marker (<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> / <code>=======</code> / <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>) in a file ships broken code — they're Git's notes, not yours. Second: resolving against the wrong branch. It's the <em>base you're merging into</em> (usually <code>upstream/main</code>) you want to pull in, not a random branch. When in doubt, <code>git merge --abort</code> rewinds you to safety.</p>
+          <p class="tip"><b>◆ claude code</b>Drop a conflicted file in and ask <em>"what was each side trying to do?"</em> — it reads both branches' intent so you resolve by meaning instead of guessing which block to keep, then double-checks no markers are left behind.</p>
+        </div>
+      </article>
+
+      <!-- 09 -->
+      <article class="card" data-n="09" id="draft">
+        <div class="oops"><span class="label cat">the move · draft</span></div>
+        <h3>Share early without pinging anyone for approval</h3>
+        <p class="what">You don't have to wait until a change is perfect to open a PR. A <strong>draft</strong> pull request is the "work in progress, eyes welcome, don't merge yet" signal. It runs the CI checks and lets people comment, but it can't be merged and doesn't nag reviewers for a final sign-off. When it's ready, flip it to ready-for-review in one command. Great for getting direction before you've sunk hours into the wrong approach.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">open as draft, flip to ready when done</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr create <span class="f">--draft</span> <span class="f">--fill</span></span><span class="note">Opens a draft PR — checks run, people can comment, but the merge button stays locked.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> pr ready</span><span class="note">When it's polished, marks the PR ready for review and notifies reviewers.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="tip"><b>◆ tip</b>Use a draft to ask one early question — "am I solving this the right way?" — before you write the whole thing. Cheap course-correction beats a finished PR pointed at the wrong target.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"open this as a draft PR with a body that asks reviewers about my approach"</em> — it frames the description as a question so you get direction, not just a rubber stamp.</p>
+        </div>
+      </article>
+
+      <!-- 10 -->
+      <article class="card" data-n="10" id="cleanup">
+        <div class="oops"><span class="label cat">the move · cleanup</span></div>
+        <h3>It merged — now close the loop</h3>
+        <p class="what">Your PR went in. Two small habits keep the next lap clean: sync your fork so its <code>main</code> includes the merge, and delete the branch you're done with. GitHub usually offers to delete the remote branch right on the merged PR — take it. Then tidy the local copy. A fork without a branch graveyard, and a <code>main</code> that matches upstream, means tomorrow's change starts from a clean line.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">sync up, sweep up, ready for the next one</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch main</span><span class="note">Leave the merged branch.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">gh</span> repo sync</span><span class="note">Pull the merge (your change, now in upstream) down into your fork's main.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> branch <span class="f">-d</span> fix-readme-typo</span><span class="note">Delete the local branch. -d is the safe version — it refuses if the work wasn't merged.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> push origin <span class="f">--delete</span> fix-readme-typo</span><span class="note">Only if GitHub didn't already auto-delete the remote branch when you merged.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Skipping the sync and starting your next branch off a stale <code>main</code> — now you're building on yesterday's code and walking straight back into move 08's conflicts. The lowercase <code>-d</code> (not <code>-D</code>) is deliberate: it's the seatbelt that won't let you delete a branch whose work never actually landed.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"my PR merged, clean up my fork and local branches"</em> — it syncs main and removes the merged branch with the safe flag, refusing to delete anything that didn't actually ship.</p>
+        </div>
+      </article>
+
+      <!-- 11 -->
+      <article class="card" data-n="11" id="etiquette">
+        <div class="oops"><span class="label sage">the human layer · etiquette</span></div>
+        <h3>The part that isn't a command</h3>
+        <p class="what">Every move above is mechanical. What actually gets your PRs merged — and gets you invited back — is the human layer. A pull request is a <strong>conversation</strong>, not a transaction. The maintainer is a person doing you a favor by reviewing. These five habits did more for my open-source standing than any Git trick.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">the unwritten rules, written down</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="g">small</span> &gt; clever</span><span class="note">One focused change per PR. A 40-line PR gets reviewed today; a 1,400-line one gets "I'll look later" forever.</span></span>
+            <span class="ln"><span class="cmd"><span class="g">explain</span> the why</span><span class="note">The diff shows WHAT changed. The body explains WHY — that's the context a reviewer can't reconstruct alone.</span></span>
+            <span class="ln"><span class="cmd"><span class="g">read</span> CONTRIBUTING.md</span><span class="note">Most repos tell you their rules — commit style, tests, formatting. Following them is free goodwill.</span></span>
+            <span class="ln"><span class="cmd"><span class="g">reply</span> to every comment</span><span class="note">Even "good catch, fixed." Silence reads as ghosting; a one-liner keeps the thread alive and warm.</span></span>
+            <span class="ln"><span class="cmd"><span class="g">assume</span> good intent</span><span class="note">Blunt review feedback is about the code, not you. Thank them, adjust, move on. It compounds into trust.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="tip"><b>◆ claude code</b>Before you open a PR to a new repo, ask it to <em>"check this repo's CONTRIBUTING.md and tell me what they expect"</em> — it reads the contributor guide and flags the commit format, tests, or lint you need to pass so you don't get bounced on a technicality.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <section class="closing">
+      <h2>The one shape underneath all eleven</h2>
+      <p>Read the moves back and the same circle keeps turning: <strong>your fork is yours, upstream is theirs, and the pull request is the bridge between them.</strong> You push to <code>origin</code>, you pull from <code>upstream</code>, and you talk in the PR. Almost every "wait, which copy am I even in" moment dissolves the instant you can name the two remotes out loud.</p>
+      <p>Solo Git teaches you to save your work. Collaboration teaches you to <em>offer</em> it — and to receive someone else's the same way. That's the actual unlock, and it's less about commands than it looks: keep the changes small, keep your fork synced, and treat every review like the conversation it is. Do one full lap of the loop on a real repo this week. The cold sweat is gone by the second.</p>
+      <p class="mantra">push to origin, pull from upstream, talk in the PR.</p>
+      <div class="signoff"><span class="name">&mdash;Lupo</span> <span>The Mess is the Method · field note no. 08 · 2026-05-31</span></div>
+    </section>
+
+  </div>
+</body>
+</html>

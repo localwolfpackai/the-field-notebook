@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Console Is a Context Machine — Nine DevTools Snippets That Feed an AI Clean Pages · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: paste-once Chrome DevTools console snippets that strip a live page down to a clean, low-token payload your AI agent can actually rebuild from." />
+  <meta property="og:title" content="The Console Is a Context Machine — Nine DevTools Snippets That Feed an AI Clean Pages" />
+  <meta property="og:description" content="Stop pasting raw DOM soup into your model. These console snippets serialize any live page into AI-ready Markdown — design tokens, clean HTML, layout maps, the whole site." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-pink:  oklch(0.74 0.15 350);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.clone    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.debug    { background: var(--margin-soft); color: var(--margin); }
+    .hack h2 .pill.extract  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.macro    { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.86rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .fn  { color: var(--code-accent); }
+    .term .pink{ color: var(--code-pink); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Prompt card — the "paste alongside" block */
+    .prompt-card {
+      background: var(--accent-wash);
+      border: 1px solid oklch(0.84 0.05 255);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.92rem;
+    }
+    .prompt-card .tag {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-ink);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .prompt-card q {
+      color: var(--ink-soft);
+      font-style: italic;
+      quotes: '“' '”';
+    }
+
+    /* The Token-Trap before/after bars */
+    .tradeoff {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    @media (max-width: 560px) { .tradeoff { grid-template-columns: 1fr; } }
+    .tradeoff .cell {
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      border: 1px solid oklch(0.86 0.03 80);
+      background: var(--paper-alt);
+    }
+    .tradeoff .cell.bad   { border-color: oklch(0.82 0.08 27); background: var(--margin-soft); }
+    .tradeoff .cell.good  { border-color: oklch(0.82 0.06 145); background: var(--sage-wash); }
+    .tradeoff .cell h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .tradeoff .cell.bad h4  { color: var(--margin); }
+    .tradeoff .cell.good h4 { color: oklch(0.36 0.10 145); }
+    .tradeoff .cell .big {
+      font-family: 'Geist Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .tradeoff .cell p { font-size: 0.86rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Step ribbon */
+    .steps {
+      display: grid;
+      gap: 0.5rem;
+      counter-reset: step;
+    }
+    .steps .step {
+      display: grid;
+      grid-template-columns: 1.7rem 1fr;
+      gap: 0.7rem;
+      align-items: baseline;
+      font-size: 0.94rem;
+      color: var(--ink-soft);
+    }
+    .steps .step::before {
+      counter-increment: step;
+      content: counter(step);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--paper);
+      background: var(--margin);
+      width: 1.4rem; height: 1.4rem;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      align-self: start;
+    }
+    .steps .step b { color: var(--ink); }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Save these to Sources › Snippets';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 17</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;09</span>
+        <span class="tag">devtools</span>
+        <span class="tag">context</span>
+      </div>
+
+      <h1>The console is a <span class="accent">context machine</span> &mdash; nine snippets that feed an AI clean pages.</h1>
+
+      <p class="deck">
+        I spent a week pasting raw page HTML into a model and watching it
+        guess in circles. Then I moved the cleanup <em>upstream</em> &mdash; into the
+        Chrome DevTools console &mdash; and the model stopped guessing. These are the
+        paste-once snippets that turn any live website into a tidy, low-token
+        payload your agent can actually rebuild from.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~13 min</span>
+        <span><b>Surface</b> · Chrome DevTools console + <code>$0</code></span>
+        <span><b>Assumes</b> · you've opened DevTools once</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          Here's the thing nobody tells you when you start handing live websites to
+          an AI: the model isn't bad at frontend &mdash; it's drowning. Copy a real
+          page's <code>outerHTML</code> and you've just shoved fifty thousand tokens of
+          hidden SVGs, base64 images, tracking scripts and twelve-deep <code>&lt;div&gt;</code>
+          soup into a context window that wanted maybe three thousand. The signal is in
+          there. It's just buried.
+        </p>
+        <p>
+          The fix I kept reaching for wasn't a better prompt. It was doing the
+          cleanup <em>before</em> the model ever sees the page &mdash; right in the
+          browser console, where I already have the live DOM in my hands. Each of
+          these snippets clones the page, strips the noise, and drops a clean
+          Markdown payload straight onto my clipboard. Run it, paste it, ship the prompt.
+        </p>
+        <p>
+          Below: nine snippets I actually keep saved, grouped into the three jobs I
+          use them for &mdash; <b>clone</b> a component, <b>debug</b> a layout,
+          and <b>extract</b> the whole page. Each gets the code, the one-line claim,
+          and the prompt I paste alongside it. Steal the ones that fit how you build.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#h0">The Token Trap, in one screenshot</a></li>
+          <li><a href="#h1"><code>copy()</code> — the whole trick</a></li>
+          <li><a href="#h2"><code>!ai-theme</code> — design tokens</a></li>
+          <li><a href="#h3"><code>!ai-component</code> — clone an element</a></li>
+          <li><a href="#h4"><code>!toggle-wireframe</code> — strip the noise</a></li>
+          <li><a href="#h5"><code>!ai-skeleton</code> — the layout map</a></li>
+          <li><a href="#h6"><code>!ai-clipper</code> — pure content</a></li>
+          <li><a href="#h7"><code>!ai-page-map</code> — topography</a></li>
+          <li><a href="#h8"><code>!ai-dom-lite</code> — the whole page, lean</a></li>
+          <li><a href="#h9"><code>!scrape-api</code> — bake in the prompt</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- HACK 0 — the problem -->
+    <article class="hack" id="h0">
+      <div class="nbr">00</div>
+      <div class="body">
+        <h2>First, the thing that was actually breaking. <span class="pill debug">why</span></h2>
+        <p>
+          I have a real transcript of this going wrong. I selected a card on a
+          Tailwind site and asked an AI assistant to tell me how it laid out at
+          different breakpoints. It came back with confident, detailed answers &mdash;
+          and they were wrong. It kept reporting <code>display: block</code> on an element
+          the screenshot clearly showed as a flex row, then apologizing, then
+          guessing again. Four rounds of "my previous inspection was inaccurate."
+        </p>
+        <p>
+          The model wasn't dumb. It was working from a selector string like
+          <code>a.relative.inline-flex.items-center.rounded-full.py-1\.5...</code> &mdash;
+          forty escaped Tailwind classes deep &mdash; with none of the computed values
+          it needed and a wall of sibling nodes it didn't. Garbage context in,
+          confident garbage out. That's the Token Trap, and it's the whole reason
+          this notebook exists.
+        </p>
+
+        <div class="tradeoff">
+          <div class="cell bad">
+            <h4>Raw paste</h4>
+            <div class="big">~50,000<span style="font-size:0.7rem;"> tokens</span></div>
+            <p>Hidden SVGs, base64 images, tracking scripts, deep div soup. Signal buried.</p>
+          </div>
+          <div class="cell good">
+            <h4>Cleaned first</h4>
+            <div class="big">~3,000<span style="font-size:0.7rem;"> tokens</span></div>
+            <p>Pure layout classes and structural nodes. The model rebuilds it on the first try.</p>
+          </div>
+        </div>
+
+        <p class="scribble">same page. one of these gets you a working component. the other gets you an apology loop.</p>
+      </div>
+    </article>
+
+    <!-- HACK 1 — copy() -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>The whole trick is one function: <code>copy()</code>. <span class="pill extract">setup</span></h2>
+        <p>
+          Before any snippet, the one thing to internalize. DevTools gives you a
+          global <code>copy()</code> in the console that puts any string straight on your
+          clipboard. Every snippet below ends with it. You run the snippet, and the
+          finished, formatted payload is <em>already copied</em> &mdash; no selecting, no
+          right-click. Tab over to your AI, paste, done.
+        </p>
+        <p>
+          Two more console primitives you'll see throughout: <code>$0</code> is whatever
+          element you last clicked in the Elements panel (DevTools assigns it for
+          you), and <code>document</code> is the live page. That's the entire vocabulary.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">console — the 10-second version</span>
+          </div>
+<pre><span class="cmt">// $0 = the element you clicked in Elements. try it:</span>
+<span class="prompt">&gt;</span> <span class="fn">copy</span>($0.outerHTML)
+<span class="out">undefined</span>   <span class="cmt">// ← but your clipboard now holds the HTML</span>
+
+<span class="cmt">// the snippets just do this, minus the garbage. e.g.</span>
+<span class="prompt">&gt;</span> <span class="fn">copy</span>(<span class="str">"### anything\n"</span> + cleanedMarkdown)</pre>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">save it ↳</span>
+          <div>
+            Open DevTools → <b>Sources</b> → <b>Snippets</b> (left panel; you may need
+            the <kbd>»</kbd> overflow). New snippet, paste the code, name it. Run any
+            saved snippet from anywhere with <kbd>⌘</kbd>+<kbd>P</kbd> → type
+            <code>!</code> → pick it. That <code>!name</code> command-menu flow is the
+            no-click magic.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 2 — ai-theme -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2><code>!ai-theme</code> &mdash; rip a site's colors and fonts in one run. <span class="pill clone">clone</span></h2>
+        <p>
+          Run this <em>without</em> selecting anything. It walks every element on the
+          page, collects the rendered colors and the font stacks actually in use,
+          dedupes them, and copies a clean token list. This is the constraint sheet
+          you hand a model so its new component matches the site instead of
+          inventing its own palette.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-theme</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">designSystemExtractor</span>() {
+  <span class="key">const</span> colors = <span class="key">new</span> Set(), fonts = <span class="key">new</span> Set();
+  document.<span class="fn">querySelectorAll</span>(<span class="str">'body *'</span>).<span class="fn">forEach</span>(el =&gt; {
+    <span class="key">const</span> s = window.<span class="fn">getComputedStyle</span>(el);
+    <span class="key">if</span> (s.color !== <span class="str">'rgba(0, 0, 0, 0)'</span>) colors.<span class="fn">add</span>(s.color);
+    <span class="key">if</span> (s.backgroundColor !== <span class="str">'rgba(0, 0, 0, 0)'</span>) colors.<span class="fn">add</span>(s.backgroundColor);
+    <span class="key">if</span> (s.fontFamily) fonts.<span class="fn">add</span>(s.fontFamily.<span class="fn">split</span>(<span class="str">','</span>)[0].<span class="fn">replace</span>(/"/g, <span class="str">''</span>));
+  });
+  <span class="fn">copy</span>(<span class="str">`### Design System\nColors:\n`</span> + [...colors]
+    .<span class="fn">filter</span>(c =&gt; c !== <span class="str">'transparent'</span>).<span class="fn">join</span>(<span class="str">'\n'</span>)
+    + <span class="str">`\nFonts:\n`</span> + [...fonts].<span class="fn">join</span>(<span class="str">'\n'</span>));
+})();</pre>
+        </div>
+
+        <p>
+          Pair it with the next snippet and you've handed the model both halves of
+          the job: <em>here are the site's rules, and here's the thing to rebuild
+          inside them.</em>
+        </p>
+      </div>
+    </article>
+
+    <!-- HACK 3 — ai-component -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2><code>!ai-component</code> &mdash; clone one element, minus the noise. <span class="pill clone">clone</span></h2>
+        <p>
+          This is the one that fixed my apology loop from #0. Click the element in
+          the Elements panel (so it becomes <code>$0</code>), run the snippet. It grabs
+          the handful of computed styles that actually drive layout, clones the
+          markup, and strips every attribute except the four that matter &mdash;
+          <code>class</code>, <code>id</code>, <code>src</code>, <code>href</code>. No
+          <code>data-*</code>, no framework gunk, no escaped-selector hell. Clean HTML
+          plus the exact computed values, formatted as Markdown.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-component</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">aiComponentHarvester</span>(el = $0) {
+  <span class="key">if</span> (!el) <span class="key">return</span> console.<span class="fn">warn</span>(<span class="str">"Select element first."</span>);
+  <span class="key">const</span> s = window.<span class="fn">getComputedStyle</span>(el);
+  <span class="key">const</span> keys = [<span class="str">'display'</span>,<span class="str">'flex-direction'</span>,<span class="str">'justify-content'</span>,
+    <span class="str">'align-items'</span>,<span class="str">'gap'</span>,<span class="str">'padding'</span>,<span class="str">'margin'</span>,<span class="str">'background-color'</span>,
+    <span class="str">'color'</span>,<span class="str">'font-size'</span>,<span class="str">'font-weight'</span>,<span class="str">'border-radius'</span>];
+  <span class="key">const</span> css = keys.<span class="fn">map</span>(k =&gt; <span class="str">`${k}: ${s.getPropertyValue(k)};`</span>)
+    .<span class="fn">filter</span>(v =&gt; !v.<span class="fn">includes</span>(<span class="str">'normal'</span>) &amp;&amp; !v.<span class="fn">includes</span>(<span class="str">'none'</span>)
+      &amp;&amp; !v.<span class="fn">includes</span>(<span class="str">'0px'</span>)).<span class="fn">join</span>(<span class="str">'\n'</span>);
+  <span class="key">const</span> clone = el.<span class="fn">cloneNode</span>(<span class="key">true</span>);
+  clone.<span class="fn">querySelectorAll</span>(<span class="str">'*'</span>).<span class="fn">forEach</span>(n =&gt; Array.<span class="fn">from</span>(n.attributes)
+    .<span class="fn">forEach</span>(a =&gt; { <span class="key">if</span> (![<span class="str">'class'</span>,<span class="str">'id'</span>,<span class="str">'src'</span>,<span class="str">'href'</span>].<span class="fn">includes</span>(a.name))
+      n.<span class="fn">removeAttribute</span>(a.name); }));
+  <span class="fn">copy</span>(<span class="str">`### Cleaned HTML:\n\`\`\`html\n`</span> + clone.outerHTML
+    + <span class="str">`\n\`\`\`\n### Computed Styles:\n\`\`\`css\n`</span> + css + <span class="str">`\n\`\`\``</span>);
+})();</pre>
+        </div>
+
+        <div class="prompt-card">
+          <span class="tag">paste alongside</span>
+          <q>You're an expert front-end engineer. I'm giving you a site's design
+          tokens, then the cleaned HTML and exact computed styles for one component.
+          Rebuild it as a React component using only Tailwind utility classes mapped
+          to those computed values. No custom CSS. Keep the semantic structure.</q>
+        </div>
+
+        <div class="steps">
+          <div class="step"><span><b>Run <code>!ai-theme</code></b> with nothing selected — grabs the global constraints.</span></div>
+          <div class="step"><span><b>Click the element</b>, run <code>!ai-component</code> — grabs the clean component.</span></div>
+          <div class="step"><span><b>Paste both</b> under the prompt above. The model has everything; it stops guessing.</span></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 4 — toggle-wireframe -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2><code>!toggle-wireframe</code> &mdash; strip the page to bones, then screenshot it. <span class="pill debug">debug</span></h2>
+        <p>
+          When a layout breaks, a screenshot of the <em>styled</em> page hides the
+          problem &mdash; the gradients and shadows distract you and the model both.
+          This toggle injects a stylesheet that flattens everything to thin
+          outlines, dims the media, and kills shadows. Suddenly every box, gap, and
+          overflow is visible. Run it again to remove it. Take a DevTools node
+          screenshot in this state and the model can <em>see</em> the structure.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !toggle-wireframe</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">toggleWireframe</span>() {
+  <span class="key">const</span> id = <span class="str">'ai-wireframe'</span>;
+  <span class="key">let</span> el = document.<span class="fn">getElementById</span>(id);
+  <span class="key">if</span> (el) el.<span class="fn">remove</span>();          <span class="cmt">// already on → toggle off</span>
+  <span class="key">else</span> {
+    el = document.<span class="fn">createElement</span>(<span class="str">'style'</span>); el.id = id;
+    el.innerHTML = <span class="str">`* { background: transparent !important;
+      color: #444 !important;
+      border: 1px solid rgba(0,0,0,0.15) !important;
+      box-shadow: none !important; text-shadow: none !important; }
+      img, svg, video, iframe {
+      opacity: 0.3 !important; border: 1px dashed red !important; }`</span>;
+    document.head.<span class="fn">appendChild</span>(el);
+  }
+})();</pre>
+        </div>
+
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Open any cluttered marketing site, run this, and watch it become a
+            blueprint. The first time an overflowing <code>div</code> just
+            <b>appears</b> as a box poking past its parent, you'll get why this beats
+            squinting at the styled version.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 5 — ai-skeleton -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2><code>!ai-skeleton</code> &mdash; the component as a labeled list. <span class="pill debug">debug</span></h2>
+        <p>
+          Screenshots are great, but the model also wants the structure as text it
+          can reason over. With your container selected, this walks its tree and
+          emits a tidy list of the elements that carry meaning &mdash; images with
+          their alt text, buttons and links with their labels and targets, headings
+          with their text. No styling, no wrappers. Just <em>what this thing is made of.</em>
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-skeleton</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">mapComponent</span>(el = $0) {
+  <span class="key">if</span> (!el) <span class="key">return</span> console.<span class="fn">warn</span>(<span class="str">"Select element first."</span>);
+  <span class="key">let</span> out = <span class="str">`### Component Skeleton\n`</span>;
+  <span class="key">const</span> w = document.<span class="fn">createTreeWalker</span>(el, NodeFilter.SHOW_ELEMENT);
+  <span class="key">let</span> n;
+  <span class="key">while</span> (n = w.<span class="fn">nextNode</span>()) {
+    <span class="key">const</span> t = n.tagName.<span class="fn">toLowerCase</span>(),
+      txt = n.innerText ? n.innerText.<span class="fn">trim</span>().<span class="fn">replace</span>(/\n/g, <span class="str">' '</span>) : <span class="str">''</span>;
+    <span class="key">if</span> (t === <span class="str">'img'</span>)
+      out += <span class="str">`- 🖼️ [IMG] Src: ${n.src.split('/').pop()} | Alt: "${n.alt}"\n`</span>;
+    <span class="key">else if</span> (t === <span class="str">'button'</span> || t === <span class="str">'a'</span>)
+      out += <span class="str">`- 🖱️ [${t.toUpperCase()}] "${txt}" | Href: ${n.href || 'N/A'}\n`</span>;
+    <span class="key">else if</span> (/^h[1-6]$/.<span class="fn">test</span>(t))
+      out += <span class="str">`- 📌 [${t.toUpperCase()}] "${txt}"\n`</span>;
+  }
+  <span class="fn">copy</span>(out);
+})();</pre>
+        </div>
+
+        <div class="prompt-card">
+          <span class="tag">debug</span>
+          <q>Here's a wireframe screenshot and the component's semantic structure.
+          The button overflows its container on mobile. Find the exact DOM node and
+          CSS property causing the break, and give me the specific fix.</q>
+        </div>
+
+        <p>
+          Wireframe screenshot for the eyes, skeleton list for the reasoning. Two
+          cheap snippets, and the model is debugging your actual layout instead of a
+          hallucinated one.
+        </p>
+      </div>
+    </article>
+
+    <!-- HACK 6 — ai-clipper -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2><code>!ai-clipper</code> &mdash; pure content, zero chrome. <span class="pill extract">extract</span></h2>
+        <p>
+          Not every job is about layout. Sometimes you just want the <em>words</em> &mdash;
+          to rewrite, summarize, or re-target for SEO. Highlighting a whole page and
+          pasting it drags in nav, footer, cookie banners and sidebar junk that
+          waste tokens and confuse the model about what's actually the article. This
+          targets <code>&lt;article&gt;</code> or <code>&lt;main&gt;</code>, violently
+          removes the noise, and copies clean prose.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-clipper</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">webClipper</span>() {
+  <span class="key">const</span> main = document.<span class="fn">querySelector</span>(<span class="str">'article'</span>)
+    || document.<span class="fn">querySelector</span>(<span class="str">'main'</span>) || document.body;
+  <span class="key">const</span> clone = main.<span class="fn">cloneNode</span>(<span class="key">true</span>);
+  clone.<span class="fn">querySelectorAll</span>(<span class="str">'nav, footer, header, aside, script, style, svg, iframe, [class*="ad-"]'</span>)
+    .<span class="fn">forEach</span>(el =&gt; el.<span class="fn">remove</span>());
+  <span class="fn">copy</span>(<span class="str">`### Web Content\n`</span>
+    + clone.innerText.<span class="fn">replace</span>(/\n{3,}/g, <span class="str">'\n\n'</span>).<span class="fn">trim</span>());
+})();</pre>
+        </div>
+
+        <div class="prompt-card">
+          <span class="tag">paste alongside</span>
+          <q>Here's token-optimized content scraped from the current page. Act as a
+          technical copywriter. Rewrite it to target the keyword [keyword] while
+          keeping the existing heading hierarchy intact. Output Markdown.</q>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 7 — ai-page-map -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2><code>!ai-page-map</code> &mdash; the whole page as a topography tree. <span class="pill macro">macro</span></h2>
+        <p>
+          When the question is structural &mdash; <em>"why is my sticky sidebar
+          scrolling away?"</em> &mdash; the model doesn't need text or color, it needs
+          the <em>shape</em> of the page. This ignores everything but the semantic and
+          container-level nodes and builds an indented Markdown tree of the macro
+          layout: headers, mains, sections, navs, the big wrappers. Depth-capped so
+          it never runs away on an absurdly nested site.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-page-map</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">mapPageTopography</span>() {
+  <span class="key">function</span> <span class="fn">getStructure</span>(node, depth = 0) {
+    <span class="key">if</span> (depth &gt; 6) <span class="key">return</span> <span class="str">''</span>;   <span class="cmt">// safety: don't dig forever</span>
+    <span class="key">let</span> out = <span class="str">''</span>;
+    Array.<span class="fn">from</span>(node.children).<span class="fn">forEach</span>(child =&gt; {
+      <span class="key">const</span> tag = child.tagName.<span class="fn">toLowerCase</span>();
+      <span class="key">const</span> id = child.id ? <span class="str">`#${child.id}`</span> : <span class="str">''</span>;
+      <span class="key">const</span> structural = [<span class="str">'header'</span>,<span class="str">'main'</span>,<span class="str">'footer'</span>,<span class="str">'section'</span>,
+        <span class="str">'article'</span>,<span class="str">'nav'</span>,<span class="str">'aside'</span>,<span class="str">'form'</span>,<span class="str">'ul'</span>,<span class="str">'dialog'</span>].<span class="fn">includes</span>(tag);
+      <span class="key">const</span> bigDiv = tag === <span class="str">'div'</span> &amp;&amp; (child.id
+        || child.className.<span class="fn">includes</span>(<span class="str">'container'</span>)
+        || child.className.<span class="fn">includes</span>(<span class="str">'wrapper'</span>));
+      <span class="key">if</span> (structural || bigDiv) {
+        out += <span class="str">`${'  '.repeat(depth)}- &lt;${tag}${id}&gt;\n`</span>;
+        out += <span class="fn">getStructure</span>(child, depth + 1);
+      } <span class="key">else if</span> (child.children.length) out += <span class="fn">getStructure</span>(child, depth);
+    });
+    <span class="key">return</span> out;
+  }
+  <span class="fn">copy</span>(<span class="str">`### Page Topography Map\n`</span> + <span class="fn">getStructure</span>(document.body));
+})();</pre>
+        </div>
+
+        <p class="scribble">paste it and ask: "which container is breaking my sticky context?" — it'll point at the node.</p>
+      </div>
+    </article>
+
+    <!-- HACK 8 — ai-dom-lite -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2><code>!ai-dom-lite</code> &mdash; the entire page, 50k tokens down to 3k. <span class="pill macro">macro</span></h2>
+        <p>
+          This is the headline snippet &mdash; the one that names the whole notebook.
+          When you genuinely need the full page structure (rebuilding a landing page,
+          say), this clones the body, deletes every heavy non-structural tag
+          (<code>script</code>, <code>svg</code>, <code>iframe</code>, <code>canvas</code>,
+          <code>video</code>…), strips all but a handful of attributes, and truncates
+          long text runs so paragraphs don't eat your context. What's left is pure
+          layout: classes and structural nodes, nothing else.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !ai-dom-lite</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">exportCleanDOM</span>() {
+  <span class="key">const</span> clone = document.body.<span class="fn">cloneNode</span>(<span class="key">true</span>);
+  <span class="cmt">// 1. nuke the heavy, non-structural elements</span>
+  clone.<span class="fn">querySelectorAll</span>(<span class="str">'script, style, svg, path, iframe, noscript, canvas, video'</span>)
+    .<span class="fn">forEach</span>(el =&gt; el.<span class="fn">remove</span>());
+  <span class="cmt">// 2. strip noisy attrs + truncate long text</span>
+  <span class="key">const</span> walker = document.<span class="fn">createTreeWalker</span>(clone, NodeFilter.SHOW_ELEMENT);
+  <span class="key">let</span> node;
+  <span class="key">while</span> (node = walker.<span class="fn">nextNode</span>()) {
+    Array.<span class="fn">from</span>(node.attributes).<span class="fn">forEach</span>(attr =&gt; {
+      <span class="key">if</span> (![<span class="str">'id'</span>,<span class="str">'class'</span>,<span class="str">'href'</span>,<span class="str">'src'</span>,<span class="str">'alt'</span>,<span class="str">'type'</span>,<span class="str">'name'</span>]
+        .<span class="fn">includes</span>(attr.name)) node.<span class="fn">removeAttribute</span>(attr.name);
+    });
+    Array.<span class="fn">from</span>(node.childNodes).<span class="fn">forEach</span>(child =&gt; {
+      <span class="key">if</span> (child.nodeType === Node.TEXT_NODE) {
+        <span class="key">const</span> text = child.nodeValue.<span class="fn">trim</span>();
+        <span class="key">if</span> (text.length &gt; 80)
+          child.nodeValue = text.<span class="fn">substring</span>(0, 80) + <span class="str">'... [text truncated]'</span>;
+      }
+    });
+  }
+  <span class="fn">copy</span>(<span class="str">`### Token-Optimized DOM\n\`\`\`html\n`</span> + clone.innerHTML + <span class="str">`\n\`\`\``</span>);
+})();</pre>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">the combo ↳</span>
+          <div>
+            For a full live-site audit: run <code>!ai-theme</code> for the brand colors,
+            then <code>!ai-dom-lite</code> for the structure, paste both, and say
+            <b>"rebuild this page in React + Tailwind using these exact tokens."</b>
+            That's two snippets standing in for a thousand-line copy-paste.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 9 — scrape-api / baked prompt -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2><code>!scrape-api</code> &mdash; bake the prompt into the payload. <span class="pill extract">extract</span></h2>
+        <p>
+          The upgrade that made all of these stick: stop typing the instruction every
+          time. You can append the system prompt <em>inside</em> the snippet, so the
+          clipboard already holds "act as X, do Y" plus the data. Run, paste, hit
+          enter &mdash; the model knows the job before you say a word. This one is the
+          sharpest example: turn the net on, click around the app, and it catches the
+          first real JSON response, then copies it <em>with</em> a request to
+          reverse-engineer the TypeScript types.
+        </p>
+
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">snippet · !scrape-api  (toggle on, then click around)</span>
+          </div>
+<pre>(<span class="key">function</span> <span class="fn">interceptAPIWithPrompt</span>() {
+  <span class="key">if</span> (window._apiScraperActive) {
+    window._apiScraperActive = <span class="key">false</span>;
+    <span class="key">return</span> console.<span class="fn">log</span>(<span class="str">"🛑 API Net OFF."</span>);
+  }
+  window._apiScraperActive = <span class="key">true</span>;
+  console.<span class="fn">log</span>(<span class="str">"🎣 API Net ON. Click around — next JSON payload gets caught."</span>);
+
+  <span class="key">const</span> originalFetch = window.fetch;
+  window.fetch = <span class="key">async function</span>(...args) {
+    <span class="key">const</span> response = <span class="key">await</span> originalFetch.<span class="fn">apply</span>(<span class="key">this</span>, args);
+    response.<span class="fn">clone</span>().<span class="fn">json</span>().<span class="fn">then</span>(data =&gt; {
+      <span class="key">const</span> url = <span class="key">typeof</span> args[0] === <span class="str">'string'</span> ? args[0] : args[0]?.url;
+      <span class="key">if</span> (!url.<span class="fn">includes</span>(<span class="str">'analytics'</span>) &amp;&amp; !url.<span class="fn">includes</span>(<span class="str">'telemetry'</span>)) {
+        window._apiScraperActive = <span class="key">false</span>;  <span class="cmt">// catch one, then stop</span>
+        <span class="key">const</span> aiPrompt = <span class="str">`Act as a backend architect. I intercepted a live `</span>
+          + <span class="str">`API response from ${url.split('?')[0]}.\n`</span>
+          + <span class="str">`Reverse-engineer the likely DB schema and write the exact `</span>
+          + <span class="str">`TypeScript interfaces to consume this payload.\n\n`</span>
+          + <span class="str">`### Payload:\n\`\`\`json\n`</span>;
+        <span class="fn">copy</span>(aiPrompt + JSON.<span class="fn">stringify</span>(data, <span class="key">null</span>, 2) + <span class="str">`\n\`\`\``</span>);
+        console.<span class="fn">log</span>(<span class="str">"📋 Payload + prompt copied. Net off."</span>);
+      }
+    }).<span class="fn">catch</span>(() =&gt; {});
+    <span class="key">return</span> response;
+  };
+})();</pre>
+        </div>
+
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            This one monkey-patches <code>window.fetch</code> for the session &mdash;
+            reload the tab when you're done to restore the native API. Only run
+            snippets you've read (these are all here in full for exactly that reason),
+            and keep this kind of interception to <b>your own apps and pages you're
+            authorized to inspect</b>. The console is powerful; aim it at your own work.
+          </div>
+        </div>
+
+        <p>
+          That's the whole arc of this notebook in one snippet: the browser already
+          holds the live context, the console can serialize it clean, and the prompt
+          can ride along in the payload. You stop being the copy-paste middleman and
+          start programming your agent from the page you're standing on.
+        </p>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The setup</h4>
+          <ul>
+            <li><code>$0</code><span>last element you clicked in Elements</span></li>
+            <li><code>copy(x)</code><span>put any string on the clipboard</span></li>
+            <li><code>⌘P → !</code><span>run a saved snippet, no clicks</span></li>
+            <li><code>Sources › Snippets</code><span>where these all live</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Clone a component</h4>
+          <ul>
+            <li><code>!ai-theme</code><span>colors + fonts in use</span></li>
+            <li><code>!ai-component</code><span>clean HTML + computed CSS</span></li>
+            <li><span>→</span><span>paste both, ask for React + Tailwind</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Debug a layout</h4>
+          <ul>
+            <li><code>!toggle-wireframe</code><span>strip to bones, screenshot</span></li>
+            <li><code>!ai-skeleton</code><span>component as a labeled list</span></li>
+            <li><span>→</span><span>screenshot + skeleton = real fix</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Extract the page</h4>
+          <ul>
+            <li><code>!ai-clipper</code><span>pure article text</span></li>
+            <li><code>!ai-page-map</code><span>macro-layout tree</span></li>
+            <li><code>!ai-dom-lite</code><span>full page, 50k → 3k tokens</span></li>
+            <li><code>!scrape-api</code><span>payload + baked-in prompt</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-09</small>
+      </div>
+      <div class="end">
+        next entry · <code>baking prompts into your tools</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

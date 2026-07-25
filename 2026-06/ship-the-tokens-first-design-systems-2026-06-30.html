@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ship the Tokens First — Ten Moves for Getting the Model to Author a Design System Before It Writes a Single Component · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: stop asking the model for a 'nice landing page' and getting AI slop. Make it author the design tokens first — a color scale, a type ramp, spacing, radius, motion — as one JSON contract, then build every component against that contract. Ten moves to a UI that looks made, not auto-spat." />
+  <meta property="og:title" content="Ship the Tokens First — Author the Design System Before the Components" />
+  <meta property="og:description" content="A 'nice landing page' prompt returns AI slop because the model is inventing style per-div. Hand it a token contract first — scale, ramp, spacing, radius — and every component snaps to the same grid. Ten moves, a live knob you can drag." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      /* feature identity — token teal (system) vs slop coral (chaos) */
+      --sys:        oklch(0.58 0.11 200);
+      --sys-wash:   oklch(0.93 0.05 200);
+      --sys-ink:    oklch(0.40 0.11 200);
+      --slop:       oklch(0.65 0.14 25);
+      --slop-wash:  oklch(0.95 0.06 25);
+      --slop-ink:   oklch(0.45 0.14 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--sys-wash) 62%, var(--sys-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.58 0.11 200 / 0.45);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.system   { background: var(--sys-wash); color: var(--sys-ink); }
+    .hack h2 .pill.design   { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.ship     { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "token knob" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .studio { grid-template-columns: 1fr; } }
+
+    /* the token panel (left) */
+    .tokens {
+      margin: 1rem;
+      display: grid;
+      gap: 0.9rem;
+      align-content: start;
+      border-right: 1px dashed oklch(0.86 0.03 80);
+      padding-right: 1rem;
+    }
+    @media (max-width: 700px) { .tokens { border-right: none; border-bottom: 1px dashed oklch(0.86 0.03 80); padding-right: 0; padding-bottom: 1rem; } }
+    .tk label {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: 0.35rem;
+    }
+    .tk label b { font-size: 0.82rem; color: var(--ink); letter-spacing: 0; text-transform: none; }
+    .tk input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; border-radius: 999px;
+      background: var(--paper-deep); outline: none; cursor: pointer;
+    }
+    .tk input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--sys); border: 2px solid var(--paper);
+      box-shadow: 0 1px 4px oklch(0.4 0.05 200 / 0.5); cursor: pointer;
+    }
+    .tk input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--sys); border: 2px solid var(--paper); cursor: pointer;
+    }
+    .swatches { display: flex; gap: 0.4rem; }
+    .swatches button {
+      flex: 1; height: 1.6rem; border-radius: 6px; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.15s var(--ease-paper);
+    }
+    .swatches button.on { border-color: var(--ink); transform: translateY(-2px); }
+
+    /* the preview card (right) — repaints from tokens */
+    .stage {
+      padding: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      background:
+        radial-gradient(120% 120% at 100% 0%, var(--sys-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--violet-wash), transparent 55%),
+        var(--paper);
+      min-height: 17rem;
+    }
+    .preview-card {
+      --pc-accent: oklch(0.55 0.16 264);
+      --pc-accent-wash: oklch(0.93 0.05 264);
+      --pc-radius: 12px;
+      --pc-pad: 1.1rem;
+      --pc-scale: 1.32;
+      width: 100%; max-width: 20rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--pc-radius);
+      overflow: hidden;
+      box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.55);
+      transition: border-radius 0.35s var(--ease-paper);
+    }
+    .preview-card .pc-hero {
+      height: 4.5rem;
+      background: linear-gradient(135deg, var(--pc-accent) 0%, oklch(0.6 0.14 320) 130%);
+      transition: background 0.35s var(--ease-paper);
+    }
+    .preview-card .pc-body { padding: var(--pc-pad); transition: padding 0.35s var(--ease-paper); }
+    .preview-card .pc-eyebrow {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--pc-accent);
+    }
+    .preview-card .pc-title {
+      font-family: 'Geist', serif; font-weight: 700; color: var(--ink);
+      font-size: calc(0.82rem * var(--pc-scale));
+      line-height: 1.2; margin-top: 0.25rem;
+    }
+    .preview-card .pc-sub {
+      color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.4rem; line-height: 1.5;
+    }
+    .preview-card .pc-btn {
+      display: inline-block; margin-top: 0.9rem;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.8rem;
+      color: oklch(0.99 0 0); background: var(--pc-accent);
+      padding: 0.5rem 1rem; border-radius: calc(var(--pc-radius) * 0.6);
+      transition: border-radius 0.35s var(--ease-paper), background 0.35s var(--ease-paper);
+    }
+    .preview-card .pc-chip {
+      display: inline-block; margin-top: 0.9rem; margin-left: 0.4rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      color: var(--pc-accent); background: var(--pc-accent-wash);
+      padding: 0.3em 0.7em; border-radius: 999px;
+      transition: background 0.35s var(--ease-paper), color 0.35s var(--ease-paper);
+    }
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .verdict-line code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px;
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .preview-card, .preview-card * { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: the token contract vs per-div chaos ─────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.good { border-left-color: var(--sys); background: var(--sys-wash); }
+    .anat .blk.bad  { border-left-color: var(--slop); background: var(--slop-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.good .tag { color: var(--sys-ink); }
+    .anat .blk.bad .tag { color: var(--slop-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.good .tag .dot { background: var(--sys); }
+    .anat .blk.bad .tag .dot { background: var(--slop); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+    .anat .cutline {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-family: 'Caveat', cursive; font-size: 1.15rem; color: var(--margin);
+    }
+    .anat .cutline hr { flex: 1; border: none; border-top: 1.5px dashed var(--margin); opacity: 0.6; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: oklch(0.36 0.10 145); font-weight: 600; }
+    .ptable td.no { color: var(--margin); font-weight: 600; }
+
+    /* ── Mobile mock (token spec on a phone) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 200 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--sys) 0%, var(--accent) 150%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.6rem; }
+    .phone .trow {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      color: var(--ink-soft);
+    }
+    .phone .trow .sw { width: 1.1rem; height: 1.1rem; border-radius: 4px; flex-shrink: 0; }
+    .phone .trow .nm { color: var(--ink); font-weight: 600; }
+    .phone .trow .vl { margin-left: auto; color: var(--ink-mute); }
+    .phone .tramp { display: grid; gap: 0.25rem; margin-top: 0.3rem; }
+    .phone .tramp .r { font-family: 'Geist', serif; color: var(--ink); line-height: 1; }
+    .phone .tspace { display: flex; align-items: flex-end; gap: 0.3rem; margin-top: 0.3rem; }
+    .phone .tspace i { display: block; background: var(--sys-wash); border: 1px solid oklch(0.8 0.05 200); border-radius: 3px; }
+    .phone .label-mini {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.58 0.11 200 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.58 0.11 200 / 0.4); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 31</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;30</span>
+        <span class="tag">design</span>
+        <span class="tag">tokens</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Ship the <span class="accent">tokens first</span> &mdash; author the design system before you let the model touch a single component.</h1>
+
+      <p class="deck">
+        You ask for a &ldquo;nice, modern landing page&rdquo; and get AI slop &mdash; because the model is
+        inventing a padding value, a blue, a font size <em>per div</em>, and none of them agree. The fix is
+        boring and it works: make it write the <strong>tokens</strong> first &mdash; one small JSON contract of
+        color scale, type ramp, spacing, radius, motion &mdash; then build every component <em>against</em> that
+        contract. Ten moves to a UI that looks made, not auto-spat. The knob below is live &mdash; drag it and
+        watch every component in the card move together.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Artifacts-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude Artifacts" />
+        <img src="https://img.shields.io/badge/Gemini-Build_Apps-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini Build Apps" />
+        <img src="https://img.shields.io/badge/tokens-first-58A6B4?style=flat-square&logo=json&logoColor=white" alt="tokens first" />
+        <img src="https://img.shields.io/badge/kills-AI_slop-2EA043?style=flat-square&logo=checkmarx&logoColor=white" alt="kills AI slop" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~10 min</span>
+        <span><b>Surface</b> · one <code>tokens.json</code> the model authors first</span>
+        <span><b>Assumes</b> · you can paste a prompt into Claude or Gemini</span>
+        <span><b>Pairs with</b> · Vol. 11 (directing Artifacts) · Vol. 27 (two models)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The tell of an AI-generated UI isn't ugliness &mdash; it's <em>disagreement</em>. One card has a 16px
+          radius, the next has 8. The hero blue is <code>#3B82F6</code>; the button blue is
+          <code>#2563EB</code>; the link blue is something else again. Padding is 12px here, 20px there, 14px
+          for no reason at all. Nothing is <em>wrong</em>, exactly &mdash; it's that nothing was <em>decided</em>.
+          The model made a fresh style choice for every element and never checked its own earlier choices.
+        </p>
+        <p>
+          Designers solved this decades ago with a <strong>design system</strong>: decide the values once &mdash;
+          the color scale, the type ramp, the spacing steps, the corner radii &mdash; and then every component
+          just <em>references</em> them. A button doesn't invent a blue; it reaches for <code>--accent</code>. A
+          card doesn't guess a gap; it uses <code>--space-4</code>. The model is fully capable of working this
+          way. It just won't <em>unless you make the system the first thing it produces.</em>
+        </p>
+        <p>
+          So flip the order. Don't say &ldquo;build me a landing page.&rdquo; Say &ldquo;first, author the design
+          tokens as JSON; show me only that.&rdquo; Approve the contract, <em>then</em> ask for components. Every
+          div now snaps to the same grid, because the grid existed before the div did. Ten moves below to run it
+          on purpose &mdash; on Claude Artifacts, on Gemini, or in Claude Code.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Name the slop — it's disagreement, not ugliness</a></li>
+          <li><a href="#h2">Make tokens the first deliverable</a></li>
+          <li><a href="#h3">The five tokens that carry the load</a></li>
+          <li><a href="#h4">Build a scale, not one color</a></li>
+          <li><a href="#h5">Ramp the type, step the space</a></li>
+          <li><a href="#h6">Approve the contract before any component</a></li>
+          <li><a href="#h7">Ban magic numbers — reference or nothing</a></li>
+          <li><a href="#h8">Give it a soul — the vibe words that steer</a></li>
+          <li><a href="#h9">Reuse the tokens across screens</a></li>
+          <li><a href="#h10">Verify — grep for the raw hex</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="token knob demo">
+      <div class="demo-bar">
+        <span>one contract, every component moves together · drag the tokens</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="studio">
+        <div class="tokens">
+          <div class="tk">
+            <label>accent hue <b id="v-hue">264 · violet</b></label>
+            <input id="k-hue" type="range" min="20" max="330" value="264" step="1" aria-label="accent hue" />
+          </div>
+          <div class="tk">
+            <label>radius <b id="v-rad">12px</b></label>
+            <input id="k-rad" type="range" min="0" max="26" value="12" step="1" aria-label="corner radius" />
+          </div>
+          <div class="tk">
+            <label>density <b id="v-pad">comfortable</b></label>
+            <input id="k-pad" type="range" min="0" max="2" value="1" step="1" aria-label="density" />
+          </div>
+          <div class="tk">
+            <label>type scale <b id="v-scale">1.32 · major third</b></label>
+            <input id="k-scale" type="range" min="112" max="150" value="132" step="1" aria-label="type scale ratio" />
+          </div>
+          <div class="tk">
+            <label>preset</label>
+            <div class="swatches" role="group" aria-label="preset vibe">
+              <button data-p="calm"  title="calm / editorial" style="background:oklch(0.55 0.16 264)"></button>
+              <button data-p="fresh" class="on" title="fresh / product" style="background:oklch(0.6 0.13 200)"></button>
+              <button data-p="warm"  title="warm / human" style="background:oklch(0.62 0.15 40)"></button>
+              <button data-p="bold"  title="bold / punchy" style="background:oklch(0.55 0.2 330)"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="preview-card" id="pc">
+            <div class="pc-hero"></div>
+            <div class="pc-body">
+              <div class="pc-eyebrow">from the token contract</div>
+              <div class="pc-title">Same card, one source of truth</div>
+              <div class="pc-sub">Every value here — the blue, the corners, the gaps, the heading size — reads from the same tokens. Move one dial, the whole thing stays coherent.</div>
+              <div>
+                <span class="pc-btn">Get started</span>
+                <span class="pc-chip">tokens.json</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>This is the point.</b> There's no per-element styling here — the card, the button, the chip, and the heading all reference <code>--accent</code>, <code>--radius</code>, <code>--space</code>, <code>--scale</code>. Change the contract, everything moves as one. That coherence is what &ldquo;not AI slop&rdquo; actually means.</span>
+        <span class="hint">drag me ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Name the slop &mdash; it's disagreement, not ugliness. <span class="pill read">read</span></h2>
+        <p>
+          Before you can prompt your way out of AI slop you have to see it correctly. It's rarely that a single
+          element looks bad. It's that the elements don't <em>agree</em>: three shades of the &ldquo;same&rdquo;
+          blue, four unrelated radii, spacing that lands on 11px and 19px and 26px like it was scattered. The eye
+          reads that incoherence as cheap long before it can name why.
+        </p>
+        <p>
+          Luis P (<a href="same-prompt-two-souls-claude-vs-gemini-design-2026-06-27.html">Vol. 27</a> is the
+          companion read) puts it well when he lines Claude and Gemini layouts side by side: the models that
+          feel &ldquo;designed&rdquo; are the ones being <em>consistent</em> about warmth, padding, and grid.
+          Consistency is the whole trick, and consistency comes from a shared source of values &mdash; not from
+          asking nicely for &ldquo;polish.&rdquo;
+        </p>
+        <div class="anat" aria-label="slop versus system">
+          <div class="blk bad">
+            <div class="tag"><span class="dot"></span>slop</div>
+            <p><em>Decided per-div — every element picks its own values.</em> Button blue ≠ hero blue. Card radius 16, input radius
+            8. Gaps at 12 / 14 / 20 with no rule. Looks &ldquo;fine&rdquo; in isolation, incoherent as a set.</p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>system</div>
+            <p><em>Decided once — every element references the same tokens.</em> One <code>--accent</code>, one radius scale,
+            one spacing step. Nothing invents; everything reaches. The set reads as one hand made it.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Make tokens the first deliverable &mdash; not the page. <span class="pill setup">setup</span></h2>
+        <p>
+          This is the entire move, and it's an ordering trick. Instead of asking for the artifact, ask for the
+          <em>system that the artifact will be built from</em> &mdash; and ask for <strong>only</strong> that.
+          You want the model to stop and hand you a small JSON object before it has written one line of markup.
+          Approving that object is you doing the one job that's actually yours: taste.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompt — the tokens-first opener (paste into Claude or Gemini)</span></div>
+<pre><span class="cmt"># DON'T say this:</span>
+<span class="str">"Build me a modern landing page for a productivity app."</span>
+
+<span class="cmt"># Say this instead — stage 1, tokens only:</span>
+<span class="str">"Before writing any UI, author a design token contract as JSON:
+  - a color scale (accent + neutrals, light + dark)
+  - a type ramp (5 steps from a base and a ratio)
+  - a spacing scale (an 8pt grid, 6 steps)
+  - a radius scale (3 steps)
+  - motion (one duration, one easing)
+Output ONLY the JSON. No components yet. Wait for my approval."</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>The magic words are <b>&ldquo;output only the JSON&rdquo;</b> and <b>&ldquo;wait for my
+          approval.&rdquo;</b> They stop the model's reflex to helpfully build the whole page in one shot &mdash;
+          the exact reflex that produces slop. You've turned one big vague ask into two small precise ones.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>The five tokens that carry the load. <span class="pill design">design</span></h2>
+        <p>
+          You don't need the 400-variable enterprise system. Five families do ~90% of the work, and every
+          component you'll ever ask for reads from them. Get these five decided and coherent and the UI has a
+          spine.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">tokens.json — the contract the model returns in stage 1</span></div>
+<pre>{
+  <span class="key">"color"</span>: {
+    <span class="key">"accent"</span>:  <span class="str">"oklch(0.55 0.16 264)"</span>,   <span class="cmt"># one hue, one truth</span>
+    <span class="key">"ink"</span>:     <span class="str">"oklch(0.20 0.01 60)"</span>,
+    <span class="key">"paper"</span>:   <span class="str">"oklch(0.98 0.01 85)"</span>
+  },
+  <span class="key">"type"</span>:   { <span class="key">"base"</span>: <span class="amb">16</span>, <span class="key">"ratio"</span>: <span class="amb">1.32</span> },  <span class="cmt"># a ramp, not sizes</span>
+  <span class="key">"space"</span>:  { <span class="key">"unit"</span>: <span class="amb">8</span>, <span class="key">"steps"</span>: [<span class="amb">4</span>,<span class="amb">8</span>,<span class="amb">16</span>,<span class="amb">24</span>,<span class="amb">40</span>,<span class="amb">64</span>] },
+  <span class="key">"radius"</span>: { <span class="key">"sm"</span>: <span class="amb">6</span>, <span class="key">"md"</span>: <span class="amb">12</span>, <span class="key">"lg"</span>: <span class="amb">18</span> },
+  <span class="key">"motion"</span>: { <span class="key">"dur"</span>: <span class="str">"0.2s"</span>, <span class="key">"ease"</span>: <span class="str">"cubic-bezier(.22,1,.36,1)"</span> }
+}</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Ask for the colors in <b>OKLCH</b>, not hex. OKLCH is perceptually uniform, so &ldquo;same
+          lightness, different hue&rdquo; actually looks the same &mdash; which is exactly how you build a scale
+          that doesn't have one muddy step. It's the format this whole notebook is written in.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Build a scale, not one color. <span class="pill system">system</span></h2>
+        <p>
+          The single most common slop tell is a lonely accent color with no relatives. Real systems have a
+          <strong>scale</strong> &mdash; the same hue at a run of lightness steps &mdash; so a hover state, a
+          wash background, a border, and a pressed state are all obviously <em>the same color, dimmed or
+          lifted</em>. Ask for the scale explicitly or the model gives you one blue and then improvises the rest.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompt — turn one hue into a usable scale</span></div>
+<pre><span class="str">"From the accent hue, generate a 6-step scale by varying ONLY
+ lightness in OKLCH — keep chroma and hue locked. Label them
+ 50 / 100 / 300 / 500 / 700 / 900. 500 is the base accent.
+ Use 100 for washes, 700 for hover, 900 for pressed text."</span>
+
+<span class="cmt"># you get back a coherent family, e.g.:</span>
+<span class="key">accent-100</span>: <span class="str">oklch(0.93 0.05 264)</span>   <span class="cmt"># wash / chip bg</span>
+<span class="key">accent-500</span>: <span class="str">oklch(0.55 0.16 264)</span>   <span class="cmt"># the button</span>
+<span class="key">accent-700</span>: <span class="str">oklch(0.42 0.16 264)</span>   <span class="cmt"># hover / link ink</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>If you let it vary <b>chroma and hue too</b>, the &ldquo;scale&rdquo; drifts &mdash; step 300
+          leans teal, step 700 leans indigo, and you're back to three blues that don't agree. Lock hue, lock
+          chroma, move only lightness. That one constraint is what makes it a scale instead of a mood board.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Ramp the type, step the space &mdash; on an 8pt grid. <span class="pill system">system</span></h2>
+        <p>
+          Font sizes should come from a <strong>ratio</strong>, not vibes. Pick a base (16px) and a ratio
+          (1.25 &ldquo;major third&rdquo; is safe; 1.33 is punchier) and every heading is
+          <code>base × ratio<sup>n</sup></code>. Spacing works the same way: pick an 8pt unit and only ever use
+          multiples of it. Now every gap and every heading is a <em>derived</em> value, and derived values
+          can't disagree.
+        </p>
+        <div class="anat" aria-label="ramp and grid">
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>ramp</div>
+            <p><em>Base 16 × 1.32 — 16 → 21 → 28 → 37 → 49.</em> Five steps, one ratio. The relationship between any two sizes is
+            constant, so headings feel like a family instead of five arbitrary numbers.</p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>spacing</div>
+            <p><em>8pt grid — 4 · 8 · 16 · 24 · 40 · 64.</em> Every margin, gap, and pad snaps to a step. No 11px, no 19px.
+            The rhythm is what makes a layout feel engineered rather than nudged-by-hand.</p>
+          </div>
+        </div>
+        <p class="scribble">no magic numbers — if a value isn't on the grid or the ramp, it's a bug.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Approve the contract before any component exists. <span class="pill design">design</span></h2>
+        <p>
+          This is where <em>you</em> earn your keep. The model just handed you a small JSON object &mdash; that's
+          the entire design of the product, compressed. Read it. Nudge it in plain language:
+          <em>&ldquo;accent's too cold, warm it 20 degrees,&rdquo;</em> <em>&ldquo;bump the ratio to 1.4, I want
+          more drama in the headings,&rdquo;</em> <em>&ldquo;tighten radius to 8, this should feel
+          sharper.&rdquo;</em> Iterate on the <strong>contract</strong>, which is cheap, not on rendered pages,
+          which is slow.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the approval loop — plain-language nudges on the JSON</span></div>
+<pre><span class="prompt">you  ▸</span> warmer accent, tighter corners, one notch more spacing.
+<span class="out">ai   ▸ updated: accent hue 264 → 40, radius md 12 → 8, unit 8 → 8 (steps up one).</span>
+<span class="prompt">you  ▸</span> perfect. lock it. NOW build the hero + pricing cards
+        using ONLY these tokens. No new colors, no off-grid spacing.</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Say <b>&ldquo;lock it&rdquo;</b> explicitly, then <b>&ldquo;using ONLY these tokens.&rdquo;</b>
+          You're converting an approved spec into a hard constraint for stage 2. The model now has a rubric to
+          build against instead of a blank canvas to improvise on &mdash; and improvisation was the slop.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Ban magic numbers &mdash; reference a token or don't ship it. <span class="pill system">system</span></h2>
+        <p>
+          Stage 2 is where discipline slips: the model builds three clean components off the tokens, then quietly
+          drops a <code>margin-top: 13px</code> or a <code>#eee</code> border because it felt right in the
+          moment. That one raw value is the crack that spreads. Put the rule in the prompt as a hard negative
+          constraint, the way you'd constrain a coding agent (<a href="the-prompt-that-stops-guessing-2026-06-18.html">Vol. 18</a>).
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">CSS — every value points back at the contract</span></div>
+<pre>:root {
+  <span class="key">--accent</span>: oklch(0.55 0.16 264);
+  <span class="key">--radius-md</span>: 12px;
+  <span class="key">--space-3</span>: 16px;  <span class="key">--space-4</span>: 24px;
+}
+.card {
+  border-radius: <span class="vio">var(--radius-md)</span>;      <span class="cmt"># not 12px</span>
+  padding: <span class="vio">var(--space-4)</span>;            <span class="cmt"># not 24px</span>
+}
+.card .btn {
+  background: <span class="vio">var(--accent)</span>;          <span class="cmt"># not #6d5ef0</span>
+  margin-top: <span class="vio">var(--space-3)</span>;
+}
+<span class="cmt"># the point: change the token, the whole UI follows. that's a system.</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Watch for the sneaky ones: a <code>box-shadow</code> with a hand-picked blur, a
+          <code>line-height: 1.45</code>, a one-off <code>gap</code>. Shadows, line-heights, and durations are
+          tokens too. If it's a number that affects how it looks, it belongs in the contract.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Give it a soul &mdash; the vibe words that steer the tokens. <span class="pill design">design</span></h2>
+        <p>
+          A coherent system can still be <em>generic</em>. Coherence kills slop; character is what's left to add.
+          The lever is the adjectives you feed stage 1 &mdash; and, per <a href="same-prompt-two-souls-claude-vs-gemini-design-2026-06-27.html">Vol. 27</a>,
+          Claude and Gemini lean different directions, so the same words land differently. A few that reliably
+          move tokens in a real direction:
+        </p>
+        <table class="ptable" aria-label="vibe words and what they change">
+          <thead>
+            <tr><th>Say this</th><th>What it moves in the tokens</th><th>Result</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">&ldquo;editorial, warm&rdquo;</td><td>serif display, low chroma, generous line-height, cream paper</td><td class="yes">calm, human</td></tr>
+            <tr><td class="trait">&ldquo;dense, technical&rdquo;</td><td>tight spacing steps, small ramp ratio, mono accents, cooler neutrals</td><td class="yes">data-forward</td></tr>
+            <tr><td class="trait">&ldquo;punchy, product&rdquo;</td><td>high-chroma accent, bigger ratio, larger radius, bold weights</td><td class="yes">energetic</td></tr>
+            <tr><td class="trait">&ldquo;quiet, premium&rdquo;</td><td>near-neutral accent, wide spacing, subtle shadows, restraint</td><td class="yes">expensive</td></tr>
+            <tr><td class="trait">&ldquo;modern &amp; clean&rdquo;</td><td>nothing — it's a null instruction the model averages away</td><td class="no">slop</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">"modern and clean" means nothing — give it a direction with an edge.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Reuse the tokens across screens &mdash; one contract, many pages. <span class="pill system">system</span></h2>
+        <p>
+          The payoff compounds the moment you build a second screen. Because the design lives in one small object,
+          the settings page, the dashboard, and the marketing site all read from the <em>same</em> tokens &mdash;
+          so they look like one product instead of three freelancers. Paste the approved <code>tokens.json</code>
+          back in as the header of every new request. It's the same stable-prefix discipline as prompt caching
+          (<a href="the-90-percent-off-dial-prompt-caching-2026-06-29.html">Vol. 30</a>): the system is the part
+          that doesn't change.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompt — carry the contract into every new screen</span></div>
+<pre><span class="str">"Here is the approved design contract (do not change it):
+&lt;paste tokens.json&gt;
+
+Now build the DASHBOARD using only these tokens. Same accent
+scale, same 8pt spacing, same radius set, same type ramp.
+Match the visual language of the landing page exactly."</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Keep <code>tokens.json</code> in a file you own, not just in a chat. It's the single most
+          reusable asset in the whole project &mdash; the thing that makes screen #7 as coherent as screen #1
+          without you re-deciding anything. This is exactly the <code>DESIGN.md</code> habit, in machine form.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Verify &mdash; grep for the raw hex. <span class="pill ship">ship</span></h2>
+        <p>
+          Don't trust that the model held the line &mdash; check it, the way you'd verify any output on a rubric
+          (<a href="grade-it-before-they-do-evals-2026-06-24.html">Vol. 24</a>). The test is mechanical and
+          brutal: search the generated code for raw color literals and off-grid numbers. A clean token-based UI
+          has almost none outside the <code>:root</code> block. Every hex or rando-pixel you find in a component
+          is a place the system leaked.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">verify.sh — hunt raw values outside the token block</span></div>
+<pre><span class="cmt"># any hex colors hiding in components?</span>
+<span class="prompt">$</span> grep -nE <span class="str">'#[0-9a-fA-F]{3,6}'</span> app.css | grep -v <span class="str">':root'</span>
+<span class="hit">(no output = every color came from a token ✓)</span>
+
+<span class="cmt"># any spacing that isn't a multiple of 8 or 4?</span>
+<span class="prompt">$</span> grep -oE <span class="str">'[0-9]+px'</span> app.css | sort -u
+<span class="out">4px  8px  12px  16px  24px  40px  64px   # all on-grid ✓</span>
+<span class="out">13px                                    # &lt;-- the one leak. fix it.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Found a leak? Don't hand-fix the <code>13px</code>. Feed the grep output <b>back to the model</b>:
+          &ldquo;these values violate the token contract &mdash; replace each with the nearest token.&rdquo;
+          You're closing the loop the same way an eval gate does &mdash; the machine made it, the machine fixes
+          it, you just hold the standard.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a token spec">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">tokens.json · the contract</div>
+            <div class="t">Decided once, reused everywhere</div>
+          </div>
+          <div class="s-body">
+            <div>
+              <div class="label-mini">color scale</div>
+              <div class="trow"><span class="sw" style="background:oklch(0.93 0.05 264)"></span><span class="nm">accent-100</span><span class="vl">wash</span></div>
+              <div class="trow"><span class="sw" style="background:oklch(0.55 0.16 264)"></span><span class="nm">accent-500</span><span class="vl">base</span></div>
+              <div class="trow"><span class="sw" style="background:oklch(0.42 0.16 264)"></span><span class="nm">accent-700</span><span class="vl">hover</span></div>
+            </div>
+            <div>
+              <div class="label-mini">type ramp · ×1.32</div>
+              <div class="tramp">
+                <div class="r" style="font-size:1.4rem">Aa</div>
+                <div class="r" style="font-size:1.05rem">Aa heading</div>
+                <div class="r" style="font-size:0.8rem">Aa body text</div>
+              </div>
+            </div>
+            <div>
+              <div class="label-mini">spacing · 8pt</div>
+              <div class="tspace">
+                <i style="width:4px;height:4px"></i>
+                <i style="width:8px;height:8px"></i>
+                <i style="width:16px;height:16px"></i>
+                <i style="width:24px;height:24px"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>The whole product, compressed into one screen you can approve in ten seconds: a color scale, a type
+        ramp, a spacing grid. <strong>Decide these once</strong> and every component you ask for afterward inherits
+        them &mdash; the button, the card, the nav, the next three pages.</p>
+        <p class="scribble">approve the spec, not the pixels — the pixels follow the spec.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Order it</h4>
+          <ul>
+            <li><code>tokens first</code><span>before any UI</span></li>
+            <li><code>"JSON only"</code><span>stops the one-shot</span></li>
+            <li><code>"wait for me"</code><span>you approve the spec</span></li>
+            <li><code>then components</code><span>built against it</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The five tokens</h4>
+          <ul>
+            <li><code>color scale</code><span>one hue, many steps</span></li>
+            <li><code>type ramp</code><span>base × ratio</span></li>
+            <li><code>space</code><span>8pt grid, no 13px</span></li>
+            <li><code>radius</code><span>sm / md / lg</span></li>
+            <li><code>motion</code><span>one dur, one ease</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Steer it</h4>
+          <ul>
+            <li><code>OKLCH</code><span>uniform, real scales</span></li>
+            <li><code>lock hue</code><span>vary lightness only</span></li>
+            <li><code>vibe words</code><span>editorial / dense / punchy</span></li>
+            <li><code>not "clean"</code><span>null instruction = slop</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Hold the line</h4>
+          <ul>
+            <li><code>"only these"</code><span>no new values</span></li>
+            <li><code>reuse the file</code><span>every screen agrees</span></li>
+            <li><code>grep #hex</code><span>find the leaks</span></li>
+            <li><code>machine fixes</code><span>feed leaks back</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 31 · tokens before components</small>
+      </div>
+      <div class="end">
+        built from the <code>design-mode</code> habit<br />
+        author the system · then the screen<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var pc = document.getElementById('pc');
+      if (!pc) return;
+
+      var kHue = document.getElementById('k-hue');
+      var kRad = document.getElementById('k-rad');
+      var kPad = document.getElementById('k-pad');
+      var kScale = document.getElementById('k-scale');
+      var vHue = document.getElementById('v-hue');
+      var vRad = document.getElementById('v-rad');
+      var vPad = document.getElementById('v-pad');
+      var vScale = document.getElementById('v-scale');
+      var swBtns = Array.prototype.slice.call(document.querySelectorAll('.swatches button'));
+
+      var padWords = ['compact', 'comfortable', 'airy'];
+      var padVals  = ['0.7rem', '1.1rem', '1.6rem'];
+
+      function hueName(h) {
+        if (h < 45)  return 'coral';
+        if (h < 95)  return 'amber';
+        if (h < 165) return 'green';
+        if (h < 215) return 'teal';
+        if (h < 285) return 'violet';
+        return 'magenta';
+      }
+      function ratioName(r) {
+        if (r < 1.18) return 'minor third';
+        if (r < 1.28) return 'major third';
+        if (r < 1.40) return 'perfect fourth';
+        return 'aug. fourth';
+      }
+
+      function paint() {
+        var h = +kHue.value;
+        var rad = +kRad.value;
+        var padI = +kPad.value;
+        var ratio = (+kScale.value) / 100;
+
+        pc.style.setProperty('--pc-accent', 'oklch(0.55 0.16 ' + h + ')');
+        pc.style.setProperty('--pc-accent-wash', 'oklch(0.93 0.05 ' + h + ')');
+        pc.style.setProperty('--pc-radius', rad + 'px');
+        pc.style.setProperty('--pc-pad', padVals[padI]);
+        pc.style.setProperty('--pc-scale', ratio.toFixed(2));
+
+        vHue.textContent = h + ' · ' + hueName(h);
+        vRad.textContent = rad + 'px';
+        vPad.textContent = padWords[padI];
+        vScale.textContent = ratio.toFixed(2) + ' · ' + ratioName(ratio);
+      }
+
+      [kHue, kRad, kPad, kScale].forEach(function (k) {
+        k.addEventListener('input', paint);
+      });
+
+      var presets = {
+        calm:  { hue: 264, rad: 10, pad: 2, scale: 125 },
+        fresh: { hue: 200, rad: 12, pad: 1, scale: 132 },
+        warm:  { hue: 40,  rad: 16, pad: 1, scale: 128 },
+        bold:  { hue: 330, rad: 20, pad: 0, scale: 145 }
+      };
+      swBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          var p = presets[b.dataset.p];
+          if (!p) return;
+          kHue.value = p.hue; kRad.value = p.rad; kPad.value = p.pad; kScale.value = p.scale;
+          swBtns.forEach(function (x) { x.classList.toggle('on', x === b); });
+          paint();
+        });
+      });
+
+      paint();
+    })();
+  </script>
+</body>
+</html>

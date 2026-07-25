@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Give the Agent Hands — Eleven Moves for Wiring MCP Into Your Real Tools · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: MCP is the layer that lets your AI agent reach into Gmail, GitHub, Figma, Vercel, and your own Mac instead of just talking about them. The mental model, the setup, the guardrails — learned by actually running a dozen connectors." />
+  <meta property="og:title" content="Give the Agent Hands — Wiring MCP Into Your Real Tools" />
+  <meta property="og:description" content="Your agent can plan and build. MCP is what lets it act. Eleven moves for connecting tools the safe way." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* MENTAL MODEL diagram ----------------------------------- */
+    .model {
+      margin: 0 0 3rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.2rem, 2vw, 1.8rem);
+      position: relative;
+    }
+    .model::before {
+      content: 'the one diagram that makes it click';
+      position: absolute;
+      top: -13px; left: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.16em 0.8em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(-1.5deg);
+    }
+    .model h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1.1rem;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+    @media (max-width: 680px) {
+      .flow { grid-template-columns: 1fr; }
+      .flow .arrow { transform: rotate(90deg); justify-self: center; padding: 0.2rem 0; }
+    }
+    .node {
+      background: var(--paper);
+      border: 1px solid oklch(0.84 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 0.9rem;
+      text-align: center;
+      display: flex; flex-direction: column; gap: 0.25rem;
+      justify-content: center;
+    }
+    .node .lab {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .node .big { font-family: 'Geist', serif; font-weight: 700; font-size: 1.02rem; color: var(--ink); }
+    .node .sm { font-size: 0.82rem; color: var(--ink-soft); }
+    .node.you   { border-color: oklch(0.80 0.08 27); background: var(--margin-soft); }
+    .node.agent { border-color: oklch(0.78 0.08 264); background: var(--accent-wash); }
+    .node.mcp   { border-color: oklch(0.78 0.10 68); background: var(--amber-wash); }
+    .arrow {
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Geist Mono', monospace;
+      color: var(--margin);
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .model .legend {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      max-width: var(--measure);
+    }
+    .model .legend b { color: var(--ink); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.concept  { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.safety   { background: var(--margin-soft); color: var(--margin); }
+    .hack h2 .pill.workflow { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    /* Connector cards grid */
+    .conn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.7rem;
+    }
+    .conn {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.85rem;
+    }
+    .conn .name {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent-ink);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .conn .name .led {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--sage); flex: 0 0 auto;
+      box-shadow: 0 0 0 3px var(--sage-wash);
+    }
+    .conn .does { font-size: 0.86rem; color: var(--ink-soft); margin-top: 0.3rem; }
+
+    /* URL hack table reuse for verb table */
+    .url-grid { display: grid; gap: 0.5rem; }
+    .url-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 0.85rem;
+      align-items: baseline;
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+    }
+    .url-row code { font-size: 0.83rem; word-break: break-all; }
+    .url-row .desc { font-size: 0.9rem; color: var(--ink-soft); }
+    @media (max-width: 560px) {
+      .url-row { grid-template-columns: 1fr; gap: 0.3rem; }
+    }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 42ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* Closing cheat sheet */
+    .cheat {
+      margin-top: 3.5rem;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem clamp(1.2rem, 2vw, 2rem);
+      position: relative;
+    }
+    .cheat::before {
+      content: 'Tape it to your monitor';
+      position: absolute;
+      top: -14px; right: 1.5rem;
+      background: oklch(0.78 0.13 68 / 0.55);
+      padding: 0.18em 0.85em;
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      border-radius: 2px;
+      transform: rotate(1.5deg);
+    }
+    .cheat h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .cheat .sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      margin-bottom: 1.1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .cheat-col h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      margin-bottom: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+    }
+    .cheat-col ul {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .cheat-col li {
+      font-size: 0.88rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+      color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.8rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.04em 0.35em;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Footer */
+    footer.sig {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--margin);
+      line-height: 1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+    }
+
+    /* Selection */
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term { box-shadow: none; }
+      .holes { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 19</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;19</span>
+        <span class="tag">agents</span>
+        <span class="tag">mcp</span>
+      </div>
+
+      <h1>Give the agent <span class="accent">hands</span> &mdash; eleven moves for wiring MCP into your real tools.</h1>
+
+      <p class="deck">
+        We taught the agent to plan without guessing and to build a frontend in
+        an afternoon. But a model that can only <em>talk</em> about your Gmail, your
+        repos, your Figma file is still a very smart person locked in a room.
+        MCP is the door. This notebook is the part nobody explains: the mental
+        model, the setup, and the guardrails &mdash; learned by actually running a
+        dozen connectors at once.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~13 min</span>
+        <span><b>Surface</b> · Claude / Cursor + MCP</span>
+        <span><b>Assumes</b> · you've talked to an agent before</span>
+        <span><b>Voice</b> · open-notebook, casual</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          For months I treated my AI like a brilliant intern with no badge. I'd
+          ask it to draft a reply, then copy-paste from Gmail. Ask it to check a
+          PR, then alt-tab to GitHub and read the diff back to it like a bedtime
+          story. The thinking was great. The reaching was all me. I was the
+          agent's hands.
+        </p>
+        <p>
+          MCP &mdash; the Model Context Protocol &mdash; is the thing that ends that.
+          It's a small, boring standard with a huge payoff: one common plug so an
+          agent can reach into a real tool, read what's there, and act. Think USB-C
+          for AI. Once a connector is plugged in, the model stops asking you to
+          fetch things and just&hellip; fetches them.
+        </p>
+        <p>
+          This isn't theory for me. As I write this, the agent on the other side of
+          the screen has live connectors into GitHub, Figma, Sanity, Gmail,
+          Calendar, Vercel, Box, and my actual Mac. That's the material below.
+          Eleven moves, from "what even is this" to "don't let it email your boss
+          by accident." The closer to the top, the sooner you'll feel it.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>What's inside ↓</h3>
+        <ol>
+          <li><a href="#h1">The mental model: USB-C for AI</a></li>
+          <li><a href="#h2">Tools vs. resources vs. prompts</a></li>
+          <li><a href="#h3">Your first connector (the easy way)</a></li>
+          <li><a href="#h4">Local servers via <code>claude mcp add</code></a></li>
+          <li><a href="#h5">The config file, demystified</a></li>
+          <li><a href="#h6">Read-only first, always</a></li>
+          <li><a href="#h7">The "write" actions that bite</a></li>
+          <li><a href="#h8">Scope the keys, not the vibes</a></li>
+          <li><a href="#h9">Stack connectors into a workflow</a></li>
+          <li><a href="#h10">When NOT to reach for MCP</a></li>
+          <li><a href="#h11">Where the registry lives</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- MENTAL MODEL -->
+    <section class="model" aria-label="MCP mental model">
+      <h3>How a request actually travels.</h3>
+      <div class="flow">
+        <div class="node you">
+          <span class="lab">you</span>
+          <span class="big">"Draft a reply to the latest invoice email."</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node agent">
+          <span class="lab">the agent</span>
+          <span class="big">decides it needs Gmail</span>
+          <span class="sm">picks the right tool</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node mcp">
+          <span class="lab">mcp server</span>
+          <span class="big">Gmail connector</span>
+          <span class="sm">reads the thread, returns it</span>
+        </div>
+      </div>
+      <p class="legend">
+        The agent never touches Gmail directly. It speaks one standard language to
+        an <b>MCP server</b> &mdash; a tiny program that knows how to talk to Gmail on
+        its behalf. Swap "Gmail" for "GitHub," "Figma," or "your filesystem" and the
+        picture is identical. <b>That's the whole idea:</b> the model learns one
+        protocol, and every connector that speaks it just works. No custom glue per
+        app.
+      </p>
+    </section>
+
+    <!-- HACK 1 -->
+    <article class="hack" id="h1">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>The mental model: MCP is USB-C for your AI. <span class="pill concept">concept</span></h2>
+        <p>
+          Before USB-C, every device had its own cable. Your camera, your phone, your
+          mouse &mdash; a drawer full of incompatible plugs. USB-C made one shape work
+          for everything. MCP is that, for AI tools.
+        </p>
+        <p>
+          Without it, every "let my AI use tool X" integration was a custom, brittle,
+          one-off. With it, anyone can ship a connector once, and <em>any</em>
+          MCP-aware agent &mdash; Claude, Cursor, VS Code, whatever comes next &mdash; can
+          use it. The protocol is open. That's why the ecosystem went from a handful
+          of servers to thousands in about a year.
+        </p>
+        <p>
+          You don't need to understand the wire format any more than you need to
+          understand USB-C's pin layout to charge your laptop. You need exactly one
+          sentence: <b>an MCP server exposes a tool's abilities; your agent calls
+          them.</b> Hold that and the rest is plumbing.
+        </p>
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Next time your agent says "I can't access that, please paste it" &mdash;
+            don't paste. Ask: <em>"is there an MCP connector for this?"</em> Half the
+            time the answer is yes and you've been doing manual labor for nothing.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Three words to know: tools, resources, prompts. <span class="pill concept">concept</span></h2>
+        <p>
+          Every MCP server can offer three kinds of things, and knowing which is
+          which saves a lot of confusion the first week.
+        </p>
+        <div class="conn-grid">
+          <div class="conn">
+            <div class="name"><span class="led"></span>tools</div>
+            <div class="does">Verbs the agent can <b>do</b>. <code>create_issue</code>, <code>send_email</code>, <code>query_documents</code>. This is the action layer &mdash; the part with consequences.</div>
+          </div>
+          <div class="conn">
+            <div class="name"><span class="led"></span>resources</div>
+            <div class="does">Nouns the agent can <b>read</b>. A file, a calendar, a doc. Context it pulls in, no side effects.</div>
+          </div>
+          <div class="conn">
+            <div class="name"><span class="led"></span>prompts</div>
+            <div class="does">Canned workflows the server <b>suggests</b>. Pre-baked recipes like "review this PR" you can trigger by name.</div>
+          </div>
+        </div>
+        <p>
+          The line that matters: <b>resources are safe, tools have teeth.</b> Reading
+          your calendar can't hurt you. A tool named <code>delete_event</code> can. We
+          come back to this hard in moves 6 and 7 &mdash; it's the difference between
+          a connector that helps and one that surprises you.
+        </p>
+      </div>
+    </article>
+
+    <!-- HACK 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Your first connector: the click-to-connect path. <span class="pill setup">setup</span></h2>
+        <p>
+          Forget the terminal for your first one. The big tools now ship hosted
+          ("remote") MCP servers you connect with an OAuth click &mdash; same flow as
+          "Sign in with Google." No install, no token files, no JSON. Inside Claude
+          or Cursor you open the connectors panel, pick the service, approve the
+          login, done.
+        </p>
+        <p>
+          This is the path I'd start anyone on. GitHub, Figma, Notion, Vercel,
+          Linear, Sentry &mdash; most have an official hosted server now. The hosted
+          ones also handle their own auth refresh, so you're not babysitting expired
+          tokens.
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the click path (no terminal)</span>
+          </div>
+<pre><span class="cmt"># in Claude / Cursor / your agent app:</span>
+<span class="out">Settings → Connectors → Browse</span>
+<span class="out">  → pick "GitHub"</span>
+<span class="out">  → "Connect" → approve OAuth in browser</span>
+<span class="out">  → done. the agent now sees github tools.</span>
+
+<span class="cmt"># verify it took:</span>
+<span class="prompt">you ›</span> <span class="str">"list my 3 most recently updated repos"</span>
+<span class="out">→ agent calls search_repositories, returns them</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Hosted servers are easiest but they route through someone else's
+            infrastructure. For anything sensitive (a private client repo, internal
+            docs) check who hosts it &mdash; <b>prefer the <em>official</em> vendor
+            server</b> over a random community proxy. Move 8 has the rule.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2><code>claude mcp add</code> &mdash; local servers, one line. <span class="pill setup">setup</span></h2>
+        <p>
+          When you want the agent to touch <em>your machine</em> &mdash; the filesystem,
+          a local Postgres, a script &mdash; you run a local ("stdio") server. The
+          CLI makes this a one-liner. No editing JSON if you don't want to.
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">terminal · claude mcp</span>
+          </div>
+<pre><span class="cmt"># add the filesystem server, scoped to one folder</span>
+<span class="prompt">$</span> claude mcp add files <span class="amb">--</span> \
+    npx -y @modelcontextprotocol/server-filesystem ~/Agents
+
+<span class="cmt"># add one with a secret, passed as an env var (don't hardcode)</span>
+<span class="prompt">$</span> claude mcp add github <span class="amb">--env</span> GITHUB_TOKEN=$GH_TOKEN <span class="amb">--</span> \
+    npx -y @modelcontextprotocol/server-github
+
+<span class="cmt"># see what's wired up + whether it's connecting</span>
+<span class="prompt">$</span> claude mcp list
+<span class="out">files    ✓ connected</span>
+<span class="out">github   ✓ connected</span>
+
+<span class="cmt"># inspect or remove one</span>
+<span class="prompt">$</span> claude mcp get github
+<span class="prompt">$</span> claude mcp remove github</pre>
+        </div>
+        <p>
+          The <code>--</code> separator matters: everything after it is the command
+          that <em>launches</em> the server. <code>npx -y</code> means "fetch and run
+          without a global install," which is why most quick-starts use it.
+        </p>
+        <p class="scribble">scope the filesystem server to a folder, never your whole home dir. you'll thank yourself.</p>
+      </div>
+    </article>
+
+    <!-- HACK 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>The config file, demystified. <span class="pill setup">setup</span></h2>
+        <p>
+          Under the click-paths and one-liners, it all lands in a plain JSON file.
+          Knowing its shape means you can read, debug, and copy-paste a setup someone
+          shares without it being magic. Every MCP-aware app uses the same skeleton.
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">mcp config (the shape is universal)</span>
+          </div>
+<pre>{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"filesystem"</span>: {
+      <span class="key">"command"</span>: <span class="str">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@modelcontextprotocol/server-filesystem"</span>, <span class="str">"~/Agents"</span>]
+    },
+    <span class="key">"github"</span>: {
+      <span class="key">"command"</span>: <span class="str">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@modelcontextprotocol/server-github"</span>],
+      <span class="key">"env"</span>: { <span class="key">"GITHUB_TOKEN"</span>: <span class="str">"${GITHUB_TOKEN}"</span> }
+    }
+  }
+}</pre>
+        </div>
+        <p>
+          That's the entire vocabulary: a name, a <code>command</code> to launch it,
+          its <code>args</code>, and optional <code>env</code> for secrets. Remote
+          servers swap <code>command</code> for a <code>url</code> + auth. When a
+          tutorial hands you a JSON blob, this is what you're pasting into &mdash; and
+          now you can read it instead of trusting it blind.
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            Write secrets as <code>${GITHUB_TOKEN}</code> referencing an environment
+            variable &mdash; <b>never paste the raw token</b> into a config you might
+            commit or share. A leaked token in a screenshot is the classic day-one
+            mistake.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Read-only first. Earn the write access. <span class="pill safety">safety</span></h2>
+        <p>
+          The single habit that's saved me the most grief: <b>when you add a new
+          connector, use it read-only for a few days before you let it write
+          anything.</b> Let it list your issues, read your calendar, summarize a
+          thread. Watch how it picks tools. Build trust before you hand it a pen.
+        </p>
+        <p>
+          Most servers expose far more than you need on day one. The filesystem
+          server can be added in read-only mode. GitHub doesn't need
+          <code>merge_pull_request</code> just to help you triage. Start with the
+          nouns (resources), graduate to the safe verbs, and only then the
+          consequential ones.
+        </p>
+        <div class="conn-grid">
+          <div class="conn">
+            <div class="name"><span class="led"></span>day 1 · read</div>
+            <div class="does"><code>list</code>, <code>get</code>, <code>search</code>, <code>read</code>. Zero side effects. Just looking.</div>
+          </div>
+          <div class="conn">
+            <div class="name"><span class="led"></span>week 1 · soft write</div>
+            <div class="does"><code>create_draft</code>, <code>create_issue</code>, <code>create_branch</code>. Reversible, visible, low blast radius.</div>
+          </div>
+          <div class="conn">
+            <div class="name"><span class="led"></span>earned · hard write</div>
+            <div class="does"><code>send</code>, <code>merge</code>, <code>delete</code>, <code>deploy</code>. Only once you trust the tool selection.</div>
+          </div>
+        </div>
+        <p class="scribble">a draft you review beats an email you can't un-send. always.</p>
+      </div>
+    </article>
+
+    <!-- HACK 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>The "write" actions that actually bite. <span class="pill safety">safety</span></h2>
+        <p>
+          Here's the lesson the hard way so you don't have to live it. The dangerous
+          tools aren't the obviously scary ones &mdash; you're already careful with
+          <code>delete</code>. The bites come from the <em>helpful-sounding</em> ones
+          the agent reaches for a little too eagerly.
+        </p>
+        <div class="url-grid">
+          <div class="url-row">
+            <code>send_email</code>
+            <div class="desc">Reaches a human instantly and can't be recalled. Prefer <code>create_draft</code> and review.</div>
+          </div>
+          <div class="url-row">
+            <code>merge_pull_request</code>
+            <div class="desc">Changes shared state. One confident-but-wrong merge can ruin an afternoon for a team.</div>
+          </div>
+          <div class="url-row">
+            <code>deploy_to_vercel</code>
+            <div class="desc">Pushes to a URL real people hit. Great when intended, rough when assumed.</div>
+          </div>
+          <div class="url-row">
+            <code>create_event</code> / <code>respond_to_event</code>
+            <div class="desc">Pings other people's calendars. Outward-facing the moment it fires.</div>
+          </div>
+        </div>
+        <p>
+          The rule I keep taped up: <b>anything outward-facing or hard to reverse gets
+          a confirm-first leash.</b> Most agent apps let you set tools to "ask every
+          time" instead of auto-run. Do that for the four above on day one. The
+          friction is two seconds; the alternative is an email to a client that
+          starts with "Hi {{first_name}}."
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            A connector with both read <em>and</em> write to the same account is a real
+            attack surface: a poisoned doc the agent <em>reads</em> can contain
+            instructions that trigger a <em>write</em>. This is "prompt injection," and
+            it's why read-only-by-default isn't paranoia &mdash; it's the seatbelt.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Scope the keys, not the vibes. <span class="pill safety">safety</span></h2>
+        <p>
+          When a connector wants a token, your instinct is to grab the easiest one &mdash;
+          the all-powerful personal access token that does everything. Resist it.
+          The whole game is <b>least privilege</b>: give the connector exactly the
+          access the job needs and not one scope more.
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">scoping a github token, the right way</span>
+          </div>
+<pre><span class="cmt"># BAD — classic token, every scope, never expires</span>
+<span class="out">[x] repo   [x] admin:org   [x] delete_repo   [x] workflow ...</span>
+
+<span class="cmt"># GOOD — fine-grained token, one repo, read + issues only</span>
+<span class="out">Repository access:  only "humanlup-site"</span>
+<span class="out">Permissions:        Contents (read)  ·  Issues (read/write)</span>
+<span class="out">Expiration:         90 days</span></pre>
+        </div>
+        <p>
+          Three habits that compound: <b>fine-grained over classic</b> tokens,
+          <b>one repo / one scope</b> over org-wide, and <b>an expiration date</b> so
+          a leaked key dies on its own. If a connector breaks because the token's too
+          narrow, widen it deliberately &mdash; that's the system working, not failing.
+        </p>
+        <p class="scribble">a token that can do everything is a key that opens every door. don't hand the agent the master.</p>
+      </div>
+    </article>
+
+    <!-- HACK 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Stack connectors into one real workflow. <span class="pill workflow">workflow</span></h2>
+        <p>
+          One connector is a feature. Several connectors is where it stops feeling
+          like a chatbot and starts feeling like a teammate &mdash; because the agent
+          can chain them in a single ask, no alt-tabbing.
+        </p>
+        <p>
+          This is a real shape I run for HumanLup client work. Notice every step is
+          a different connector, and the human (me) only shows up at the gate that
+          matters:
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">one prompt, four tools, one human gate</span>
+          </div>
+<pre><span class="prompt">you ›</span> <span class="str">"Pull the homepage copy from our Sanity dataset, draft a
+       revision in our brand voice, open a PR on the site repo,
+       and draft me an email to the client summarizing it."</span>
+
+<span class="out">1. sanity      → query_documents   (read the live copy)</span>
+<span class="out">2. filesystem  → read brand/voice/   (load the voice rules)</span>
+<span class="out">3. github      → create_branch + PR  (soft write, reviewable)</span>
+<span class="out">4. gmail       → create_draft        (NOT send — i review it)</span>
+
+<span class="prompt">agent ›</span> <span class="out">"PR #41 opened, email draft saved. Both await your OK."</span></pre>
+        </div>
+        <p>
+          Four tools, one sentence, and the only thing left for me is judgment &mdash;
+          read the PR, read the draft, hit go. That's the operating-to-directing
+          shift the whole notebook keeps circling. MCP is the wiring that makes it
+          literal.
+        </p>
+        <div class="tryit">
+          <span class="badge">try it ↳</span>
+          <div>
+            Pick two connectors you already have and write <b>one</b> prompt that
+            needs both &mdash; "find the issue I opened yesterday and add it to my
+            calendar for Friday." If it chains them without you copy-pasting, you've
+            felt the point of this entire entry.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- HACK 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>When NOT to reach for MCP. <span class="pill concept">concept</span></h2>
+        <p>
+          Counter-intuitive, but the people who get the most out of MCP are the ones
+          who don't bolt a connector onto everything. More tools in the agent's hands
+          means more for it to read every turn &mdash; which means slower, pricier, and
+          more likely to pick the wrong one. Connectors aren't free; each one is
+          context tax.
+        </p>
+        <p>
+          My actual decision order, lifted straight from how I work: <b>a quick ask
+          &gt; a native feature &gt; a slash command &gt; a one-line shell pipe &gt; a
+          connector.</b> Reach for MCP only when the task genuinely needs to touch a
+          live system you can't easily paste in. If you can copy three lines and move
+          on, copy three lines.
+        </p>
+        <div class="url-grid">
+          <div class="url-row">
+            <code>one-off lookup</code>
+            <div class="desc">Just paste it. A connector for a thing you'll do once is overhead.</div>
+          </div>
+          <div class="url-row">
+            <code>daily, live, multi-step</code>
+            <div class="desc">This is the MCP sweet spot. Wire it.</div>
+          </div>
+          <div class="url-row">
+            <code>sensitive + no audit trail</code>
+            <div class="desc">Think twice. If you can't review what the agent did, don't grant the write.</div>
+          </div>
+        </div>
+        <p class="scribble">the goal is fewer moving parts that do more, not more parts.</p>
+      </div>
+    </article>
+
+    <!-- HACK 11 -->
+    <article class="hack" id="h11">
+      <div class="nbr">11</div>
+      <div class="body">
+        <h2>Where the connectors live &mdash; the registry. <span class="pill workflow">workflow</span></h2>
+        <p>
+          You don't have to know what exists. There's now an open MCP registry &mdash;
+          a searchable index of available servers &mdash; plus curated directories.
+          Before you build a connector or hand-roll an integration, search first.
+          The thing you need almost certainly already exists.
+        </p>
+        <div class="term">
+          <div class="bar">
+            <span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">finding a connector</span>
+          </div>
+<pre><span class="cmt"># the official open registry (browse / API)</span>
+<span class="out">registry.modelcontextprotocol.io</span>
+
+<span class="cmt"># curated lists worth a bookmark</span>
+<span class="out">github.com/modelcontextprotocol/servers   (reference servers)</span>
+<span class="out">github.com/punkpeye/awesome-mcp-servers    (community index)</span>
+
+<span class="cmt"># inside a capable agent, just ask:</span>
+<span class="prompt">you ›</span> <span class="str">"is there an MCP server for Linear? suggest one."</span></pre>
+        </div>
+        <p>
+          The reference servers (filesystem, fetch, memory, git) are the ones to read
+          if you ever want to <em>write</em> your own &mdash; they're small, official, and
+          deliberately boring. But that's a later notebook. For now: connect, scope,
+          read-only first, and let the agent start reaching for itself.
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up ↳</span>
+          <div>
+            The flip side of "anyone can publish a connector" is "anyone can publish a
+            connector." Before installing a community server that wants your tokens,
+            check the stars, the author, and that the source is open. Prefer official
+            vendor servers for anything that holds real credentials.
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="Cheat sheet">
+      <h2>One-page recap.</h2>
+      <div class="sub">The whole notebook, on a sticky note.</div>
+
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The model</h4>
+          <ul>
+            <li><code>MCP</code><span>USB-C for AI — one plug, every tool</span></li>
+            <li><code>server</code><span>the program that speaks to one app</span></li>
+            <li><code>tools</code><span>verbs the agent can DO (teeth)</span></li>
+            <li><code>resources</code><span>nouns the agent can READ (safe)</span></li>
+            <li><code>prompts</code><span>canned workflows the server offers</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Setup</h4>
+          <ul>
+            <li><code>hosted</code><span>OAuth click — start here</span></li>
+            <li><code>claude mcp add</code><span>local server, one line</span></li>
+            <li><code>claude mcp list</code><span>see what's connected</span></li>
+            <li><code>mcpServers{}</code><span>the universal config shape</span></li>
+            <li><code>${TOKEN}</code><span>secrets via env var, never raw</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Safety floor</h4>
+          <ul>
+            <li><code>read-only first</code><span>earn the write access</span></li>
+            <li><code>confirm-first</code><span>on send / merge / deploy</span></li>
+            <li><code>fine-grained</code><span>tokens over classic</span></li>
+            <li><code>one scope</code><span>least privilege, add an expiry</span></li>
+            <li><code>draft &gt; send</code><span>reversible beats instant</span></li>
+          </ul>
+        </div>
+
+        <div class="cheat-col">
+          <h4>Judgment</h4>
+          <ul>
+            <li><code>ask &gt; native</code><span>exhaust the simple path first</span></li>
+            <li><code>connect ≠ free</code><span>each tool is context tax</span></li>
+            <li><code>stack them</code><span>one prompt, many tools</span></li>
+            <li><code>search registry</code><span>it probably already exists</span></li>
+            <li><code>official servers</code><span>for anything holding keys</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · 2026-06-19</small>
+      </div>
+      <div class="end">
+        next entry · <code>writing your own MCP server in 40 lines</code> →
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

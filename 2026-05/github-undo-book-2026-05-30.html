@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The GitHub Undo Book — Oh No → Oh Phew · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: twelve GitHub panics every beginner hits, and the one safe command that rescues each. Every command adversarially verified — wrong git advice destroys real work." />
+  <meta property="og:title" content="The GitHub Undo Book — Oh No → Oh Phew" />
+  <meta property="og:description" content="Committed to main? Lost your commits? Pushed a secret? Twelve beginner panics, twelve calm fixes. Git almost never throws work away — here's how to get it back." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.52 0.11 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.62 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --danger:     oklch(0.55 0.18 27);
+      --danger-wash:oklch(0.95 0.045 27);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.66 0.015 80);
+      --code-accent:oklch(0.80 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.82 0.14 145);
+      --code-red:   oklch(0.74 0.16 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.9em;
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.1rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+      max-width: 16ch;
+    }
+    h1 .arrow {
+      display: inline-block;
+      color: var(--sage);
+      font-weight: 700;
+    }
+    .dek {
+      font-size: clamp(1.08rem, 1rem + 0.5vw, 1.32rem);
+      color: var(--ink-soft);
+      max-width: 56ch;
+      line-height: 1.5;
+    }
+    .scrawl {
+      font-family: 'Caveat', cursive;
+      font-size: 1.5rem;
+      color: var(--margin);
+      transform: rotate(-1.5deg);
+      line-height: 1.2;
+    }
+    .byline {
+      display: flex;
+      gap: 0.9rem;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.86rem;
+      color: var(--ink-mute);
+      font-family: 'Geist Mono', monospace;
+      margin-top: 0.4rem;
+    }
+    .byline .pill {
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      padding: 0.2em 0.7em;
+      border-radius: 999px;
+    }
+    .byline .pill.verified { color: var(--sage); border-color: var(--sage-wash); background: var(--sage-wash); }
+
+    /* INTRO — the compass --------------------------------- */
+    .lede {
+      margin: 0 0 3rem;
+      max-width: var(--measure);
+      display: grid;
+      gap: 1.1rem;
+    }
+    .lede p { color: var(--ink-soft); font-size: 1.06rem; }
+    .lede strong { color: var(--ink); font-weight: 600; }
+
+    .compass {
+      margin-top: 0.6rem;
+      border: 1.5px solid var(--accent-wash);
+      background: linear-gradient(180deg, var(--accent-wash), var(--paper));
+      border-radius: var(--radius-lg);
+      padding: 1.3rem 1.5rem;
+      display: grid;
+      gap: 0.9rem;
+    }
+    .compass h3 {
+      font-size: 1.05rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      color: var(--accent-ink);
+    }
+    .compass .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9rem;
+    }
+    @media (max-width: 640px) { .compass .two { grid-template-columns: 1fr; } }
+    .compass .tool {
+      background: var(--paper);
+      border: 1px solid var(--paper-deep);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+    }
+    .compass .tool code {
+      display: inline-block;
+      background: var(--code-bg);
+      color: var(--code-green);
+      border: none;
+      padding: 0.25em 0.6em;
+      border-radius: 6px;
+      font-size: 0.86rem;
+      margin-bottom: 0.45rem;
+    }
+    .compass .tool p { font-size: 0.92rem; color: var(--ink-soft); margin: 0; }
+
+    /* SECTION LABELS -------------------------------------- */
+    .section-rule {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 3.2rem 0 1.8rem;
+    }
+    .section-rule .num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      color: var(--margin);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-rule .line { flex: 1; height: 1px; background: var(--rule); }
+
+    /* CARDS ----------------------------------------------- */
+    .cards { display: grid; gap: 1.7rem; }
+
+    .card {
+      background: var(--paper-alt);
+      border: 1px solid var(--paper-deep);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.2rem, 2.5vw, 1.9rem);
+      position: relative;
+      box-shadow: 0 1px 2px oklch(0.5 0.02 80 / 0.05), 0 8px 26px -18px oklch(0.4 0.05 60 / 0.4);
+      scroll-margin-top: 1.5rem;
+    }
+    .card::before {
+      content: attr(data-n);
+      position: absolute;
+      top: -0.7rem; left: 1.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--paper);
+      background: var(--ink);
+      padding: 0.2em 0.7em;
+      border-radius: 999px;
+    }
+    .oops {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .oops .label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--danger);
+      background: var(--danger-wash);
+      border: 1px solid oklch(0.85 0.06 27);
+      padding: 0.18em 0.6em;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .card h3 {
+      font-size: clamp(1.25rem, 1.05rem + 1vw, 1.7rem);
+      margin: 0.15rem 0 0.7rem;
+    }
+    .what {
+      color: var(--ink-soft);
+      font-size: 0.99rem;
+      max-width: var(--measure);
+      margin-bottom: 1.1rem;
+    }
+
+    /* TERMINAL block -------------------------------------- */
+    .terminal {
+      background: var(--code-bg);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 14px 40px -22px oklch(0.2 0.02 60 / 0.7);
+      margin-bottom: 1.1rem;
+    }
+    .terminal .bar {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid oklch(0.30 0.012 60);
+    }
+    .terminal .bar i {
+      width: 11px; height: 11px; border-radius: 50%;
+      display: inline-block;
+    }
+    .terminal .bar i.r { background: oklch(0.65 0.18 25); }
+    .terminal .bar i.y { background: oklch(0.78 0.14 80); }
+    .terminal .bar i.g { background: oklch(0.72 0.16 145); }
+    .terminal .bar .title {
+      margin-left: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--code-mute);
+      letter-spacing: 0.03em;
+    }
+    .terminal .body {
+      padding: 0.95rem 1.1rem 1.05rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    .terminal .ln { display: block; margin: 0 0 0.85rem; }
+    .terminal .ln:last-child { margin-bottom: 0; }
+    .terminal .cmd { color: var(--code-ink); white-space: pre-wrap; word-break: break-word; }
+    .terminal .cmd .p { color: var(--code-green); user-select: none; }
+    .terminal .cmd .g { color: var(--code-blue); }
+    .terminal .cmd .f { color: var(--code-accent); }
+    .terminal .cmd .s { color: var(--code-red); }
+    .terminal .note {
+      display: block;
+      color: var(--code-mute);
+      font-size: 0.78rem;
+      margin-top: 0.18rem;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .terminal .note::before {
+      content: '#';
+      position: absolute; left: 0;
+      color: oklch(0.5 0.012 80);
+    }
+
+    /* FOOTGUN + TIP --------------------------------------- */
+    .strip {
+      display: grid;
+      gap: 0.8rem;
+    }
+    .footgun, .tip {
+      border-radius: var(--radius-md);
+      padding: 0.8rem 1rem 0.8rem 1.05rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      position: relative;
+    }
+    .footgun {
+      background: var(--danger-wash);
+      border: 1px solid oklch(0.88 0.05 27);
+      color: oklch(0.32 0.07 27);
+    }
+    .footgun b, .tip b {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-right: 0.4rem;
+    }
+    .footgun b { color: var(--danger); }
+    .tip {
+      background: var(--accent-wash);
+      border: 1px solid oklch(0.88 0.04 250);
+      color: var(--accent-ink);
+    }
+    .tip b { color: var(--accent); }
+    .footgun code, .tip code {
+      background: oklch(1 0 0 / 0.5);
+      border-color: oklch(0.8 0.02 60 / 0.4);
+    }
+
+    /* CLOSING --------------------------------------------- */
+    .closing {
+      margin-top: 3.5rem;
+      border-top: 2px solid var(--margin-soft);
+      padding-top: 2rem;
+      max-width: var(--measure);
+      display: grid;
+      gap: 1.1rem;
+    }
+    .closing h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); }
+    .closing p { color: var(--ink-soft); }
+    .closing .mantra {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      color: var(--margin);
+      transform: rotate(-1deg);
+      line-height: 1.25;
+    }
+    .signoff {
+      margin-top: 1.4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.84rem;
+      color: var(--ink-mute);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .signoff .dash { color: var(--margin); }
+
+    .tldr {
+      margin: 1.4rem 0 0;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.85 0.06 145);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.2rem;
+      font-size: 0.92rem;
+      color: oklch(0.3 0.06 145);
+    }
+    .tldr b { font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+
+    ::selection { background: var(--margin-soft); }
+    @media (max-width: 560px) {
+      .oops { gap: 0.4rem; }
+      .terminal .body { font-size: 0.79rem; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>FIELD NOTES</span><span class="dot">●</span>
+        <span>GIT &amp; GITHUB</span><span class="dot">●</span>
+        <span>2026-05-30</span>
+        <span class="tag">no. 07</span>
+      </div>
+      <h1>The Undo Book <span class="arrow">↩</span></h1>
+      <p class="scrawl">"oh no" → "oh phew" in one command</p>
+      <p class="dek">Twelve panics every beginner hits with Git, and the calm fix for each. The thing nobody tells you up front: <strong>Git almost never throws your work away.</strong> It just stops pointing at it. Once that clicks, most "I broke everything" moments turn into a one-line walk-back.</p>
+      <div class="byline">
+        <span class="pill verified">verified</span>
+        <span>Open notebook · keep it bookmarked · every command adversarially verified</span>
+      </div>
+    </header>
+
+    <section class="lede">
+      <p>I used to treat Git like a tripwire. One wrong command and the work was gone — that was the story in my head. It took getting burned a few times to learn the opposite: a commit is just a <strong>snapshot plus a label</strong>, and labels are the cheapest thing in Git to move. "I lost my commits" almost always means "the label slid off them," not "they're deleted." The work is usually still on disk, waiting to be pointed at again.</p>
+      <p>So before the twelve scenarios, here are the two tools that make nearly everything on this page recoverable. When the panic hits, I reach for these first — they tell me what state I'm actually in before I touch anything.</p>
+
+      <div class="compass">
+        <h3>🧭 The two-tool compass</h3>
+        <div class="two">
+          <div class="tool">
+            <code>git status</code>
+            <p>Where am I, what's changed, what's staged. The map. Run it before <em>and</em> after any fix — half of all panics evaporate the moment you can see the actual state instead of imagining the worst.</p>
+          </div>
+          <div class="tool">
+            <code>git reflog</code>
+            <p>Git's private logbook of every place HEAD has ever stood. This is the undo-for-the-undo. If a commit "vanished," its hash is almost certainly still written here — read it back and re-attach a label.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-rule">
+      <span class="num">// the twelve panics</span>
+      <span class="line"></span>
+    </div>
+
+    <div class="cards">
+
+      <!-- 01 -->
+      <article class="card" data-n="01" id="wrong-message">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The garbage commit message you already hit enter on</h3>
+        <p class="what">Nothing's broken. A commit is a snapshot plus a message, and since this one hasn't been pushed, it lives only on this machine. The message isn't carved in stone — it's just metadata on the latest commit, and Git lets you rewrite the latest commit's message any time before it leaves your laptop.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">fix the message — unpushed</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> commit <span class="f">--amend</span> -m <span class="s">"the message you actually meant"</span></span><span class="note">Replaces the last commit's message in one shot. Files stay exactly as they were.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> commit <span class="f">--amend</span></span><span class="note">Same thing, but opens your editor for a longer message. Save and close to apply.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> log -1 <span class="f">--oneline</span></span><span class="note">Confirms the new message stuck.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b><code>--amend</code> only rewrites the <em>most recent</em> commit, and only safely while it's unpushed. If it already went up, amending makes local history disagree with the remote and the next plain push gets rejected (that's card 08's territory). And if the bad message is two or three commits back, amend can't reach it.</p>
+          <p class="tip"><b>◆ claude code</b>Tell it <em>"fix my last commit message to say X"</em> and it runs the amend for you — handy when you can't remember whether it's <code>--amend</code>, <code>--edit</code>, or something else.</p>
+        </div>
+      </article>
+
+      <!-- 02 -->
+      <article class="card" data-n="02" id="forgot-file">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The file you left out of the commit</h3>
+        <p class="what">A commit is a snapshot of whatever was <em>staged</em> the moment you ran it. The forgotten file wasn't staged, so Git didn't include it. Nothing's lost — the file is still in your folder, just not recorded in that snapshot yet. Stage it now and fold it into the same commit instead of making a second one.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">fold the file into the last commit</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> add path/to/forgotten-file</span><span class="note">Stage what you left out (or 'git add .' to grab everything that changed).</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> commit <span class="f">--amend --no-edit</span></span><span class="note">Re-do the last commit with the file folded in. --no-edit keeps your original message.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Amend gives the commit a brand-new ID — fine while it only lives on your machine. If you already pushed, a plain <code>git push</code> gets rejected and you'd need <code>git push --force-with-lease</code>, which can stomp a teammate's work. If it's already shared, just make a fresh second commit. No shame in two commits.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"I forgot to include a file in my last commit"</em> and it checks whether that commit was pushed before picking amend vs. a follow-up — so you never rewrite shared history by accident.</p>
+        </div>
+      </article>
+
+      <!-- 03 -->
+      <article class="card" data-n="03" id="undo-keep-changes">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>Undo the last commit, keep every change</h3>
+        <p class="what">A commit is a bookmark pointing at a snapshot — it isn't your files. <code>git reset --soft HEAD~1</code> moves the bookmark back by one commit and leaves every edit exactly where it was, now staged and ready to re-commit. The commit disappears from the log; the work stays in <code>git status</code>. And the move itself is logged in the reflog, so even this undo is undoable.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">un-commit, keep the work</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reset <span class="f">--soft</span> HEAD~1</span><span class="note">Removes the last commit, keeps all its changes staged, ready to re-commit.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> status</span><span class="note">Confirms your work is still there — files show as staged, nothing lost.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The trap is reaching for <code>--hard</code>. <code>git reset --hard HEAD~1</code> undoes the commit <em>and wipes the changes</em> — the exact opposite of what you want here. For this panic it's always <code>--soft</code>. Want the changes unstaged instead (back to plain edits)? Use <code>--mixed</code>. Both keep your work; only <code>--hard</code> destroys it.</p>
+          <p class="tip"><b>◆ claude code</b>Not sure which reset flag you ran? Ask it to read <code>git reflog</code> — it shows every move HEAD made, so even an accidental commit can be pointed back to.</p>
+        </div>
+      </article>
+
+      <!-- 04 -->
+      <article class="card" data-n="04" id="throw-away-edits">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The edits you wish you never made</h3>
+        <p class="what">When you edit a file but haven't committed, Git still has a clean copy of the last committed version in its back pocket. Your ugly edits only live in the file on disk — Git hasn't recorded them. "Getting the file back" isn't undoing anything deep; it's telling Git to overwrite the mess with the copy it already saved. The lesson that dropped my panic: nothing's lost until you commit, and even after you save garbage, the good version is one command away.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">snap a file back to its committed state</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> status</span><span class="note">If the file shows as 'modified' (red), your edits were never committed — the clean copy is safe.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> restore path/to/file.txt</span><span class="note">Throw away your edits, pull back the last committed version of that one file.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> restore <span class="f">--staged</span> path/to/file.txt</span><span class="note">Only if you already 'git add'-ed it (shows green). Un-stages it, then run the line above.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b><code>git restore</code> deletes your current edits with no trash can — if there's any chance you want a scrap of what you typed, copy it somewhere first. And it only rescues files you <em>never committed</em>. Once the bad version is committed, restore won't reach back past it — that's a job for revert or reflog.</p>
+          <p class="tip"><b>◆ claude code</b>Say <em>"I hate my changes to this file, give me back the committed version"</em> — it reads <code>git status</code>, spots whether the file is staged, and runs the right restore so you don't guess which path you're on.</p>
+        </div>
+      </article>
+
+      <!-- 05 -->
+      <article class="card" data-n="05" id="committed-to-main">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>Committed straight to main</h3>
+        <p class="what">Nothing is broken. A commit on <code>main</code> is just a labeled save point, and the <code>main</code> label is one of the cheapest things to move. The work is safe in that commit — all you're doing is copying the label onto a new branch, then sliding <code>main</code> back one step to where it was.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">move the commit onto a branch where it belongs</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -c feature-branch</span><span class="note">New branch right here — it points at your commit, so the work is safe.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch main</span><span class="note">Hop back to main so you can rewind it.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reset <span class="f">--soft</span> HEAD~1</span><span class="note">Move main back one commit. --soft keeps the changes; they're already safe on feature-branch.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch feature-branch</span><span class="note">Back to your branch — keep working like you meant to all along.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>This rewinds local history, so it's only safe before you've pushed <code>main</code>. If the commit already went up, don't reset — run <code>git revert HEAD</code> instead, which adds a fresh commit that cancels the change without rewriting what others pulled.</p>
+          <p class="tip"><b>◆ claude code</b>I had it read my reflog and confirm the commit was still local before touching reset, so I knew the rewind was safe.</p>
+        </div>
+      </article>
+
+      <!-- 06 -->
+      <article class="card" data-n="06" id="lost-commits">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The commits that "vanished" after a bad reset</h3>
+        <p class="what">The first time a hard reset ate my work, I was sure it was gone. It wasn't. Git almost never throws commits away — <code>reset</code> just moved the branch pointer backward, leaving the old commits floating, still on disk, just unlabeled. The reflog remembers every place HEAD has stood, so "vanished" really means "no longer pointed at." Find the old position, point a branch back at it.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">recover floating commits via the reflog</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reflog</span><span class="note">Every recent HEAD position, newest first. The line just before your bad reset is the one you want — note its short hash.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> show a1b2c3d</span><span class="note">Peek at that hash to confirm it's the work you thought you lost, before touching anything.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -c rescue a1b2c3d</span><span class="note">Safest move: bring it back on a NEW branch, leaving your current one untouched.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reset <span class="f">--hard</span> a1b2c3d</span><span class="note">Or, if you're sure: snap the current branch back. Only with a clean working tree.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>Running <code>git reset --hard</code> to recover while you have uncommitted edits open — the hard reset wipes the working tree too, trading one loss for another. Recover onto <code>git switch -c rescue &lt;hash&gt;</code> first, look at it, then decide. And don't wait forever: unreachable reflog entries get pruned eventually (weeks, not months), so the rescue window isn't open indefinitely.</p>
+          <p class="tip"><b>◆ claude code</b>Paste your <code>git reflog</code> output and it points at the exact line your good commit lives on — no squinting at a wall of SHAs guessing which hash to recover.</p>
+        </div>
+      </article>
+
+      <!-- 07 -->
+      <article class="card" data-n="07" id="committed-secret">
+        <div class="oops"><span class="label">oh no</span> <span class="label" style="color:var(--amber);background:var(--amber-wash);border-color:oklch(0.85 0.08 80)">the scary one</span></div>
+        <h3>You committed your .env (or an API key)</h3>
+        <p class="what">Git did exactly what you told it — it photographed every staged file, <code>.env</code> included, and froze it into history. The file isn't so much "in" the repo as <em>photographed by it</em>: deleting the line now doesn't remove it from the old snapshot. That's the part that trips everyone up — undoing the commit and scrubbing the secret from history are two separate jobs. And the first question isn't a Git question at all: <strong>did this leave your machine yet?</strong></p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">un-commit + ignore — secret was NOT pushed</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> log <span class="f">--oneline</span> -1</span><span class="note">Confirm the bad commit is the most recent one.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reset <span class="f">--soft</span> HEAD~1</span><span class="note">Undo just that commit — files stay on disk, still staged, nothing lost.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span>echo <span class="s">".env"</span> &gt;&gt; .gitignore</span><span class="note">Tell Git to stop tracking .env from now on.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> restore <span class="f">--staged</span> .env</span><span class="note">Unstage the secret so the next commit won't grab it again.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> commit -m <span class="s">"ignore .env"</span> -- .gitignore</span><span class="note">Commit ONLY the ignore rule (the '-- .gitignore' keeps unrelated staged work out of this commit).</span></span>
+          </div>
+        </div>
+        <p class="tldr"><b>where did my secret go?</b> &nbsp;Your <code>.env</code> is intentionally still on disk — just untracked now. That's correct; you want your local env file. It's only gone from Git's tracking, not from your folder.</p>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The trap is thinking this is enough <em>after you've pushed</em>. The moment a secret hits a shared remote, treat it as leaked — bots scrape public commits for keys within minutes. <code>reset --soft</code> only rewrites local history; it can't claw back what GitHub already has. So if it pushed: <strong>rotate the key first</strong> (revoke, regenerate), <em>then</em> clean history. And if the secret is buried several commits back or already shared, the real scrub tool is <code>git filter-repo</code> (or the BFG) — not <code>git rebase -i</code>, which blindly rewrites shared history.</p>
+          <p class="tip"><b>◆ claude code</b>It can read your <code>git log</code>, tell you whether the bad commit actually pushed, and walk the exact reset-or-rotate path for your case instead of guessing.</p>
+        </div>
+      </article>
+
+      <!-- 08 -->
+      <article class="card" data-n="08" id="undo-pushed">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>I pushed a broken commit and people may have pulled it</h3>
+        <p class="what">Here's what unstuck me: once a commit is on the remote and someone might have pulled it, the history isn't mine alone anymore. Rewriting it (reset, force-push) would yank the ground out from under everyone else's clone. The clean move is to add a <em>new</em> commit that cancels the old one out. <code>git revert</code> builds the inverse of the bad commit and stacks it on top — the broken change is gone, the timeline stays honest, everyone's pull still lines up.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">cancel a shared commit safely</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> log <span class="f">--oneline</span> -5</span><span class="note">Find the broken commit, copy its short hash from the list.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> revert &lt;hash&gt;</span><span class="note">Builds a new commit that undoes that one. An editor opens for the message — save and close.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> push</span><span class="note">A plain push, no force — the fix goes out as a normal commit everyone pulls cleanly.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The reflex is <code>git reset</code> + <code>git push --force</code> to make the bad commit "never happen." On a shared branch that rewrites history out from under your teammates — their next pull conflicts or silently drops the fix. Force-push is for branches only <em>you</em> touch. The second anyone else has the commit, <code>revert</code> is the safe path.</p>
+          <p class="tip"><b>◆ claude code</b>Paste the broken diff and ask which commit to revert — it reads <code>git log</code>, spots the right hash, and writes the revert message for you.</p>
+        </div>
+      </article>
+
+      <!-- 09 -->
+      <article class="card" data-n="09" id="pull-conflict-mess">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The pull that started a fight</h3>
+        <p class="what">A pull is two moves stitched together: fetch the remote work, then merge it into yours. The merge is where it bit me. Git tried to fold their changes into mine, hit spots where both sides edited the same lines, and stopped cold rather than guess. Those <code>CONFLICT</code> lines aren't broken code or lost work — they're Git handing you both versions and saying "I won't pick for you." Nothing's committed yet, so there's always a clean way back out.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">bail out, or resolve and finish</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> merge <span class="f">--abort</span></span><span class="note">The panic button — rewinds the pull, puts you back exactly where you were, conflicts gone.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> status</span><span class="note">After aborting, confirms you're clean. Or if you want to push through: lists every file still in conflict.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> restore <span class="f">--ours</span> path/to/file</span><span class="note">Keep YOUR version of one file (or --theirs for the incoming one). The standard "I want this side" idiom.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> add . &amp;&amp; <span class="g">git</span> commit</span><span class="note">Once you've removed the conflict markers and kept the lines you want, this finishes the merge.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The reflex is to delete the whole repo and re-clone. Don't — your unpushed commits live only on this machine and a fresh clone wipes them. <code>git merge --abort</code> is the real undo. Also: the <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> / <code>=======</code> / <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> lines are Git's markers, not your code — leaving even one ships a broken file. And restoring or editing a file alone doesn't end the merge; you still need to <code>commit</code> (or <code>--abort</code>) to close it out.</p>
+          <p class="tip"><b>◆ claude code</b>Drop a conflicted file in and ask what each side was trying to do — it reads both branches' intent so you resolve by meaning, not by guessing which block to keep.</p>
+        </div>
+      </article>
+
+      <!-- 10 -->
+      <article class="card" data-n="10" id="forgot-stash">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The stash that vanished days ago</h3>
+        <p class="what">Nothing got lost. A stash is just a saved bundle of changes Git set aside on a hidden shelf so your working tree could go back to clean. It doesn't expire on its own. The panic comes from forgetting the shelf exists, not from Git throwing the work away. Every stash you ever made is still in a list, newest first, waiting to come back.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">find it, preview it, bring it back safely</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> stash list</span><span class="note">Every stash, newest first, labeled stash@{0}, stash@{1}, …</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> stash show -p stash@{0}</span><span class="note">Preview the actual diff so you confirm it's the one you want before touching anything.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> stash apply stash@{0}</span><span class="note">Drops the changes back into your files but KEEPS the stash on the shelf as a safety copy.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> stash drop stash@{0}</span><span class="note">Deletes that one stash — only after you've confirmed the changes landed safely.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The reflex is <code>git stash pop</code>, which applies <em>and</em> deletes in one move. Using <code>apply</code> first, then <code>drop</code> once the files look right, means there's always a copy on the shelf if something goes sideways mid-conflict. One more: a stash comes back onto whatever branch you're standing on <em>now</em>, not the one you made it on — check where you are with <code>git status</code> first.</p>
+          <p class="tip"><b>◆ claude code</b>Paste <code>git stash list</code> and it reads the diffs, tells you which stash holds which work, and walks you through applying the right one without nuking the others.</p>
+        </div>
+      </article>
+
+      <!-- 11 -->
+      <article class="card" data-n="11" id="detached-head">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>"HEAD detached" and you're lost in space</h3>
+        <p class="what">Nothing broke. Detached HEAD just means you checked out a specific commit directly instead of a branch, so you're standing on a snapshot with no branch name attached. Git's fine — it's warning you that any new commits made here won't belong to a branch, so they'd be easy to lose. The fix is just deciding where you actually want to be.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">re-attach to a branch</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> status</span><span class="note">Confirms the detached state and shows the commit you're sitting on.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -</span><span class="note">If you just want OUT — jumps back to the branch you were on before.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch main</span><span class="note">Or land on a named branch directly (swap main for yours).</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -c rescue-branch</span><span class="note">If you made commits here and want to KEEP them — names this spot as a branch so nothing's lost.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The trap is making commits while detached, then running <code>git switch main</code> to leave — those commits aren't on any branch and look gone. The order that saves you: if you did work here, <code>git switch -c a-new-branch</code> <em>first</em> to anchor it, then switch away. Already left and panicking? <code>git reflog</code> still shows the hash so you can recover it. Detached HEAD isn't the danger — leaving without naming your work is.</p>
+          <p class="tip"><b>◆ claude code</b>Paste the full <code>git status</code> and it reads which commit you're parked on, then tells you whether you have unsaved commits to rescue before switching away.</p>
+        </div>
+      </article>
+
+      <!-- 12 -->
+      <article class="card" data-n="12" id="deleted-branch">
+        <div class="oops"><span class="label">oh no</span></div>
+        <h3>The branch I swore I was done with</h3>
+        <p class="what">Here's what calmed me down: deleting a branch doesn't delete the work. A branch is just a sticky note pointing at a commit. I tore off the note, but the commit is still in Git's history. The reflog records every place HEAD has been, so the commit my branch pointed at is still written down — I just read it back and stick a new note on it.</p>
+        <div class="terminal">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="title">rebuild a deleted branch from the reflog</span></div>
+          <div class="body">
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> reflog</span><span class="note">Scroll for the line naming your branch, like 'commit: work on feature'. The 7-char code at the start is the commit.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> switch -c feature-thing b12505d</span><span class="note">Rebuild the branch — swap in your real name and the code you found. Recreates it exactly where it was.</span></span>
+            <span class="ln"><span class="cmd"><span class="p">$ </span><span class="g">git</span> log <span class="f">--oneline</span> -1</span><span class="note">Confirm your commits are back — the top line should be the work you thought you lost.</span></span>
+          </div>
+        </div>
+        <div class="strip">
+          <p class="footgun"><b>⚠ footgun</b>The thing that almost tripped me up: if the branch was already <em>merged</em> when I deleted it, none of this is needed — the commits live on the branch I merged into, so I just keep working there. The reflog rescue is for branches deleted with <em>unmerged</em> work on them. And the reflog is local-only and gets pruned over time, so this works on the machine where the branch lived — not a fresh clone, and not forever.</p>
+          <p class="tip"><b>◆ claude code</b>I had it read my reflog and tell me which line was the branch I deleted — saved me squinting at a wall of SHAs guessing which one was mine.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <section class="closing">
+      <h2>The one habit underneath all twelve</h2>
+      <p>Look at the cards again and the same shape repeats: <code>git status</code> to see where you are, <code>git reflog</code> when something "disappeared," and a strong bias toward <strong>recovering onto a new branch</strong> instead of resetting in place. Almost nothing on this page is actually destructive except <code>reset --hard</code> and <code>push --force</code> — so those are the only two commands worth slowing down for.</p>
+      <p>What changed things for me wasn't memorizing the fixes. It was believing the premise: the work is usually still there, just unlabeled. Once you stop assuming Git deleted your stuff, the panic drops and the right command gets obvious. Steal what's useful here, and the next time the terminal yells in red, you'll already know it's a "phew," not an "oh no."</p>
+      <p class="mantra">commit small, push often, and let the reflog be your safety net.</p>
+      <div class="signoff"><span class="dash">—</span>Lupo · The Mess is the Method · field note no. 07 · 2026-05-30</div>
+    </section>
+
+  </div>
+</body>
+</html>

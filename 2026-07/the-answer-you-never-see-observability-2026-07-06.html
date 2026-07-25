@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Answer You Never See — Ten Moves to Watch Your Live AI App and Turn a Bad Reply Into a Fixed One · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: your AI app is shipped, capped, and defended — and you have no idea what it says to anyone who isn't you. This is the blind spot after launch. Ten moves to see inside it: trace every call, tag it with a request ID, add a thumbs-up/down, sample real conversations, replay the bad one, watch cost and latency drift, alarm on the spikes — then feed the worst answer straight back into your evals so it never happens twice." />
+  <meta property="og:title" content="The Answer You Never See — Observability & the Feedback Loop for a Live AI App" />
+  <meta property="og:description" content="You shipped it. Now a hundred strangers are getting answers you'll never read. Ten moves to see inside the black box: trace, tag, thumbs, sample, replay, and close the loop back into your evals. A live conversation-replay panel you can scrub." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --code-red:   oklch(0.72 0.16 25);
+
+      /* feature identity — a good reply (up) vs a bad one (down) */
+      --good:       oklch(0.58 0.13 150);
+      --good-wash:  oklch(0.93 0.06 150);
+      --good-ink:   oklch(0.38 0.11 150);
+      --bad:        oklch(0.63 0.17 25);
+      --bad-wash:   oklch(0.95 0.06 25);
+      --bad-ink:    oklch(0.45 0.15 25);
+      --signal:     oklch(0.55 0.16 300);
+      --signal-wash:oklch(0.94 0.05 300);
+      --signal-ink: oklch(0.42 0.14 300);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--signal-wash) 62%, var(--signal-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.55 0.16 300 / 0.4);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.signal   { background: var(--signal-wash); color: var(--signal-ink); }
+    .hack h2 .pill.loop     { background: var(--sage-wash); color: var(--good-ink); }
+    .hack h2 .pill.watch    { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .red { color: var(--code-red); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "conversation replay" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .studio { grid-template-columns: 1fr; } }
+
+    /* the session picker (left) */
+    .sessions {
+      margin: 1rem;
+      display: grid;
+      gap: 0.55rem;
+      align-content: start;
+      border-right: 1px dashed oklch(0.86 0.03 80);
+      padding-right: 1rem;
+    }
+    @media (max-width: 700px) { .sessions { border-right: none; border-bottom: 1px dashed oklch(0.86 0.03 80); padding-right: 0; padding-bottom: 1rem; } }
+    .sessions-lbl {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: -0.1rem;
+    }
+    .sess-row {
+      display: flex; align-items: center; gap: 0.7rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.7rem;
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease-paper), background 0.2s var(--ease-paper);
+      user-select: none;
+      text-align: left;
+    }
+    .sess-row:hover { border-color: oklch(0.78 0.09 300); }
+    .sess-row.sel { background: var(--signal-wash); border-color: oklch(0.72 0.12 300); }
+    .sess-row .vote { font-size: 1.05rem; flex-shrink: 0; }
+    .sess-row .txt { display: grid; gap: 0.05rem; min-width: 0; }
+    .sess-row .txt b { font-size: 0.86rem; color: var(--ink); font-weight: 600; }
+    .sess-row .txt span {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      color: var(--ink-mute); line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sess-row .rid {
+      margin-left: auto; flex-shrink: 0;
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      color: var(--ink-mute); letter-spacing: 0.03em;
+    }
+
+    .loop-toggle {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-top: 0.4rem;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.78 0.09 150);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.7rem;
+      cursor: pointer; user-select: none;
+      transition: opacity 0.2s var(--ease-paper);
+    }
+    .loop-toggle .sw {
+      width: 34px; height: 20px; border-radius: 999px; flex-shrink: 0;
+      background: var(--good); position: relative;
+      transition: background 0.25s var(--ease-paper);
+    }
+    .loop-toggle .sw::after {
+      content: ''; position: absolute; top: 2px; left: 16px;
+      width: 16px; height: 16px; border-radius: 50%; background: oklch(0.99 0 0);
+      transition: left 0.25s var(--ease-paper);
+      box-shadow: 0 1px 2px oklch(0.30 0.02 60 / 0.4);
+    }
+    .loop-toggle.off .sw { background: oklch(0.80 0.03 80); }
+    .loop-toggle.off .sw::after { left: 2px; }
+    .loop-toggle .g-txt b { font-size: 0.84rem; color: var(--ink); font-weight: 600; }
+    .loop-toggle .g-txt span {
+      display: block; font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-mute);
+    }
+
+    /* the trace panel (right) */
+    .stage {
+      padding: 1.2rem;
+      display: flex; flex-direction: column; gap: 0.7rem; justify-content: flex-start;
+      background:
+        radial-gradient(120% 120% at 100% 0%, var(--signal-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--good-wash), transparent 55%),
+        var(--paper);
+      min-height: 17rem;
+    }
+    .bubble {
+      border-radius: var(--radius-md);
+      padding: 0.7rem 0.85rem;
+      font-size: 0.86rem; line-height: 1.5;
+      border: 1px solid oklch(0.88 0.02 80);
+      background: var(--paper);
+    }
+    .bubble .who {
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .bubble.user .who { color: var(--accent-ink); }
+    .bubble.user { border-color: oklch(0.82 0.06 264); background: var(--accent-wash); }
+    .bubble.bot .who { color: var(--ink-soft); }
+    .bubble.bot.up { border-color: oklch(0.78 0.09 150); background: var(--good-wash); }
+    .bubble.bot.down { border-color: oklch(0.75 0.12 25); background: var(--bad-wash); }
+    .bubble .verdict-chip {
+      margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 0.55rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.1em 0.45em; border-radius: 999px;
+    }
+    .bubble.bot.up .verdict-chip { background: var(--good); color: oklch(0.99 0 0); }
+    .bubble.bot.down .verdict-chip { background: var(--bad); color: oklch(0.99 0 0); }
+    .bubble .msg em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+    /* the trace strip under the bubbles */
+    .trace {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      margin-top: 0.15rem;
+    }
+    @media (max-width: 440px) { .trace { grid-template-columns: repeat(2, 1fr); } }
+    .trace .cell {
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.5rem;
+      display: grid; gap: 0.12rem;
+    }
+    .trace .cell .tl {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+    }
+    .trace .cell .tv {
+      font-family: 'Geist Mono', monospace; font-size: 0.82rem;
+      font-weight: 600; color: var(--ink);
+    }
+    .trace .cell.hot .tv { color: var(--bad-ink); }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .verdict-line code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px;
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .bubble, .sess-row, .loop-toggle, .loop-toggle * { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: blind vs instrumented ─────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.good { border-left-color: var(--good); background: var(--good-wash); }
+    .anat .blk.bad  { border-left-color: var(--bad); background: var(--bad-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.good .tag { color: var(--good-ink); }
+    .anat .blk.bad .tag { color: var(--bad-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.good .tag .dot { background: var(--good); }
+    .anat .blk.bad .tag .dot { background: var(--bad); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: var(--good-ink); font-weight: 600; }
+    .ptable td.no { color: var(--margin); font-weight: 600; }
+
+    /* ── Mobile mock (a live dashboard on a phone) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 300 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--signal) 0%, var(--accent) 160%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.5rem; }
+    .phone .lrow {
+      display: grid; gap: 0.15rem;
+      background: var(--paper-alt); border: 1px solid oklch(0.9 0.02 80);
+      border-radius: 8px; padding: 0.45rem 0.55rem;
+      border-left: 3px solid var(--good);
+    }
+    .phone .lrow.flag { border-left-color: var(--bad); background: var(--bad-wash); }
+    .phone .lrow .lt { font-family: 'Geist Mono', monospace; font-size: 0.52rem; color: var(--ink); font-weight: 600; }
+    .phone .lrow .lm { font-family: 'Geist Mono', monospace; font-size: 0.48rem; color: var(--ink-mute); line-height: 1.35; }
+    .phone .lrow .lx { font-family: 'Geist Mono', monospace; font-size: 0.46rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .phone .lrow .lx.held { color: var(--good-ink); }
+    .phone .lrow .lx.flag { color: var(--bad-ink); }
+    .phone .metric { background: oklch(0.16 0.01 60); border-radius: 8px; padding: 0.55rem 0.65rem; margin-top: 0.15rem; }
+    .phone .metric .mv { font-family: 'Geist', serif; font-weight: 800; font-size: 1.25rem; color: oklch(0.95 0.02 80); line-height: 1; }
+    .phone .metric .ml { font-family: 'Geist Mono', monospace; font-size: 0.48rem; text-transform: uppercase; letter-spacing: 0.08em; color: oklch(0.72 0.02 80); margin-top: 0.2rem; }
+    .phone .label-mini {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.55 0.16 300 / 0.35);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.55 0.16 300 / 0.30); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 34</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;07&nbsp;·&nbsp;06</span>
+        <span class="tag">observe</span>
+        <span class="tag">feedback loop</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>The answer you never <span class="accent">see</span> &mdash; watch your live AI app, then turn its worst reply into a fixed one.</h1>
+
+      <p class="deck">
+        Last volume you kept the model on-task when a stranger tried to break it. But the strangers who <em>don&rsquo;t</em>
+        try to break it are a bigger blind spot: they ask a real question, get a real answer, and you never read a word of it.
+        Your app is shipped, capped, and defended &mdash; and completely dark. This is <strong>observability</strong>:
+        ten moves to see inside the box. Trace every call, tag it with an ID, add a thumbs-up/down, sample the real
+        conversations, replay the bad one, watch cost and latency drift &mdash; and then the move that makes all the
+        others worth it: feed the worst answer straight back into your evals so it never happens twice.
+        Pick a real session below and replay it.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-API-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude API" />
+        <img src="https://img.shields.io/badge/traces-on-8250DF?style=flat-square&logo=opentelemetry&logoColor=white" alt="traces on" />
+        <img src="https://img.shields.io/badge/feedback-%F0%9F%91%8D%20%2F%20%F0%9F%91%8E-2EA043?style=flat-square" alt="feedback thumbs" />
+        <img src="https://img.shields.io/badge/bad%20reply-%E2%86%92%20eval-DB6D28?style=flat-square&logo=vitest&logoColor=white" alt="bad reply to eval" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~11 min</span>
+        <span><b>Surface</b> · the same serverless route, now instrumented</span>
+        <span><b>Assumes</b> · you shipped Vol. 32 &amp; defended Vol. 33</span>
+        <span><b>Pairs with</b> · Vol. 24 (evals) · Vol. 25 (cost &amp; latency) · Vol. 32 (ship it)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The week after I put a little AI helper live, I checked the spend dashboard, saw a healthy little curve of
+          usage, and felt great. Then a friend texted me a screenshot: my bot had confidently given her a
+          <em>wrong</em> answer about a thing I&rsquo;d never even tested. My reaction wasn&rsquo;t &ldquo;how do I fix
+          it&rdquo; &mdash; it was <strong>&ldquo;how many other people got that answer, and I just never knew?&rdquo;</strong>
+        </p>
+        <p>
+          That&rsquo;s the gap this volume closes. When you build a normal app, a bug throws an error and something turns
+          red. When you ship an AI app, the failure mode is quieter and worse: it produces a fluent, confident,
+          <em>wrong</em> answer, hands it to a stranger, and moves on. Nothing turns red. The only person who ever sees
+          it is the user &mdash; and they just leave. You are flying a plane with the windows painted over.
+        </p>
+        <p>
+          Observability is knocking the paint off the windows. It&rsquo;s three questions you should be able to answer
+          about any live app: <em>what did it actually say, to whom, and was it any good?</em> The ten moves below build
+          that up from a single log line to a real loop &mdash; and the loop is the point. Every bad answer you catch
+          becomes a test case (Vol. 24) that guards the next version. Watching without acting is just a sadder dashboard.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">See the blind spot — silence isn't success</a></li>
+          <li><a href="#h2">Log the one line that matters</a></li>
+          <li><a href="#h3">Tag every call with a request ID</a></li>
+          <li><a href="#h4">Add the thumbs — let users grade you</a></li>
+          <li><a href="#h5">Trace the whole call, not just the reply</a></li>
+          <li><a href="#h6">Sample real conversations on purpose</a></li>
+          <li><a href="#h7">Replay the bad one exactly</a></li>
+          <li><a href="#h8">Watch the drift — cost, latency, refusals</a></li>
+          <li><a href="#h9">Alarm on the spike, not the average</a></li>
+          <li><a href="#h10">Close the loop — bad reply becomes an eval</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="conversation replay panel demo">
+      <div class="demo-bar">
+        <span>the support bot's real sessions · replay one &mdash; then flip the loop on</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="studio">
+        <div class="sessions" id="sessions">
+          <div class="sessions-lbl">real sessions →</div>
+          <button class="sess-row sel" data-s="good" aria-pressed="true">
+            <span class="vote">👍</span>
+            <span class="txt"><b>Answered cleanly</b><span>"when do refunds process?"</span></span>
+            <span class="rid">#a1f</span>
+          </button>
+          <button class="sess-row" data-s="wrong" aria-pressed="false">
+            <span class="vote">👎</span>
+            <span class="txt"><b>Confidently wrong</b><span>"do you ship to Canada?"</span></span>
+            <span class="rid">#c7d</span>
+          </button>
+          <button class="sess-row" data-s="slow" aria-pressed="false">
+            <span class="vote">🐢</span>
+            <span class="txt"><b>Right but slow</b><span>"summarize my last 3 orders"</span></span>
+            <span class="rid">#e02</span>
+          </button>
+          <button class="sess-row" data-s="refuse" aria-pressed="false">
+            <span class="vote">🚫</span>
+            <span class="txt"><b>Refused a real ask</b><span>"cancel order #4821"</span></span>
+            <span class="rid">#b93</span>
+          </button>
+
+          <div class="loop-toggle" id="loop" role="switch" aria-checked="true">
+            <span class="sw"></span>
+            <span class="g-txt"><b>Feedback loop ON</b><span>👎 → captured → eval case</span></span>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <div class="bubble user">
+            <div class="who">🙂 user · session #a1f</div>
+            <div class="msg" id="userMsg">when do refunds process?</div>
+          </div>
+          <div class="bubble bot up" id="botBubble">
+            <div class="who">🤖 support bot <span class="verdict-chip" id="chip">👍 helpful</span></div>
+            <div class="msg" id="botMsg">Refunds post 5–7 business days after approval. Want me to check a specific order?</div>
+          </div>
+          <div class="trace" id="trace">
+            <div class="cell"><span class="tl">latency</span><span class="tv" id="tLat">1.2s</span></div>
+            <div class="cell"><span class="tl">tokens</span><span class="tv" id="tTok">340</span></div>
+            <div class="cell"><span class="tl">cost</span><span class="tv" id="tCost">$0.004</span></div>
+            <div class="cell"><span class="tl">verdict</span><span class="tv" id="tVer">pass</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>A clean session.</b> You&rsquo;d never think to look at this one &mdash; and you don&rsquo;t need to. Now pick the 👎 session, read what a stranger actually got, and watch the loop turn that miss into a test.</span>
+        <span class="hint">replay a session ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>See the blind spot &mdash; silence isn&rsquo;t success. <span class="pill read">read</span></h2>
+        <p>
+          The dangerous thing about a shipped AI app is that <em>nothing tells you it&rsquo;s failing.</em> A crashed
+          server pages you. A 500 shows up in red. But a model that hands a confident wrong answer to a stranger looks
+          <strong>identical</strong>, from your side, to one that nailed it &mdash; same 200 response, same happy latency
+          graph, same little bump in the usage chart. Cal&rsquo;s daily-experiment instinct is the fix: you don&rsquo;t
+          guess whether it&rsquo;s good, you go <em>read what it actually said.</em>
+        </p>
+        <p>
+          So the whole discipline starts with a mindset flip. Your spend dashboard tells you the app is <em>alive</em>.
+          It tells you nothing about whether it&rsquo;s <em>right</em>. Those are two completely different questions, and
+          almost every beginner ships the first dashboard and calls it monitoring. The moves below build the second one:
+          the one that can answer &ldquo;was that answer any good?&rdquo;
+        </p>
+        <div class="anat" aria-label="blind versus instrumented app">
+          <div class="blk bad">
+            <div class="tag"><span class="dot"></span>blind</div>
+            <p><em>You see that it ran &mdash; green graphs, zero insight.</em> Requests count up, latency looks fine, spend ticks along. Every one
+            of those requests could be a wrong answer and the dashboard would look <strong>exactly the same.</strong>
+            You find out something&rsquo;s broken when a user tells a friend, not you.</p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>instrumented</div>
+            <p><em>You see what it said &mdash; you can read the conversation.</em> Every call leaves a trace: the prompt, the reply, who gave it a
+            thumbs-down, how long it took. A bad answer is now a <strong>row you can find and fix</strong> &mdash; not a
+            rumor you hear about a week late.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Log the one line that matters. <span class="pill setup">setup</span></h2>
+        <p>
+          You don&rsquo;t need a vendor to start. The first real move is one structured log line per call, written from
+          the same serverless route you shipped in Vol. 32. Dray&rsquo;s plain-developer framing: it&rsquo;s just a
+          <code>console.log</code> of a JSON object &mdash; but log the <em>right</em> fields, as structured JSON (not a
+          string), so future-you can actually search it.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — one structured line, right after the model replies</span></div>
+<pre><span class="key">const</span> t0 = Date.now();
+<span class="key">const</span> reply = <span class="key">await</span> client.messages.create({ <span class="cmt">/* … */</span> });
+<span class="key">const</span> ms = Date.now() - t0;
+
+<span class="hit">// one searchable line — not a paragraph, not a string blob</span>
+console.log(JSON.stringify({
+  at:      <span class="key">new</span> Date().toISOString(),
+  input:   userText.slice(0, <span class="amb">400</span>),   <span class="cmt">// truncate — you want shape, not liability</span>
+  output:  reply.content[<span class="amb">0</span>].text.slice(0, <span class="amb">400</span>),
+  model:   reply.model,
+  tokens:  reply.usage.input_tokens + reply.usage.output_tokens,
+  ms,                                    <span class="cmt">// latency, for free</span>
+  stop:    reply.stop_reason,            <span class="cmt">// 'end_turn' vs 'max_tokens' matters later</span>
+}));</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>On Vercel, these lines land in the runtime logs you already watched in Vol. 32 &mdash; no new tool. Log
+          as <b>structured JSON</b>, never a formatted string: the day you want &ldquo;every call over 4 seconds,&rdquo;
+          a JSON field is one filter and a string is a regex nightmare.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Tag every call with a request ID. <span class="pill setup">setup</span></h2>
+        <p>
+          The moment you have more than one log line, you need a way to say &ldquo;<em>that</em> one.&rdquo; A short
+          request ID, generated at the top of the route and stitched into every log line, every error, and &mdash;
+          crucially &mdash; returned to the browser, is the thread that ties a user&rsquo;s complaint to the exact
+          conversation in your logs. Ashi&rsquo;s modular habit: one ID, threaded through every piece.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">generate once, thread everywhere, hand it back to the client</span></div>
+<pre><span class="key">const</span> rid = crypto.randomUUID().slice(0, <span class="amb">8</span>);   <span class="cmt">// 'c7d4a1f0' → short + unique enough</span>
+
+<span class="key">try</span> {
+  <span class="key">const</span> reply = <span class="key">await</span> client.messages.create({ <span class="cmt">/* … */</span> });
+  console.log(JSON.stringify({ rid, ok: <span class="key">true</span>, <span class="cmt">/* …the fields from move 2… */</span> }));
+  <span class="key">return</span> Response.json({ rid, text: reply.content[<span class="amb">0</span>].text });  <span class="cmt">// ← rid goes to the UI</span>
+} <span class="key">catch</span> (e) {
+  console.error(JSON.stringify({ rid, ok: <span class="key">false</span>, err: e.message }));   <span class="cmt">// same rid on failure</span>
+  <span class="key">return</span> Response.json({ rid, error: <span class="str">'Something went wrong'</span> }, { status: <span class="amb">500</span> });
+}</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Show the <code>rid</code> somewhere quiet in your UI &mdash; a tiny grey <code>#c7d4a1f0</code> under the
+          reply. Now a bug report is &ldquo;it broke, ref #c7d&rdquo; and you jump straight to the one line instead of
+          scrolling a thousand. This one ID is the spine every later move hangs off.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Add the thumbs &mdash; let users grade you. <span class="pill signal">signal</span></h2>
+        <p>
+          Here&rsquo;s the highest-value, lowest-effort widget you will ever add: a 👍 / 👎 under each reply. You cannot
+          read every conversation, but your users can, and a thumbs-down is them <em>pointing at the exact bad answer for
+          you.</em> Bailey&rsquo;s prototyping energy applies &mdash; it&rsquo;s two buttons and one <code>fetch</code>,
+          and it turns silent strangers into a free labelling team.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the feedback endpoint — attach a vote to the rid from move 3</span></div>
+<pre><span class="cmt">// client: the two buttons post the rid + the vote, nothing else</span>
+<span class="key">function</span> vote(rid, score) {          <span class="cmt">// score: +1 or -1</span>
+  fetch(<span class="str">'/api/feedback'</span>, { method: <span class="str">'POST'</span>,
+    body: JSON.stringify({ rid, score }) });
+}
+
+<span class="cmt">// server /api/feedback: write it next to the trace, keyed by rid</span>
+<span class="key">export</span> <span class="key">async</span> <span class="key">function</span> POST(req) {
+  <span class="key">const</span> { rid, score } = <span class="key">await</span> req.json();
+  <span class="key">await</span> db.feedback.insert({ rid, score, at: Date.now() });
+  console.log(JSON.stringify({ rid, feedback: score }));   <span class="hit">// 👎 is now findable</span>
+  <span class="key">return</span> Response.json({ ok: <span class="key">true</span> });
+}</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Thumbs are <b>biased and sparse</b> &mdash; most people vote on nothing, and the angry ones vote loudest.
+          Treat a 👎 as &ldquo;go look at this,&rdquo; not &ldquo;this is objectively broken.&rdquo; It&rsquo;s a
+          spotlight pointed at conversations worth reading, which is exactly what you were missing &mdash; not a grade
+          you can average and trust.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Trace the whole call, not just the reply. <span class="pill signal">signal</span></h2>
+        <p>
+          For a bare model call, move 2&rsquo;s log line is the whole trace. But the second your app does <em>more than
+          one thing</em> &mdash; retrieves a doc (Vol. 26), calls a tool (Vol. 19), runs an agent loop (Vol. 10) &mdash;
+          the interesting failure lives <strong>between</strong> the steps. A trace records each step as a span under one
+          <code>rid</code>, so when the answer is wrong you can see <em>which</em> step went sideways, not just that the
+          final text was bad.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">a hand-rolled trace — an array of spans, one rid, no vendor needed</span></div>
+<pre><span class="key">const</span> trace = { rid, spans: [] };
+<span class="key">const</span> span = (name, fn) => <span class="key">async</span> () => {
+  <span class="key">const</span> t = Date.now(), out = <span class="key">await</span> fn();
+  trace.spans.push({ name, ms: Date.now() - t });
+  <span class="key">return</span> out;
+};
+
+<span class="key">const</span> docs  = <span class="key">await</span> span(<span class="str">'retrieve'</span>, () => search(userText))();
+<span class="key">const</span> reply = <span class="key">await</span> span(<span class="str">'generate'</span>, () => model(userText, docs))();
+console.log(JSON.stringify(trace));
+<span class="cmt">// → spans: [ {retrieve, 80ms}, {generate, 1400ms} ]  ← now you know WHERE the time (or the bug) went</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Start hand-rolled &mdash; an array of <code>{name, ms}</code> is a real trace and costs nothing. When it
+          gets busy, tools like <b>Langfuse</b>, <b>Helicone</b>, or plain OpenTelemetry give you the same spans in a
+          searchable UI. Same idea, more chrome. Don&rsquo;t buy the tool before you feel the pain.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Sample real conversations on purpose. <span class="pill watch">watch</span></h2>
+        <p>
+          You can&rsquo;t read all of it and you shouldn&rsquo;t only read the complaints &mdash; the thumbs-down crowd
+          is a skewed slice. So carve out fifteen minutes and read a <em>random</em> handful of real sessions, the way a
+          restaurant owner eats their own food unannounced. This is where you discover the failures nobody bothered to
+          downvote: the merely-mediocre answer, the slightly-off tone, the thing that technically worked but felt wrong.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">a two-minute daily habit — pull 10 random traces and actually read them</span></div>
+<pre><span class="prompt">$</span> <span class="key">node</span> read-samples.js --n 10 --since 24h
+
+<span class="out">#a1f  👍  "when do refunds process?"        → clean, on-task</span>
+<span class="out">#c7d  👎  "do you ship to Canada?"          → </span><span class="red">WRONG — invented a policy</span>
+<span class="out">#e02  🐢  "summarize my last 3 orders"      → right, but 6.2s (slow)</span>
+<span class="out">#f5a  --  "what's your return window?"      → fine</span>
+<span class="out">#b93  🚫  "cancel order #4821"              → </span><span class="amb">refused a legit request</span>
+<span class="hit">// 3 of 10 worth fixing — you'd never have found #e02 or #b93 from votes alone</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Make it a ritual, not a project: ten random sessions with coffee, once a day, for a week. You&rsquo;ll
+          learn more about your real threat model than any spec &mdash; because it&rsquo;s <b>your</b> users asking
+          <b>your</b> app the questions you never imagined.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Replay the bad one exactly. <span class="pill signal">signal</span></h2>
+        <p>
+          You found a 👎. Now the trap: you tweak the prompt, ask the model a <em>slightly different</em> question, get a
+          good answer, and declare victory &mdash; but you never reproduced the original miss, so you have no idea if you
+          fixed it. The fix is to <strong>replay the exact input</strong> from the trace: same user text, same retrieved
+          docs, same everything, so &ldquo;before&rdquo; and &ldquo;after&rdquo; are actually comparable.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">replay.js — rebuild the failing call from its stored trace</span></div>
+<pre><span class="key">const</span> t = <span class="key">await</span> db.traces.find({ rid: <span class="str">'c7d'</span> });   <span class="cmt">// the downvoted one</span>
+
+<span class="cmt">// feed the SAME inputs back in — this is the "before"</span>
+<span class="key">const</span> before = <span class="key">await</span> runChat(t.input, { system: t.system });
+console.log(<span class="str">'before:'</span>, before.text);   <span class="out">// "Yes, we ship to Canada in 2 days" ← invented</span>
+
+<span class="cmt">// now change ONE thing (the system prompt) and replay the identical input</span>
+<span class="key">const</span> after = <span class="key">await</span> runChat(t.input, { system: fixedSystem });
+console.log(<span class="str">'after: '</span>, after.text);   <span class="hit">// "I can only confirm US shipping — let me get a human." ✓</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Models are non-deterministic &mdash; the same input can vary run to run. Replay a fix <b>a few times</b>,
+          not once, before you trust it. One good replay is luck; five good replays is a fix. (Set
+          <code>temperature: 0</code> for the eval in the next move to squeeze most of the wobble out.)</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Watch the drift &mdash; cost, latency, refusals. <span class="pill watch">watch</span></h2>
+        <p>
+          Single bad answers are one failure mode; <em>slow trends</em> are the other, and they&rsquo;re sneakier. Your
+          p95 latency creeping from 2s to 5s. Your average tokens-per-call doubling because someone made the system
+          prompt longer. Your refusal rate quietly climbing after a prompt tweak. None of these throw an error &mdash;
+          they just make the product worse by degrees. The fields you logged in move 2 are exactly the fields you now
+          chart over time.
+        </p>
+        <table class="ptable" aria-label="the four drift signals worth charting">
+          <thead>
+            <tr><th>Signal</th><th>From the log field</th><th>What a bad trend means</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">p95 latency</td><td><code>ms</code></td><td>Slower tail — users bounce before the tokens finish.</td></tr>
+            <tr><td class="trait">Tokens / call</td><td><code>tokens</code></td><td>Cost creep — a longer prompt or runaway context (Vol. 14).</td></tr>
+            <tr><td class="trait">Refusal rate</td><td><code>output</code> match</td><td>Over-guarded — the app is now saying &ldquo;I can&rsquo;t&rdquo; too often.</td></tr>
+            <tr><td class="trait">Cut-off rate</td><td><code>stop</code> = max_tokens</td><td>Answers getting truncated mid-thought — raise the ceiling.</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">watch the percentile, not the average — the average hides your worst 5%.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Alarm on the spike, not the average. <span class="pill watch">watch</span></h2>
+        <p>
+          A dashboard only helps when you&rsquo;re looking at it &mdash; and you won&rsquo;t be, at 2am on a Saturday.
+          So set one or two <em>cheap</em> alarms that ping you (a Slack webhook, an email) when something crosses a line
+          you&rsquo;d actually care about. The art is picking thresholds that fire on <strong>real</strong> problems and
+          stay quiet otherwise, or you&rsquo;ll mute them in a week &mdash; and a muted alarm is worse than none.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">a cron that checks the last hour and pings you only on a real spike</span></div>
+<pre><span class="key">const</span> last = <span class="key">await</span> db.traces.since(<span class="str">'1h'</span>);
+
+<span class="key">const</span> downRate = last.filter(t => t.feedback === <span class="amb">-1</span>).length / last.length;
+<span class="key">const</span> spend    = last.reduce((s, t) => s + t.cost, <span class="amb">0</span>);
+
+<span class="key">if</span> (downRate &gt; <span class="amb">0.15</span>)              <span class="cmt">// &gt;15% thumbs-down in an hour = something regressed</span>
+  ping(<span class="str">`👎 rate ${(downRate*100)|0}% last hour — go read the traces`</span>);
+
+<span class="key">if</span> (spend &gt; <span class="amb">5</span>)                    <span class="cmt">// backstops the daily cap from Vol. 32 at hourly resolution</span>
+  ping(<span class="str">`💸 $${spend.toFixed(2)}/hr — check for a loop or an abuser`</span>);</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Start with <b>exactly two</b> alarms: a thumbs-down spike and an hourly-spend spike. They map to your two
+          real fears &mdash; &ldquo;it got worse&rdquo; and &ldquo;it got expensive&rdquo; &mdash; and they pair
+          perfectly with the daily spend cap you already set in Vol. 32. Add more only when a real incident teaches you
+          the third one you needed.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Close the loop &mdash; the bad reply becomes an eval. <span class="pill loop">loop</span></h2>
+        <p>
+          This is the move the other nine exist for. A bad answer you merely <em>fixed</em> can silently come back the
+          next time you touch the prompt. A bad answer you turn into a <strong>test case</strong> is guarded forever.
+          Take the downvoted trace, write down what the <em>right</em> answer looks like, and drop it into the eval
+          harness from <a href="../2026-06/grade-it-before-they-do-evals-2026-06-24.html">Vol. 24</a>. Now your CI grades
+          every future version against the exact mistakes your real users already caught.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">one downvoted trace → one golden eval case (the whole loop, in code)</span></div>
+<pre><span class="cmt">// the loop, start to end:</span>
+<span class="cmt">//   user 👎 → trace captured → you read it → you write the expectation</span>
+
+evals.push({
+  id:     <span class="str">'ships-canada-honestly'</span>,
+  from:   <span class="str">'trace #c7d — real user, downvoted 2026-07-06'</span>,   <span class="cmt">// provenance</span>
+  input:  <span class="str">'do you ship to Canada?'</span>,
+  expect: (out) =&gt; !/yes|2 days/i.test(out)         <span class="cmt">// must NOT invent a policy…</span>
+             &amp;&amp; /US|human|can&#39;t confirm/i.test(out),   <span class="hit">// …must hedge or escalate</span>
+});
+<span class="cmt">// next deploy, CI runs this. the exact miss a stranger found can never ship again.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>This is the flywheel that separates a toy from a product: <b>every real-world miss makes the app
+          permanently harder to break.</b> Observe → catch → replay → add-to-evals → guarded. Do this ten times and your
+          eval suite becomes a museum of every dumb thing your app ever said &mdash; and a wall against it saying them
+          again.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a live health dashboard">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">acme-refunds · live health</div>
+            <div class="t">What it&rsquo;s saying</div>
+          </div>
+          <div class="s-body">
+            <div class="label-mini">last hour · sampled</div>
+            <div class="lrow">
+              <div class="lt">👍 refund timing</div>
+              <div class="lm">"when do refunds process?"</div>
+              <div class="lx held">answered · #a1f</div>
+            </div>
+            <div class="lrow flag">
+              <div class="lt">👎 shipping policy</div>
+              <div class="lm">"do you ship to Canada?"</div>
+              <div class="lx flag">wrong → sent to evals · #c7d</div>
+            </div>
+            <div class="lrow">
+              <div class="lt">🐢 order summary</div>
+              <div class="lm">"summarize my orders"</div>
+              <div class="lx held">6.2s · p95 flag · #e02</div>
+            </div>
+            <div class="metric">
+              <div class="mv">96%</div>
+              <div class="ml">👍 rate · 1 caught → eval</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>This is what &ldquo;the windows aren&rsquo;t painted anymore&rdquo; looks like from your phone: real
+        questions, real votes, the one wrong answer flagged and already on its way to becoming a test.
+        <strong>You can&rsquo;t read every conversation</strong> &mdash; but you can make sure the bad ones find you,
+        instead of the other way around.</p>
+        <p class="scribble">the answer you never see is the one that decides if they come back.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Capture it</h4>
+          <ul>
+            <li><code>console.log(JSON…)</code><span>one structured line</span></li>
+            <li><code>rid = uuid().slice(0,8)</code><span>thread it everywhere</span></li>
+            <li><code>return { rid, text }</code><span>hand it to the UI</span></li>
+            <li><code>spans: [{name, ms}]</code><span>trace multi-step calls</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Grade it</h4>
+          <ul>
+            <li><code>👍 / 👎 + rid</code><span>users label for you</span></li>
+            <li><code>read 10 random</code><span>daily, unannounced</span></li>
+            <li><code>replay the input</code><span>reproduce before you fix</span></li>
+            <li><code>run it 5×</code><span>non-determinism check</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Watch the trend</h4>
+          <ul>
+            <li><code>p95 latency</code><span>not the average</span></li>
+            <li><code>tokens / call</code><span>cost creep</span></li>
+            <li><code>refusal rate</code><span>over-guarded?</span></li>
+            <li><code>stop = max_tokens</code><span>cut-off answers</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Close the loop</h4>
+          <ul>
+            <li><code>2 alarms</code><span>👎 spike · $/hr spike</span></li>
+            <li><code>bad reply → eval</code><span>guarded forever</span></li>
+            <li><code>from: 'trace #…'</code><span>keep the provenance</span></li>
+            <li><code>CI on every deploy</code><span>never ships twice</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 34 · the feedback loop</small>
+      </div>
+      <div class="end">
+        built on the <code>observe → catch → replay → eval</code> loop<br />
+        trace the call · read the traffic · close the loop<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var stage = document.getElementById('stage');
+      if (!stage) return;
+
+      var rows = Array.prototype.slice.call(document.querySelectorAll('.sess-row'));
+      var loop = document.getElementById('loop');
+      var userMsg = document.getElementById('userMsg');
+      var botBubble = document.getElementById('botBubble');
+      var botMsg = document.getElementById('botMsg');
+      var chip = document.getElementById('chip');
+      var verdict = document.getElementById('verdict');
+      var userWho = stage.querySelector('.bubble.user .who');
+      var tLat = document.getElementById('tLat'), tTok = document.getElementById('tTok');
+      var tCost = document.getElementById('tCost'), tVer = document.getElementById('tVer');
+      var traceEl = document.getElementById('trace');
+
+      var loopOn = true;
+      var current = 'good';
+
+      // each real session: the input, the reply, its vote, its trace numbers,
+      // and what the observability loop does with it (loop on vs off)
+      var sessions = {
+        good: {
+          rid: '#a1f', vote: 'up', chip: '👍 helpful',
+          user: 'when do refunds process?',
+          bot:  'Refunds post 5–7 business days after approval. Want me to check a specific order?',
+          lat: '1.2s', tok: '340', cost: '$0.004', ver: 'pass', hot: false,
+          onLine:  '<b>A clean session — nothing to do.</b> The loop only fires on the misses, so a 👍 like this just confirms the app is on-task. Pick the 👎 next to see the loop actually work.',
+          offLine: '<b>A clean session.</b> With the loop off it looks identical to a bad one in your dashboard — same 200, same green graph. That&rsquo;s the whole problem: <em>you can&rsquo;t tell them apart without reading them.</em>'
+        },
+        wrong: {
+          rid: '#c7d', vote: 'down', chip: '👎 wrong',
+          user: 'do you ship to Canada?',
+          bot:  'Yes! We ship to Canada in about 2 business days. — (There is no such policy. The model invented it.)',
+          lat: '1.4s', tok: '390', cost: '$0.005', ver: 'FAIL', hot: true,
+          onLine:  '<b>Loop caught it.</b> The 👎 flagged trace <code>#c7d</code>, you read the real reply, replayed the exact input (move #7), and pushed it to your evals (move #10) as <code>ships-canada-honestly</code>. This exact miss can never ship again.',
+          offLine: '<b>Invisible.</b> Loop off: a stranger got a confidently invented policy, shrugged, and left. No error, no alert, no trace — you&rsquo;d find out when a friend texts you a screenshot. This is the answer you never see.'
+        },
+        slow: {
+          rid: '#e02', vote: 'neutral', chip: '🐢 6.2s',
+          user: 'summarize my last 3 orders',
+          bot:  'Here are your last three orders: #4821 (shipped), #4790 (delivered), #4755 (refunded). — Correct, but it took 6.2s.',
+          lat: '6.2s', tok: '910', cost: '$0.011', ver: 'pass·slow', hot: true,
+          onLine:  '<b>Right, but a latency outlier.</b> Nobody downvoted it — the answer was correct — so only your <em>p95 latency</em> chart (move #8) surfaces it. A retrieve+generate trace (move #5) shows the time is in retrieval, not the model.',
+          offLine: '<b>Hidden in the average.</b> Loop off, this 6.2s call vanishes into a healthy-looking mean latency. The user waited, maybe bounced, and your dashboard never blinked. Percentiles catch what averages bury.'
+        },
+        refuse: {
+          rid: '#b93', vote: 'down', chip: '🚫 over-refused',
+          user: 'cancel order #4821',
+          bot:  'I can&rsquo;t help with that. — (But cancelling is a legit, in-scope request. The guardrail is too tight.)',
+          lat: '1.1s', tok: '210', cost: '$0.003', ver: 'FAIL', hot: true,
+          onLine:  '<b>Over-guarded — and now measured.</b> Your refusal-rate trend (move #8) ticked up after a prompt tweak; this 👎 shows why. It becomes an eval that asserts the app <em>does</em> handle cancellations — the mirror image of the Vol. 33 defense going too far.',
+          offLine: '<b>Silent false-refusal.</b> Loop off, a paying customer got told &ldquo;I can&rsquo;t&rdquo; to a normal request and left frustrated. Over-refusal is invisible in a spend graph — it looks like a cheap, fast, &ldquo;successful&rdquo; call.'
+        }
+      };
+
+      function paint() {
+        var s = sessions[current];
+        userWho.textContent = '🙂 user · session ' + s.rid;
+        userMsg.textContent = s.user;
+        botMsg.textContent = s.bot;
+        chip.textContent = s.chip;
+        botBubble.classList.toggle('up', s.vote === 'up');
+        botBubble.classList.toggle('down', s.vote === 'down');
+        tLat.textContent = s.lat; tTok.textContent = s.tok;
+        tCost.textContent = s.cost; tVer.textContent = s.ver;
+        // heat the verdict cell when it's a fail/outlier
+        var verCell = tVer.parentElement;
+        verCell.classList.toggle('hot', s.hot);
+        verdict.innerHTML = loopOn ? s.onLine : s.offLine;
+      }
+
+      rows.forEach(function (r) {
+        r.addEventListener('click', function () {
+          rows.forEach(function (x) { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); });
+          r.classList.add('sel'); r.setAttribute('aria-pressed', 'true');
+          current = r.getAttribute('data-s');
+          paint();
+        });
+      });
+
+      function toggleLoop() {
+        loopOn = !loopOn;
+        loop.classList.toggle('off', !loopOn);
+        loop.setAttribute('aria-checked', loopOn ? 'true' : 'false');
+        var lbl = loop.querySelector('.g-txt b');
+        if (lbl) lbl.textContent = loopOn ? 'Feedback loop ON' : 'Feedback loop OFF';
+        paint();
+      }
+      loop.addEventListener('click', toggleLoop);
+      loop.addEventListener('keydown', function (e) {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleLoop(); }
+      });
+
+      paint();
+    })();
+  </script>
+</body>
+</html>

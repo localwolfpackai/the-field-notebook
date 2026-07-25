@@ -1,0 +1,1590 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Prompt Is the Product — Ten Moves to Version, Diff, A/B and Roll Back the One File That Runs Your Whole App · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: your app is shipped, defended, and watched — but the thing that decides every answer is a 400-line prompt you edit live in a text box and pray. This volume treats that prompt as the product it is. Ten moves: pull it out of the code, give it a version number, diff two versions, run both against your evals before you pick one, ship it behind a flag, watch the metric move, and roll back in one line when it doesn't. Stop editing the most important file in your app by feel." />
+  <meta property="og:title" content="The Prompt Is the Product — Version, Diff, A/B and Roll Back Your Prompt Like Code" />
+  <meta property="og:description" content="The 400-line prompt is the most important file in your app — and the only one you edit by feel with no version, no diff, no undo. Ten moves to treat it like code: pull it out, version it, A/B two of them against your evals, ship behind a flag, roll back in one line. A live prompt-diff bench you can run." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --code-red:   oklch(0.72 0.16 25);
+
+      /* feature identity — version A (old) vs version B (challenger) */
+      --vA:         oklch(0.60 0.02 260);
+      --vA-wash:    oklch(0.93 0.015 260);
+      --vA-ink:     oklch(0.42 0.02 260);
+      --vB:         oklch(0.55 0.16 300);
+      --vB-wash:    oklch(0.94 0.05 300);
+      --vB-ink:     oklch(0.42 0.14 300);
+      --win:        oklch(0.58 0.13 150);
+      --win-wash:   oklch(0.93 0.06 150);
+      --win-ink:    oklch(0.38 0.11 150);
+      --lose:       oklch(0.63 0.17 25);
+      --lose-wash:  oklch(0.95 0.06 25);
+      --lose-ink:   oklch(0.45 0.15 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--vB-wash) 62%, var(--vB-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.55 0.16 300 / 0.4);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.setup    { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.diff     { background: var(--vB-wash); color: var(--vB-ink); }
+    .hack h2 .pill.test     { background: var(--sage-wash); color: var(--win-ink); }
+    .hack h2 .pill.ship     { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.gotcha   { background: var(--margin-soft); color: var(--margin); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .red { color: var(--code-red); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .hit { color: var(--code-green); font-weight: 600; }
+    .term .add { color: var(--code-green); }
+    .term .del { color: var(--code-red); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "prompt A/B bench" demo ─────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .bench {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .bench { grid-template-columns: 1fr; } }
+
+    /* left: the two prompt versions + eval trigger */
+    .versions {
+      margin: 1rem;
+      display: grid;
+      gap: 0.6rem;
+      align-content: start;
+      border-right: 1px dashed oklch(0.86 0.03 80);
+      padding-right: 1rem;
+    }
+    @media (max-width: 700px) { .versions { border-right: none; border-bottom: 1px dashed oklch(0.86 0.03 80); padding-right: 0; padding-bottom: 1rem; } }
+    .versions-lbl {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      margin-bottom: -0.1rem;
+    }
+    .ver-card {
+      display: grid; gap: 0.35rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease-paper), background 0.2s var(--ease-paper);
+      user-select: none;
+      text-align: left;
+    }
+    .ver-card:hover { border-color: oklch(0.78 0.09 300); }
+    .ver-card.sel { background: var(--vB-wash); border-color: oklch(0.72 0.12 300); }
+    .ver-card .vhead {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ver-card .vtag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.12em 0.5em; border-radius: 999px;
+      color: oklch(0.99 0 0);
+    }
+    .ver-card[data-v="a"] .vtag { background: var(--vA); }
+    .ver-card[data-v="b"] .vtag { background: var(--vB); }
+    .ver-card .vname { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .ver-card .vline {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      color: var(--ink-mute); line-height: 1.4;
+    }
+    .ver-card .vline .plus { color: var(--win-ink); }
+    .ver-card .vline .minus { color: var(--lose-ink); }
+
+    .run-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      margin-top: 0.2rem;
+      background: var(--accent);
+      color: oklch(0.99 0 0);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer; user-select: none;
+      font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.86rem;
+      transition: filter 0.15s var(--ease-paper), transform 0.15s var(--ease-paper);
+    }
+    .run-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .run-btn.running { background: var(--ink-mute); cursor: progress; }
+
+    /* right: the scoreboard */
+    .board {
+      padding: 1.2rem;
+      display: flex; flex-direction: column; gap: 0.8rem; justify-content: flex-start;
+      background:
+        radial-gradient(120% 120% at 100% 0%, var(--vB-wash), transparent 55%),
+        radial-gradient(110% 120% at 0% 100%, var(--vA-wash), transparent 55%),
+        var(--paper);
+      min-height: 17rem;
+    }
+    .board-head {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+    }
+    .cases { display: grid; gap: 0.4rem; }
+    .case-row {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center;
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.6rem;
+      font-size: 0.8rem;
+    }
+    .case-row .cn { color: var(--ink); font-weight: 500; }
+    .case-row .mark {
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem; font-weight: 600;
+      min-width: 2.4rem; text-align: center;
+      transition: color 0.3s var(--ease-paper), opacity 0.3s var(--ease-paper);
+    }
+    .case-row .mark.a { color: var(--vA-ink); }
+    .case-row .mark.b { color: var(--vB-ink); }
+    .case-row .mark.pass { color: var(--win-ink); }
+    .case-row .mark.fail { color: var(--lose-ink); }
+    .case-row .mark.pending { color: var(--ink-mute); opacity: 0.5; }
+
+    .scoreline {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
+      margin-top: 0.1rem;
+    }
+    .score {
+      border-radius: var(--radius-sm);
+      border: 1px solid oklch(0.88 0.02 80);
+      padding: 0.6rem 0.7rem;
+      background: var(--paper);
+    }
+    .score.a { border-left: 3px solid var(--vA); }
+    .score.b { border-left: 3px solid var(--vB); }
+    .score .sv { font-family: 'Geist', serif; font-weight: 800; font-size: 1.5rem; color: var(--ink); line-height: 1; }
+    .score .sl {
+      font-family: 'Geist Mono', monospace; font-size: 0.56rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute); margin-top: 0.25rem;
+    }
+    .score.winner { background: var(--win-wash); border-color: oklch(0.78 0.09 150); }
+    .score.winner .sv { color: var(--win-ink); }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); flex: 1; min-width: 14rem; }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .verdict-line code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px;
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .case-row .mark, .ver-card, .run-btn { animation: none; transition: none; }
+    }
+
+    /* ── Anatomy: buried prompt vs versioned prompt ─────── */
+    .anat {
+      display: grid;
+      gap: 0.6rem;
+      margin: 1rem 0;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+    }
+    .anat .blk {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--ink-mute);
+      background: var(--paper-alt);
+    }
+    .anat .blk.good { border-left-color: var(--win); background: var(--win-wash); }
+    .anat .blk.bad  { border-left-color: var(--lose); background: var(--lose-wash); }
+    .anat .blk .tag {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+    .anat .blk.good .tag { color: var(--win-ink); }
+    .anat .blk.bad .tag { color: var(--lose-ink); }
+    .anat .blk .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .anat .blk.good .tag .dot { background: var(--win); }
+    .anat .blk.bad .tag .dot { background: var(--lose); }
+    .anat .blk p { color: var(--ink-soft); }
+    .anat .blk em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+    /* ── Decision / when-to-use table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.yes { color: var(--win-ink); font-weight: 600; }
+    .ptable td.no { color: var(--margin); font-weight: 600; }
+
+    /* ── Mobile mock (a prompt-registry on a phone) ────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.4rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 560px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } .phone-wrap .phone-cap { justify-self: start; } }
+    .phone {
+      width: 200px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 300 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 400px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background: linear-gradient(140deg, var(--vB) 0%, var(--accent) 160%);
+      padding: 1.9rem 1.1rem 1rem; color: oklch(0.99 0 0);
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+    .phone .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone .s-body { padding: 0.9rem 1rem; display: grid; gap: 0.5rem; }
+    .phone .lrow {
+      display: grid; gap: 0.15rem;
+      background: var(--paper-alt); border: 1px solid oklch(0.9 0.02 80);
+      border-radius: 8px; padding: 0.45rem 0.55rem;
+      border-left: 3px solid var(--vA);
+    }
+    .phone .lrow.live { border-left-color: var(--win); background: var(--win-wash); }
+    .phone .lrow.rolled { border-left-color: var(--lose); background: var(--lose-wash); }
+    .phone .lrow .lt { font-family: 'Geist Mono', monospace; font-size: 0.52rem; color: var(--ink); font-weight: 600; }
+    .phone .lrow .lm { font-family: 'Geist Mono', monospace; font-size: 0.48rem; color: var(--ink-mute); line-height: 1.35; }
+    .phone .lrow .lx { font-family: 'Geist Mono', monospace; font-size: 0.46rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .phone .lrow .lx.on { color: var(--win-ink); }
+    .phone .lrow .lx.off { color: var(--ink-mute); }
+    .phone .lrow .lx.back { color: var(--lose-ink); }
+    .phone .metric { background: oklch(0.16 0.01 60); border-radius: 8px; padding: 0.55rem 0.65rem; margin-top: 0.15rem; }
+    .phone .metric .mv { font-family: 'Geist', serif; font-weight: 800; font-size: 1.25rem; color: oklch(0.95 0.02 80); line-height: 1; }
+    .phone .metric .ml { font-family: 'Geist Mono', monospace; font-size: 0.48rem; text-transform: uppercase; letter-spacing: 0.08em; color: oklch(0.72 0.02 80); margin-top: 0.2rem; }
+    .phone .label-mini {
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+      margin-bottom: 0.1rem;
+    }
+
+    .phone-cap { max-width: 42ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.55 0.16 300 / 0.35);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.55 0.16 300 / 0.30); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 35</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;07&nbsp;·&nbsp;07</span>
+        <span class="tag">version</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>The prompt is the <span class="accent">product</span> &mdash; version, diff, and roll back the one file that runs your whole app.</h1>
+
+      <p class="deck">
+        Last volume you knocked the paint off the windows and watched your live app. So you caught a bad answer &mdash;
+        now what? You open the code, scroll to a 400-line string, tweak a sentence, and redeploy. No version. No diff.
+        No undo. You just edited the single most important file in your product <em>by feel</em>. This volume fixes that:
+        ten moves to treat your prompt like code &mdash; pull it out, give it a version number, diff two versions, run
+        both against your evals (Vol. 24) before you pick a winner, ship it behind a flag, and roll back in one line
+        when the metric moves the wrong way. Run the A/B bench below.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-API-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude API" />
+        <img src="https://img.shields.io/badge/prompt-v3-8250DF?style=flat-square&logo=git&logoColor=white" alt="prompt versioned" />
+        <img src="https://img.shields.io/badge/A%2FB-vs%20evals-2EA043?style=flat-square&logo=vitest&logoColor=white" alt="A/B against evals" />
+        <img src="https://img.shields.io/badge/rollback-1%20line-DB6D28?style=flat-square&logo=vercel&logoColor=white" alt="one-line rollback" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~11 min</span>
+        <span><b>Surface</b> · the same serverless route, prompt pulled out</span>
+        <span><b>Assumes</b> · you have evals (Vol. 24) &amp; observability (Vol. 34)</span>
+        <span><b>Pairs with</b> · Vol. 24 (evals) · Vol. 30 (caching) · Vol. 34 (observe)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          There&rsquo;s a file in your app that decides every single answer it gives, and for most beginners it lives as
+          a giant backtick string wedged between two functions, edited live, tweaked by vibe, and shipped with a commit
+          message that says <code>fix prompt</code>. It is the highest-leverage code you own and you treat it worse than
+          a CSS margin.
+        </p>
+        <p>
+          Here&rsquo;s how the trap springs. You catch a bad answer from Vol. 34. You open the prompt, add a line
+          &mdash; &ldquo;always confirm the order number before cancelling&rdquo; &mdash; and redeploy. It fixes that
+          one case. But you have <em>no idea</em> what it did to the other forty things the prompt was already handling
+          well. A week later a different answer gets worse and you can&rsquo;t even tell which edit caused it, because
+          there was never a version to compare against. This is prompt-whack-a-mole, and every non-dev builder plays it.
+        </p>
+        <p>
+          The escape is boring and it works: <strong>treat the prompt like code.</strong> Code got version control,
+          diffs, tests, and one-command rollback for exactly this reason &mdash; so a change is a thing you can see,
+          measure, and undo. The ten moves below give your prompt all four. By the end, &ldquo;let me try a new prompt&rdquo;
+          stops meaning &ldquo;pray and redeploy&rdquo; and starts meaning &ldquo;score the challenger against the champion,
+          ship the winner behind a flag, and keep the receipt.&rdquo;
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">See the trap — the file you edit by feel</a></li>
+          <li><a href="#h2">Pull the prompt out of the code</a></li>
+          <li><a href="#h3">Give it a version number</a></li>
+          <li><a href="#h4">Log which version answered</a></li>
+          <li><a href="#h5">Diff two versions like a PR</a></li>
+          <li><a href="#h6">Score the challenger against evals</a></li>
+          <li><a href="#h7">A/B it on real traffic</a></li>
+          <li><a href="#h8">Ship the winner behind a flag</a></li>
+          <li><a href="#h9">Roll back in one line</a></li>
+          <li><a href="#h10">Keep a changelog the model can't</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="prompt A/B bench demo">
+      <div class="demo-bar">
+        <span>the support bot's prompt · champion v2 vs challenger v3 &mdash; run both against the eval set</span>
+        <span class="live"><i></i> bench</span>
+      </div>
+
+      <div class="bench">
+        <div class="versions" id="versions">
+          <div class="versions-lbl">pick the challenger →</div>
+          <button class="ver-card sel" data-v="b" data-c="v3-cancel-guard" aria-pressed="true">
+            <div class="vhead"><span class="vtag">v3</span><span class="vname">Added a cancel-confirm rule</span></div>
+            <div class="vline"><span class="plus">+ confirm order # before cancelling</span></div>
+            <div class="vline"><span class="minus">− dropped "be concise"</span></div>
+          </button>
+          <button class="ver-card" data-v="b" data-c="v3-tone" aria-pressed="false">
+            <div class="vhead"><span class="vtag">v3'</span><span class="vname">Warmer, chattier tone</span></div>
+            <div class="vline"><span class="plus">+ friendly, uses the user's name</span></div>
+            <div class="vline"><span class="minus">− longer replies, more tokens</span></div>
+          </button>
+          <button class="ver-card" data-v="b" data-c="v3-strict" aria-pressed="false">
+            <div class="vhead"><span class="vtag">v3&Prime;</span><span class="vname">Stricter refusal rules</span></div>
+            <div class="vline"><span class="plus">+ never guesses a policy</span></div>
+            <div class="vline"><span class="minus">− over-refuses real asks</span></div>
+          </button>
+
+          <button class="run-btn" id="runBtn">▶ run A/B against evals</button>
+        </div>
+
+        <div class="board" id="board">
+          <div class="board-head">10 golden cases · <span id="scored">not run</span></div>
+          <div class="cases" id="cases">
+            <div class="case-row"><span class="cn">cancel confirms order #</span><span class="mark a pending" data-k="c1a">v2</span><span class="mark b pending" data-k="c1b">v3</span></div>
+            <div class="case-row"><span class="cn">won't invent a shipping policy</span><span class="mark a pending" data-k="c2a">v2</span><span class="mark b pending" data-k="c2b">v3</span></div>
+            <div class="case-row"><span class="cn">answers refund timing</span><span class="mark a pending" data-k="c3a">v2</span><span class="mark b pending" data-k="c3b">v3</span></div>
+            <div class="case-row"><span class="cn">stays concise (&lt; 60 words)</span><span class="mark a pending" data-k="c4a">v2</span><span class="mark b pending" data-k="c4b">v3</span></div>
+            <div class="case-row"><span class="cn">handles a real cancel ask</span><span class="mark a pending" data-k="c5a">v2</span><span class="mark b pending" data-k="c5b">v3</span></div>
+          </div>
+          <div class="scoreline">
+            <div class="score a" id="scoreA"><div class="sv" id="svA">—</div><div class="sl">v2 champion</div></div>
+            <div class="score b" id="scoreB"><div class="sv" id="svB">—</div><div class="sl" id="slB">v3 challenger</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Pick a challenger, then hit run.</b> Every version gets scored against the same ten golden cases before a single real user sees it &mdash; so &ldquo;is the new prompt better?&rdquo; becomes a number, not a hunch.</span>
+        <span class="hint">run it ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>See the trap &mdash; the file you edit by feel. <span class="pill read">read</span></h2>
+        <p>
+          Every AI feature has a control surface, and it&rsquo;s the system prompt. Change one sentence in it and the
+          behaviour of the whole app shifts &mdash; tone, accuracy, what it refuses, how long the answers run. That is an
+          <em>enormous</em> amount of leverage sitting inside one string. And here&rsquo;s the quiet disaster: because it
+          lives inside your code as a big backtick blob, you edit it the same careless way you&rsquo;d fix a typo, with
+          none of the safety rails you&rsquo;d demand for anything else this important.
+        </p>
+        <p>
+          Dray&rsquo;s AI-engineer framing cuts to it: a prompt is a <em>dependency</em>, not a comment. Your app&rsquo;s
+          output depends on it the way it depends on a library version. You&rsquo;d never bump a library from v2 to v3 in
+          production with no changelog, no diff, and no way back &mdash; but that&rsquo;s exactly what &ldquo;let me just
+          tweak the prompt&rdquo; does. This whole volume is about giving the most important dependency in your app the
+          same respect as the least important one in your <code>package.json</code>.
+        </p>
+        <div class="anat" aria-label="buried prompt versus versioned prompt">
+          <div class="blk bad">
+            <div class="tag"><span class="dot"></span>buried</div>
+            <p><em>A prompt edited by feel &mdash; one string, no history.</em> It lives between two functions, gets tweaked live, and ships as
+            <code>fix prompt</code>. When an answer gets worse you can&rsquo;t see what changed, can&rsquo;t compare it to
+            last week, and can&rsquo;t roll back. Every edit is a <strong>coin flip you can&rsquo;t undo.</strong></p>
+          </div>
+          <div class="blk good">
+            <div class="tag"><span class="dot"></span>versioned</div>
+            <p><em>A prompt treated like code &mdash; a file with a number.</em> <code>v2</code> is running, <code>v3</code> is a diff you can read, both get
+            scored against your evals, and the loser never ships. When something breaks, you roll back to <code>v2</code>
+            in one line. The prompt is now <strong>a decision you can see and reverse</strong> &mdash; not a mystery.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Pull the prompt out of the code. <span class="pill setup">setup</span></h2>
+        <p>
+          The first move is the one that unlocks all the others, and it takes five minutes: get the prompt out of the
+          function body and into its own file. A string wedged in <code>api/chat.js</code> can&rsquo;t be diffed cleanly,
+          can&rsquo;t be swapped without a redeploy of logic, and can&rsquo;t be pointed at by a version number. A
+          standalone file can. Ashi&rsquo;s modular instinct: separate the <em>thing that changes often</em> (the words)
+          from the <em>thing that changes rarely</em> (the plumbing).
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompts/support.js — the words live here now, not in the route</span></div>
+<pre><span class="cmt">// prompts/support.js — one export per version, plain text</span>
+<span class="key">export</span> <span class="key">const</span> SUPPORT_V2 = <span class="str">`You are Acme's support assistant.
+Answer only from the policies provided. If you don't know,
+say so — never invent a policy. Keep replies concise.`</span>;
+
+<span class="cmt">// api/chat.js — the plumbing imports the words</span>
+<span class="key">import</span> { SUPPORT_V2 } <span class="key">from</span> <span class="str">'../prompts/support.js'</span>;
+
+<span class="key">const</span> reply = <span class="key">await</span> client.messages.create({
+  model:  <span class="str">'claude-sonnet-5'</span>,
+  system: SUPPORT_V2,                 <span class="hit">// ← swappable, not buried</span>
+  messages: [{ role: <span class="str">'user'</span>, content: userText }],
+});</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Bonus you get for free: a stable system prompt in its own constant is the exact <b>cacheable prefix</b> from
+          Vol. 30. Pull it out once and you&rsquo;ve set up versioning <em>and</em> teed up a ~90%-off cache marker on the
+          same line. Two wins, one refactor.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Give it a version number. <span class="pill setup">setup</span></h2>
+        <p>
+          Now name your versions on purpose. Not <code>promptFinal</code>, <code>promptFinal2</code>,
+          <code>promptFinalREAL</code> &mdash; a real integer that goes up by one every time the words change. A registry
+          object with a single <code>ACTIVE</code> pointer means switching which prompt runs is a <em>one-line</em> change,
+          and everything downstream (logs, evals, rollback) can refer to a version by name instead of by &ldquo;the one I
+          think I deployed on Tuesday.&rdquo;
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompts/support.js — a registry with one active pointer</span></div>
+<pre><span class="key">export</span> <span class="key">const</span> PROMPTS = {
+  <span class="str">'v1'</span>: <span class="str">`...the original...`</span>,
+  <span class="str">'v2'</span>: <span class="str">`...concise, won't invent policies...`</span>,   <span class="cmt">// current champion</span>
+  <span class="str">'v3'</span>: <span class="str">`...v2 + always confirm order # before cancel...`</span>,
+};
+
+<span class="key">export</span> <span class="key">const</span> ACTIVE = <span class="str">'v2'</span>;   <span class="hit">// ← the ONLY line you change to switch prompts</span>
+
+<span class="cmt">// api/chat.js</span>
+<span class="key">import</span> { PROMPTS, ACTIVE } <span class="key">from</span> <span class="str">'../prompts/support.js'</span>;
+<span class="key">const</span> system = PROMPTS[ACTIVE];   <span class="cmt">// resolve the active version at request time</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Version the <b>words</b>, not the whole call. Model name, temperature, and max-tokens are their own knobs
+          (Vol. 25) &mdash; keep them separate so a prompt diff is <em>only</em> a prompt diff. If you change the model and
+          the prompt in the same version, you&rsquo;ll never know which one moved the metric.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Log which version answered. <span class="pill setup">setup</span></h2>
+        <p>
+          Remember the one structured log line from Vol. 34? Add one field to it: <code>promptVersion</code>. This is the
+          hinge that connects everything &mdash; the day an answer goes bad, the trace tells you <em>which prompt version
+          produced it.</em> Without this field, a regression is a mystery; with it, it&rsquo;s a lookup. Cal&rsquo;s
+          notebook habit: write down which experiment you were running, or you can&rsquo;t trust the result.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — stamp the version into the trace from Vol. 34</span></div>
+<pre>console.log(JSON.stringify({
+  rid,                              <span class="cmt">// the request ID from Vol. 34</span>
+  promptVersion: ACTIVE,            <span class="hit">// ← the one field that ties a bad answer to a prompt</span>
+  input:  userText.slice(<span class="amb">0</span>, <span class="amb">400</span>),
+  output: reply.content[<span class="amb">0</span>].text.slice(<span class="amb">0</span>, <span class="amb">400</span>),
+  tokens: reply.usage.input_tokens + reply.usage.output_tokens,
+}));
+<span class="cmt">// now "every 👎 since Tuesday" and "every 👎 on v3" are the same one-line filter</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Combine this with the Vol. 34 thumbs. Filter your feedback by <code>promptVersion</code> and you get the
+          single most useful chart in the whole stack: <b>👎-rate per prompt version.</b> If v3&rsquo;s thumbs-down rate is
+          higher than v2&rsquo;s, you have proof the &ldquo;improvement&rdquo; made things worse &mdash; before you have to
+          argue about it.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Diff two versions like a PR. <span class="pill diff">diff</span></h2>
+        <p>
+          Because the prompt is now a file, <code>git diff</code> just works &mdash; and a prompt diff is one of the most
+          clarifying things you can look at. It forces the vague &ldquo;I made it better&rdquo; into a concrete
+          &ldquo;I added this line and removed that one.&rdquo; Half the time you&rsquo;ll catch a silent regression
+          you didn&rsquo;t mean to make: you added the cancel rule <em>and accidentally deleted &ldquo;be concise,&rdquo;</em>
+          and now every answer is a paragraph longer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">git diff prompts/support.js — v2 → v3, read it like a code review</span></div>
+<pre>  You are Acme's support assistant.
+  Answer only from the policies provided. If you don't
+  know, say so — never invent a policy.
+<span class="del">- Keep replies concise.</span>                        <span class="cmt">// ← wait, why did this leave?</span>
+<span class="add">+ Before cancelling an order, always confirm the</span>
+<span class="add">+ order number back to the user first.</span>          <span class="cmt">// ← the intended change</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Make prompt changes a real <b>pull request</b>, even solo. Open a branch, edit the version, and read the
+          diff before you merge. It takes two minutes and it&rsquo;s the cheapest quality gate you own &mdash; you review
+          the words that run your product with the same eyes you&rsquo;d give a database migration.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Score the challenger against evals. <span class="pill test">test</span></h2>
+        <p>
+          Here&rsquo;s where Vol. 24 pays off. You built a little eval harness &mdash; golden cases, a judge, a pass bar.
+          Now point it at <em>both</em> prompt versions and let it settle the argument with a number. Run v2 through the
+          ten cases, run v3 through the same ten, compare the scores. &ldquo;Is v3 better?&rdquo; stops being a taste
+          debate and becomes <code>v3: 9/10 vs v2: 8/10</code> &mdash; or, just as valuable, <code>v3: 7/10</code>, which
+          tells you the improvement quietly broke two things.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">eval/ab.js — same golden cases, both prompts, one scoreboard</span></div>
+<pre><span class="key">import</span> { PROMPTS } <span class="key">from</span> <span class="str">'../prompts/support.js'</span>;
+<span class="key">import</span> { GOLDEN, judge } <span class="key">from</span> <span class="str">'./harness.js'</span>;   <span class="cmt">// from Vol. 24</span>
+
+<span class="key">async</span> <span class="key">function</span> score(version) {
+  <span class="key">let</span> pass = <span class="amb">0</span>;
+  <span class="key">for</span> (<span class="key">const</span> c <span class="key">of</span> GOLDEN) {
+    <span class="key">const</span> out = <span class="key">await</span> run(PROMPTS[version], c.input);
+    <span class="key">if</span> (<span class="key">await</span> judge(out, c.expect)) pass++;   <span class="cmt">// same judge for both — fair fight</span>
+  }
+  <span class="key">return</span> pass;
+}
+
+console.log(<span class="str">'v2'</span>, <span class="key">await</span> score(<span class="str">'v2'</span>));   <span class="out">// v2 8</span>
+console.log(<span class="str">'v3'</span>, <span class="key">await</span> score(<span class="str">'v3'</span>));   <span class="hit">// v3 9  ← ship it</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>A one-case win is noise. Models are non-deterministic (Vol. 34), so run each version <b>a few times</b> and
+          compare the totals, not a single lucky pass. And make sure a case you just fixed by hand is <em>in</em> the
+          golden set &mdash; otherwise you&rsquo;re grading v3 on a test that doesn&rsquo;t include the thing you changed
+          it for.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>A/B it on real traffic. <span class="pill test">test</span></h2>
+        <p>
+          Evals catch the obvious wins and the obvious breaks, but the golden set is small and the real world is weird
+          (that&rsquo;s the whole reason Vol. 34 exists). So for a change you&rsquo;re unsure about, let real traffic vote:
+          send a slice of users to v3, keep the rest on v2, and compare the thumbs-down rate. Bailey&rsquo;s prototyping
+          move &mdash; it&rsquo;s a coin flip on the <code>rid</code>, five lines, no experimentation platform required.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">api/chat.js — 10% of traffic gets the challenger, logged by version</span></div>
+<pre><span class="cmt">// deterministic split so the same user stays on one version</span>
+<span class="key">const</span> onChallenger = hash(userId) % <span class="amb">10</span> === <span class="amb">0</span>;   <span class="cmt">// ~10% see v3</span>
+<span class="key">const</span> version = onChallenger ? <span class="str">'v3'</span> : <span class="str">'v2'</span>;
+
+<span class="key">const</span> reply = <span class="key">await</span> client.messages.create({
+  system: PROMPTS[version],
+  messages: [{ role: <span class="str">'user'</span>, content: userText }],
+});
+console.log(JSON.stringify({ rid, promptVersion: version }));  <span class="hit">// compare 👎-rate per version later</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Start the challenger slice <b>small</b> &mdash; 5-10%. If v3 has a problem your evals missed, only a handful
+          of users hit it, and your per-version 👎-rate (move #4) surfaces it fast. This is a canary, not a coin toss:
+          you&rsquo;re risking a sliver of traffic to buy proof, then rolling the winner out wide.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Ship the winner behind a flag. <span class="pill ship">ship</span></h2>
+        <p>
+          When v3 wins &mdash; better eval score, lower 👎-rate on the canary &mdash; promote it. But do it through a flag,
+          not a code edit, so the switch is <em>config, not a deploy.</em> An environment variable that sets
+          <code>ACTIVE</code> means promoting v3 (or reverting to v2) is a dashboard toggle that takes effect on the next
+          request, with no build, no wait, and &mdash; crucially &mdash; the ability to flip it back the second something
+          looks wrong.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">the active version is config, so promoting = flipping an env var</span></div>
+<pre><span class="cmt">// prompts/support.js — active version comes from the environment</span>
+<span class="key">export</span> <span class="key">const</span> ACTIVE = process.env.PROMPT_VERSION ?? <span class="str">'v2'</span>;   <span class="hit">// default = last known-good</span>
+
+<span class="cmt">// promote v3 with zero code change:</span>
+<span class="prompt">$</span> vercel env add PROMPT_VERSION v3 production
+<span class="prompt">$</span> vercel env pull        <span class="out"># takes effect next request — no rebuild of logic</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>The flag defaulting to <code>'v2'</code> matters more than it looks: if the env var is ever missing,
+          empty, or fat-fingered, you fall back to the <b>last known-good version</b>, not to a crash or an undefined
+          prompt. A safe default is the difference between &ldquo;a config typo&rdquo; and &ldquo;the bot answered with an
+          empty system prompt for an hour.&rdquo;</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Roll back in one line. <span class="pill ship">ship</span></h2>
+        <p>
+          This is the move that makes all the risk of shipping a new prompt disappear. Because &ldquo;which prompt is
+          live&rdquo; is one config value, and every old version still sits in the registry, undoing a bad prompt is
+          <em>instant</em> &mdash; not &ldquo;revert the commit, wait for the build, redeploy, pray.&rdquo; The moment your
+          per-version 👎-rate spikes or an eval alarm from Vol. 34 fires, you flip the flag back and the whole app returns
+          to the last version you trusted, on the very next request.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">v3 is misbehaving in the wild — undo it right now</span></div>
+<pre><span class="prompt">$</span> vercel env rm PROMPT_VERSION production   <span class="cmt"># or set it back to v2</span>
+<span class="out">✓ removed. ACTIVE falls back to 'v2' — the known-good champion</span>
+
+<span class="hit"># next request is served by v2 again. no rebuild, no scrolling</span>
+<span class="hit"># through a 400-line string trying to remember what you changed.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Never delete an old version. Keep <code>v1</code>, <code>v2</code>, <code>v3</code> all in the registry
+          forever &mdash; they cost nothing and each one is a <b>safe harbour</b> you can jump back to. A prompt you can
+          roll back to in one line is a prompt you can afford to be brave with. That&rsquo;s the whole trade: cheap undo
+          buys bold iteration.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Keep a changelog the model can&rsquo;t. <span class="pill diff">diff</span></h2>
+        <p>
+          The last move is the one future-you will thank you for. A version number tells you <em>that</em> the prompt
+          changed; a one-line changelog tells you <em>why.</em> Three months from now you&rsquo;ll stare at v3 and have no
+          memory of what problem it solved &mdash; unless you left a note. Tie each version to the eval or the trace that
+          justified it, and your prompt history becomes a story you can actually read: every line earned its place because
+          a real answer went wrong.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompts/CHANGELOG.md — one line per version, tied to its reason</span></div>
+<pre><span class="cmt"># Support prompt — changelog</span>
+
+<span class="key">## v3</span> — 2026-07-07
+<span class="add">+ Confirm order # before cancelling.</span>
+  <span class="cmt">why: trace #c7d — bot cancelled the wrong order (Vol. 34).</span>
+  <span class="cmt">eval: 9/10 (was 8/10). canary 👎-rate 2% vs v2 3%. promoted.</span>
+
+<span class="key">## v2</span> — 2026-06-21
+<span class="add">+ Never invent a policy; say "I don't know".</span>
+  <span class="cmt">why: the "ships to Canada" hallucination. still the fallback.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>This closes the loop that started in Vol. 34. A bad answer became a trace, the trace became an eval case,
+          the eval case justified a prompt version, and the changelog remembers all of it. <b>Observe → catch → eval →
+          new prompt version → measured → shipped or rolled back.</b> That&rsquo;s not prompt-whacking anymore &mdash;
+          that&rsquo;s a product with a memory.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- WHEN-TO TABLE -->
+    <article class="hack">
+      <div class="nbr">✳</div>
+      <div class="body">
+        <h2>When is a prompt change actually &ldquo;a new version&rdquo;? <span class="pill read">read</span></h2>
+        <p>
+          Not every keystroke needs a version bump &mdash; that way lies a registry with forty entries and no signal. The
+          line is simple: <strong>if it could change behaviour a user would notice, it&rsquo;s a version.</strong> If
+          it&rsquo;s a typo fix in a comment nobody reads, it isn&rsquo;t. Here&rsquo;s the quick call.
+        </p>
+        <table class="ptable">
+          <thead>
+            <tr><th>The change</th><th>New version?</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">Added / removed a rule</td><td class="yes">yes</td><td>Changes what it does — must be scored against evals before it ships.</td></tr>
+            <tr><td class="trait">Reworded a rule for clarity</td><td class="yes">yes</td><td>Wording <em>is</em> the behaviour with an LLM — a subtle reword can move the metric.</td></tr>
+            <tr><td class="trait">Changed tone / persona</td><td class="yes">yes</td><td>Users feel tone immediately; A/B it (move #7) before going wide.</td></tr>
+            <tr><td class="trait">Fixed a typo in a comment</td><td class="no">no</td><td>No behavioural surface — just commit it.</td></tr>
+            <tr><td class="trait">Bumped the model or temperature</td><td class="no">no*</td><td>Real change, but it&rsquo;s a <em>different knob</em> (Vol. 25) — version it separately so the diff stays clean.</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">when in doubt, bump the number — versions are free, mystery regressions aren&rsquo;t.</p>
+      </div>
+    </article>
+
+    <!-- MOBILE MOCK -->
+    <div class="phone-wrap" aria-label="mobile mock of a prompt registry">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="s-head">
+            <div class="k">acme-support · prompt registry</div>
+            <div class="t">Which version is live</div>
+          </div>
+          <div class="s-body">
+            <div class="label-mini">active pointer · one line</div>
+            <div class="lrow live">
+              <div class="lt">v2 — concise, no invented policies</div>
+              <div class="lm">👎 3% · eval 8/10 · known-good</div>
+              <div class="lx on">● LIVE — 90% of traffic</div>
+            </div>
+            <div class="lrow">
+              <div class="lt">v3 — + cancel-confirm rule</div>
+              <div class="lm">👎 2% · eval 9/10 · canary</div>
+              <div class="lx off">◐ canary — 10% of traffic</div>
+            </div>
+            <div class="lrow rolled">
+              <div class="lt">v3&Prime; — stricter refusals</div>
+              <div class="lm">over-refused · eval 6/10</div>
+              <div class="lx back">↩ rolled back · kept in registry</div>
+            </div>
+            <div class="metric">
+              <div class="mv">1 line</div>
+              <div class="ml">to promote · to roll back</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-cap">
+        <p>This is what &ldquo;the prompt is the product&rdquo; looks like from your phone: three versions in the registry,
+        one pointer deciding which is live, a canary earning its promotion, and a loser that was rolled back in a single
+        line &mdash; <strong>but never deleted.</strong> The most important file in your app finally has a version, a
+        score, and an undo button.</p>
+        <p class="scribble">you'd never ship code with no version. stop shipping prompts that way.</p>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>The one-page cheat sheet ✂</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Pull it out</h4>
+          <ul>
+            <li><code>prompts/support.js</code><span>words, not plumbing</span></li>
+            <li><code>PROMPTS = { v1, v2 }</code><span>a registry object</span></li>
+            <li><code>ACTIVE = 'v2'</code><span>one pointer to switch</span></li>
+            <li><code>system: PROMPTS[ACTIVE]</code><span>resolve at request time</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Prove it</h4>
+          <ul>
+            <li><code>git diff</code><span>read it like a PR</span></li>
+            <li><code>score('v2') vs score('v3')</code><span>same golden cases</span></li>
+            <li><code>run each 3×</code><span>a one-case win is noise</span></li>
+            <li><code>promptVersion in logs</code><span>👎-rate per version</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Ship it safe</h4>
+          <ul>
+            <li><code>hash(id) % 10 === 0</code><span>10% canary</span></li>
+            <li><code>PROMPT_VERSION=v3</code><span>flag, not a deploy</span></li>
+            <li><code>?? 'v2'</code><span>safe default = known-good</span></li>
+            <li><code>env rm → v2</code><span>roll back in one line</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Remember it</h4>
+          <ul>
+            <li><code>CHANGELOG.md</code><span>one line per version</span></li>
+            <li><code>why: trace #c7d</code><span>tie it to the reason</span></li>
+            <li><code>keep old versions</code><span>each is a safe harbour</span></li>
+            <li><code>bump if behaviour moves</code><span>versions are free</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 35 · prompt as code</small>
+      </div>
+      <div class="end">
+        built on the <code>pull out → version → diff → score → ship → roll back</code> loop<br />
+        the prompt is the product · give it a number · keep the receipt<br />
+        <strong>The Mess is the Method.</strong>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var board = document.getElementById('board');
+      if (!board) return;
+
+      var cards = Array.prototype.slice.call(document.querySelectorAll('.ver-card'));
+      var runBtn = document.getElementById('runBtn');
+      var verdict = document.getElementById('verdict');
+      var scored = document.getElementById('scored');
+      var svA = document.getElementById('svA'), svB = document.getElementById('svB');
+      var slB = document.getElementById('slB');
+      var scoreA = document.getElementById('scoreA'), scoreB = document.getElementById('scoreB');
+      var marks = Array.prototype.slice.call(document.querySelectorAll('.case-row .mark'));
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      var current = 'v3-cancel-guard';
+
+      // each challenger: the label, the per-case results for v2 (A) and v3 (B),
+      // and the verdict when the bench finishes. v2 is the fixed champion baseline.
+      // marks arrays are [c1,c2,c3,c4,c5] · true = pass
+      var A = [true, true, true, true, false];   // v2 champion: 4/5 — misses the cancel-confirm case
+      var challengers = {
+        'v3-cancel-guard': {
+          tag: 'v3', name: 'cancel-confirm',
+          B: [true, true, true, false, true],    // fixes cancel, but dropped "concise" → fails c4
+          a: 4, b: 4, win: 'tie',
+          line: '<b>A wash — and that&rsquo;s the point.</b> v3 fixed the cancel case (c1) but dropping &ldquo;be concise&rdquo; broke the length check (c4). Net <code>4–4</code>. The eval caught a silent regression the diff (move #5) would&rsquo;ve warned you about. Add the concise line back and re-run.'
+        },
+        'v3-tone': {
+          tag: "v3'", name: 'warmer tone',
+          B: [true, true, true, false, false],   // chattier → fails concise AND fumbles a strict cancel
+          a: 4, b: 3, win: 'a',
+          line: '<b>Champion holds.</b> The warmer, chattier tone reads nicely but blows the concise check and rambles past the cancel confirmation. <code>v2 4 – v3&rsquo; 3</code>. Ship this and your 👎-rate on long answers climbs. Keep v2 live.'
+        },
+        'v3-strict': {
+          tag: 'v3″', name: 'stricter refusals',
+          B: [true, true, true, true, false],    // never invents policy, but over-refuses the real cancel
+          a: 4, b: 4, win: 'tie',
+          line: '<b>Trades one flaw for another.</b> Stricter rules nail the &ldquo;never invent a policy&rdquo; cases, but now it over-refuses a legitimate cancel (c5) — the exact Vol. 33 failure in reverse. <code>4–4</code>, different holes. Not a clean win; iterate before you canary.'
+        }
+      };
+
+      function reset() {
+        marks.forEach(function (m) {
+          m.classList.remove('pass', 'fail');
+          m.classList.add('pending');
+          m.textContent = m.classList.contains('a') ? 'v2' : 'v3';
+        });
+        svA.textContent = '—'; svB.textContent = '—';
+        scoreA.classList.remove('winner'); scoreB.classList.remove('winner');
+        scored.textContent = 'not run';
+        var c = challengers[current];
+        slB.textContent = c.tag + ' ' + c.name;
+      }
+
+      function pickCard(card) {
+        cards.forEach(function (x) { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); });
+        card.classList.add('sel'); card.setAttribute('aria-pressed', 'true');
+        current = card.getAttribute('data-c');
+        reset();
+        verdict.innerHTML = '<b>Challenger set to ' + challengers[current].tag + '.</b> Hit run to score it against the same ten golden cases v2 already passes.';
+      }
+
+      function fillMark(m, pass, whichLabel) {
+        m.classList.remove('pending');
+        m.classList.add(pass ? 'pass' : 'fail');
+        m.textContent = pass ? '✓' : '✕';
+      }
+
+      function run() {
+        var c = challengers[current];
+        runBtn.classList.add('running');
+        runBtn.textContent = 'running evals…';
+        reset();
+        scored.textContent = 'running…';
+
+        // reveal case-by-case for a real "grading" feel
+        var pairs = [];
+        for (var i = 0; i < 5; i++) {
+          pairs.push({ m: marks[i * 2], pass: A[i] });        // v2 column
+          pairs.push({ m: marks[i * 2 + 1], pass: c.B[i] });  // v3 column
+        }
+
+        var step = reduced ? 0 : 130;
+        pairs.forEach(function (p, idx) {
+          setTimeout(function () { fillMark(p.m, p.pass); }, step * idx);
+        });
+
+        setTimeout(function () {
+          svA.textContent = c.a + '/5';
+          svB.textContent = c.b + '/5';
+          scored.textContent = '10 evals done';
+          scoreA.classList.toggle('winner', c.win === 'a');
+          scoreB.classList.toggle('winner', c.win === 'b');
+          verdict.innerHTML = c.line;
+          runBtn.classList.remove('running');
+          runBtn.textContent = '▶ run A/B again';
+        }, step * pairs.length + (reduced ? 0 : 180));
+      }
+
+      cards.forEach(function (card) {
+        card.addEventListener('click', function () { pickCard(card); });
+      });
+      runBtn.addEventListener('click', run);
+
+      reset();
+    })();
+  </script>
+</body>
+</html>

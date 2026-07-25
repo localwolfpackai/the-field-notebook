@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Same Prompt, Two Souls — Ten Moves to Read (and Steer) How Claude and Gemini Design the Same UI · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: feed Claude and Gemini the exact same prompt and you get two different-looking apps. One leans warm, editorial, roomy; the other leans dense, gridded, information-first. Ten moves to read the difference — and steer either one to your taste with the knobs they actually respond to." />
+  <meta property="og:title" content="Same Prompt, Two Souls — How Claude and Gemini Design Differently" />
+  <meta property="og:description" content="Two models, one prompt, two distinct design personalities. Read the warmth-vs-density split, learn the words each model responds to, and steer either to your taste. Ten moves, real prompts, a live knob you can drag." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+
+      /* model identity — Claude warm clay, Gemini cool blue */
+      --claude:     oklch(0.63 0.13 47);
+      --claude-wash:oklch(0.95 0.045 60);
+      --claude-ink: oklch(0.45 0.13 47);
+      --gem:        oklch(0.55 0.16 264);
+      --gem-wash:   oklch(0.94 0.05 264);
+      --gem-ink:    oklch(0.42 0.16 264);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.read     { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.steer    { background: var(--claude-wash); color: var(--claude-ink); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "warmth knob" demo ─────────────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .knob-wrap { padding: 1.1rem 1.15rem 0.4rem; }
+    .knob-row {
+      display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
+      margin-bottom: 0.9rem;
+    }
+    .knob-row .lab {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+    }
+    .knob-row input[type="range"] {
+      flex: 1; min-width: 140px;
+      accent-color: var(--accent);
+      height: 4px;
+    }
+    .knob-row .end {
+      font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.78rem;
+    }
+    .knob-row .end.claude { color: var(--claude-ink); }
+    .knob-row .end.gem    { color: var(--gem-ink); }
+
+    /* the morphing preview card */
+    .render {
+      margin: 0 1.15rem 0.4rem;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: var(--rb, 1px) solid var(--rc, oklch(0.88 0.02 80));
+      background: var(--rbg, var(--paper));
+      transition: border-radius 0.4s var(--ease-paper), border-color 0.4s, background 0.4s;
+    }
+    .render .r-head {
+      padding: var(--rpad, 1.4rem) var(--rpadx, 1.5rem) calc(var(--rpad, 1.4rem) * 0.7);
+      background: var(--rhead, linear-gradient(135deg, var(--claude) 0%, var(--amber) 120%));
+      color: oklch(0.99 0 0);
+      transition: padding 0.4s var(--ease-paper);
+    }
+    .render .r-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .render .r-head .t {
+      font-family: var(--rfont, 'Geist'), serif;
+      font-weight: 700; font-size: var(--rtitle, 1.5rem);
+      margin-top: 0.2rem; line-height: 1.1;
+      transition: font-size 0.4s var(--ease-paper);
+    }
+    .render .r-body {
+      padding: var(--rpad, 1.4rem) var(--rpadx, 1.5rem);
+      display: grid; gap: var(--rgap, 0.9rem);
+      transition: padding 0.4s var(--ease-paper), gap 0.4s;
+    }
+    .render .r-stat {
+      display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;
+      align-items: baseline;
+      padding-bottom: var(--rgap, 0.9rem);
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+    }
+    .render .r-stat:last-child { border-bottom: none; padding-bottom: 0; }
+    .render .r-stat .nm { font-size: var(--rtext, 0.95rem); color: var(--ink-soft); }
+    .render .r-stat .v {
+      font-family: 'Geist Mono', monospace; font-weight: 600;
+      font-size: var(--rtext, 0.95rem); color: var(--ink);
+    }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line { font-size: 0.86rem; color: var(--ink-soft); }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .render, .render * { animation: none; transition: none; }
+    }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col {
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1rem 1rem;
+    }
+    .compare .col.claude { border-top: 3px solid var(--claude); }
+    .compare .col.gemini { border-top: 3px solid var(--gem); }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .compare .col.claude h4 { color: var(--claude-ink); }
+    .compare .col.gemini h4 { color: var(--gem-ink); }
+    .compare .col h4 .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .compare .col.claude h4 .dot { background: var(--claude); }
+    .compare .col.gemini h4 .dot { background: var(--gem); }
+    .compare .col p { font-size: 0.92rem; color: var(--ink-soft); }
+    .compare .col ul { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.88rem; color: var(--ink-soft); }
+    .compare .col li { margin-top: 0.25rem; }
+
+    /* ── Decision / trait table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+      vertical-align: top;
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.trait { font-weight: 600; color: var(--ink); }
+    .ptable td.cl { color: var(--claude-ink); }
+    .ptable td.ge { color: var(--gem-ink); }
+
+    /* ── Word-bank chips ─────────────────────── */
+    .bank { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .bank { grid-template-columns: 1fr; } }
+    .bank .set { background: var(--paper); border: 1px solid oklch(0.88 0.02 80); border-radius: var(--radius-md); padding: 0.85rem 0.95rem; }
+    .bank .set h5 {
+      font-family: 'Geist Mono', monospace; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.55rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .bank .set.warm h5 { color: var(--claude-ink); }
+    .bank .set.dense h5 { color: var(--gem-ink); }
+    .bank .set h5 .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .bank .set.warm h5 .dot { background: var(--claude); }
+    .bank .set.dense h5 .dot { background: var(--gem); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+      padding: 0.22em 0.6em; border-radius: 999px;
+      background: var(--paper-deep); color: var(--ink-soft);
+    }
+    .bank .set.warm .chip { background: var(--claude-wash); color: var(--claude-ink); }
+    .bank .set.dense .chip { background: var(--gem-wash); color: var(--gem-ink); }
+
+    /* ── Mobile mock (two phones) ─────────────────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 1.2rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 720px) { .phone-wrap { grid-template-columns: 1fr 1fr; } .phone-wrap .phone-cap { grid-column: 1 / -1; } }
+    @media (max-width: 460px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .phone {
+      width: 192px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 264 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      height: 380px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 18px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 11px 11px;
+      z-index: 3;
+    }
+    .phone .tab {
+      position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+      font-family: 'Geist Mono', monospace; font-size: 0.5rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.12em 0.55em; border-radius: 999px; z-index: 4;
+      color: oklch(0.99 0 0);
+    }
+    .phone.cl .tab { background: var(--claude); }
+    .phone.ge .tab { background: var(--gem); }
+
+    /* Claude phone — warm, roomy, editorial */
+    .phone.cl .s-head {
+      background: linear-gradient(140deg, var(--claude) 0%, var(--amber) 130%);
+      padding: 1.9rem 1.2rem 1.1rem; color: oklch(0.99 0 0);
+    }
+    .phone.cl .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.15rem; line-height: 1.15; }
+    .phone.cl .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+    .phone.cl .s-body { padding: 1.1rem 1.2rem; display: grid; gap: 1rem; }
+    .phone.cl .s-card { border-bottom: 1px solid oklch(0.92 0.015 80); padding-bottom: 0.9rem; }
+    .phone.cl .s-card:last-child { border-bottom: none; }
+    .phone.cl .s-card .nm { font-size: 0.78rem; color: var(--ink-soft); }
+    .phone.cl .s-card .v { font-family: 'Geist', serif; font-weight: 700; font-size: 1.35rem; color: var(--ink); margin-top: 0.1rem; }
+
+    /* Gemini phone — dense, gridded, data-first */
+    .phone.ge .s-head {
+      background: linear-gradient(140deg, var(--gem) 0%, var(--accent) 130%);
+      padding: 1.5rem 0.85rem 0.7rem; color: oklch(0.99 0 0);
+    }
+    .phone.ge .s-head .t { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem; }
+    .phone.ge .s-head .k { font-family: 'Geist Mono', monospace; font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
+    .phone.ge .s-grid { padding: 0.6rem 0.7rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+    .phone.ge .s-tile { background: var(--paper-alt); border: 1px solid oklch(0.9 0.015 80); border-radius: 7px; padding: 0.45rem 0.5rem; }
+    .phone.ge .s-tile .nm { font-family: 'Geist Mono', monospace; font-size: 0.48rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-mute); }
+    .phone.ge .s-tile .v { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 0.95rem; color: var(--ink); margin-top: 0.1rem; }
+    .phone.ge .s-tile .d { font-size: 0.46rem; color: var(--sage); font-family: 'Geist Mono', monospace; margin-top: 0.05rem; }
+    .phone.ge .s-row { padding: 0 0.7rem; display: grid; gap: 0.3rem; margin-top: 0.4rem; }
+    .phone.ge .s-line { display: grid; grid-template-columns: 1fr auto; font-family: 'Geist Mono', monospace; font-size: 0.55rem; color: var(--ink-soft); padding: 0.22rem 0; border-bottom: 1px solid oklch(0.94 0.01 80); }
+
+    .phone-cap { max-width: 40ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.10 264 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 27</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;27</span>
+        <span class="tag">design</span>
+        <span class="tag">models</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Same prompt, two <span class="accent">souls</span> &mdash; how Claude and Gemini design the very same screen differently.</h1>
+
+      <p class="deck">
+        Type one identical prompt into Claude and Gemini and you don't get one app twice &mdash;
+        you get two. One comes back <strong>warm, roomy, editorial</strong>; the other comes back
+        <strong>dense, gridded, data-first</strong>. Neither is wrong. Ten moves to read the split,
+        learn the words each model actually responds to, and steer either one to your taste.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Artifacts-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude Artifacts" />
+        <img src="https://img.shields.io/badge/Gemini-Canvas-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini Canvas" />
+        <img src="https://img.shields.io/badge/same_prompt-two_souls-8250DF?style=flat-square&logo=figma&logoColor=white" alt="same prompt two souls" />
+        <img src="https://img.shields.io/badge/your_taste-the_tiebreaker-2EA043?style=flat-square&logo=tailwindcss&logoColor=white" alt="your taste is the tiebreaker" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~10 min</span>
+        <span><b>Surface</b> · one prompt, two outputs, side by side</span>
+        <span><b>Assumes</b> · you've gotten "fine but generic" from both</span>
+        <span><b>Pairs with</b> · Vol. 11 (Claude Design) · Vol. 12 (PageConfig)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          I ran an experiment that should be boring and isn't: I pasted the <em>exact</em> same
+          prompt &mdash; "build me a dashboard for a coffee subscription business" &mdash; into
+          Claude and into Gemini, changed nothing, and put the two results next to each other.
+          They didn't look like two versions of one idea. They looked like two designers with
+          different temperaments solving the same brief.
+        </p>
+        <p>
+          Claude gave me air. Big editorial headline, one metric per row, serif numerals you could
+          read across the room, a palette that felt like a print magazine. Gemini gave me a
+          cockpit. A tight grid of stat tiles, deltas in green, monospace everywhere, six numbers
+          where Claude showed three. Claude wants you to <em>feel</em> the data; Gemini wants you to
+          <em>scan</em> it.
+        </p>
+        <p>
+          That difference is a tool, not a verdict. Once you can name the split &mdash; warmth vs.
+          density &mdash; you stop fighting whichever model you're in and start <em>steering</em> it.
+          Ten moves below, each with the trait, a real prompt phrase, and a try-it. The panel under
+          this intro is live: drag one slider from Claude's instincts to Gemini's and watch the same
+          card morph between the two souls.
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Run the same prompt twice — the experiment itself</a></li>
+          <li><a href="#h2">Name the split: warmth vs. density</a></li>
+          <li><a href="#h3">Read the padding — it's the loudest tell</a></li>
+          <li><a href="#h4">Read the type — serif editorial vs. mono data</a></li>
+          <li><a href="#h5">Read the color — earthy warmth vs. signal blue</a></li>
+          <li><a href="#h6">Steer Claude toward data when you need density</a></li>
+          <li><a href="#h7">Steer Gemini toward warmth when you need soul</a></li>
+          <li><a href="#h8">Hand both a token spec — kill the house style</a></li>
+          <li><a href="#h9">Pick the right model for the job, not the hype</a></li>
+          <li><a href="#h10">Steal from both — the remix is the move</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="warmth-to-density knob demo">
+      <div class="demo-bar">
+        <span>one card · drag from Claude's soul to Gemini's</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-row">
+          <span class="end claude">◀ Claude · warm</span>
+          <input id="knob" type="range" min="0" max="100" value="15" aria-label="warmth to density" />
+          <span class="end gem">dense · Gemini ▶</span>
+        </div>
+      </div>
+
+      <div class="render" id="render">
+        <div class="r-head">
+          <div class="k" id="r-k">coffee co · monthly</div>
+          <div class="t" id="r-t">Subscription Overview</div>
+        </div>
+        <div class="r-body" id="r-body"><!-- filled by JS --></div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>This is Claude's instinct.</b> Roomy padding, a serif headline, three metrics with breathing space — designed to be felt, not just scanned.</span>
+        <span class="hint">drag me right ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Run the same prompt twice &mdash; the cheapest design study you'll ever do. <span class="pill design">design</span></h2>
+        <p>
+          Before you theorize about which model is "better at design," do the experiment. Open
+          Claude (Artifacts) and Gemini (Canvas) side by side, paste the <em>identical</em> prompt
+          into both, and change nothing. The point isn't to crown a winner &mdash; it's to see, in
+          your own brief, how each model fills the gaps you left open. Every prompt has a thousand
+          unstated decisions; the model's defaults are its personality, and this is how you meet it.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">prompt.txt &mdash; paste the same thing into both, verbatim</span></div>
+<pre><span class="cmt"># The control prompt. No design adjectives on purpose —</span>
+<span class="cmt"># we want each model's *default* taste, not ours yet.</span>
+Build a dashboard for a coffee subscription business.
+Show this month's revenue, active subscribers, and churn.
+Make it look good.</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Run it now with <em>your</em> product. Screenshot both. Put them side by side in a slide.
+          The gap between the two screenshots is the entire lesson &mdash; and it's worth more than
+          any blog post (this one included) telling you what the gap "should" be.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Name the split &mdash; almost every difference rolls up to <em>warmth vs. density</em>. <span class="pill read">read</span></h2>
+        <p>
+          Once you've stared at a few side-by-sides, a single axis explains most of what you see.
+          Claude defaults toward <strong>warmth</strong>: generous whitespace, fewer elements per
+          screen, editorial type, a human tone. Gemini defaults toward <strong>density</strong>:
+          tight grids, more data visible at once, functional type, a tool-like tone. Same brief,
+          opposite ends of one dial.
+        </p>
+        <table class="ptable" aria-label="warmth versus density traits">
+          <thead>
+            <tr><th>Trait</th><th>Claude leans…</th><th>Gemini leans…</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="trait">Whitespace</td><td class="cl">generous, roomy</td><td class="ge">tight, efficient</td></tr>
+            <tr><td class="trait">Info per screen</td><td class="cl">few, focused</td><td class="ge">many, scannable</td></tr>
+            <tr><td class="trait">Type voice</td><td class="cl">editorial / serif accents</td><td class="ge">functional / mono</td></tr>
+            <tr><td class="trait">Default mood</td><td class="cl">a magazine</td><td class="ge">a cockpit</td></tr>
+            <tr><td class="trait">Reads as</td><td class="cl">made by a person</td><td class="ge">built by a system</td></tr>
+          </tbody>
+        </table>
+        <p class="scribble">neither end is "correct." a hospital monitor wants density. a landing page wants warmth.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Read the padding first &mdash; spacing is the loudest tell of all. <span class="pill read">read</span></h2>
+        <p>
+          If you only learn to read one signal, make it <strong>spacing</strong>. Claude reaches
+          for big, consistent padding and large gaps between elements &mdash; the layout feels like
+          it can exhale. Gemini compresses: smaller padding, tighter gaps, more packed into the same
+          viewport. You can spot which model made a screen from across the room, before you read a
+          single word, just by how much air is in it.
+        </p>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>Claude · roomy</h4>
+            <p>Defaults to large padding tokens and wide gaps. One idea per region. The layout
+            breathes; nothing is fighting for space.</p>
+            <ul>
+              <li>~24–32px section padding</li>
+              <li>one metric per row, lots of gutter</li>
+              <li>generous line-height on body copy</li>
+            </ul>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>Gemini · packed</h4>
+            <p>Defaults to compact padding and tight gaps. Multiple ideas per region. Maximizes
+            information density, minimizes scroll.</p>
+            <ul>
+              <li>~8–12px tile padding</li>
+              <li>2–3 column stat grids</li>
+              <li>tighter line-height, smaller text</li>
+            </ul>
+          </div>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Don't mistake "more air" for "better." Claude's roominess can waste a power-user's
+          screen; Gemini's density can overwhelm a casual one. The <b>right</b> spacing is the one
+          your <em>user's task</em> wants &mdash; that's the call only you can make.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Read the type &mdash; serif editorial vs. monospace data. <span class="pill read">read</span></h2>
+        <p>
+          The second tell is typography. Claude likes to introduce contrast &mdash; a serif or a
+          heavier display weight for headlines, set big, treated like a magazine masthead. It uses
+          type to create <em>hierarchy you feel</em>. Gemini stays functional and even: clean
+          sans throughout, monospace for numbers, smaller sizes that let more fit. One designs a
+          cover; the other designs a readout.
+        </p>
+        <div class="bank">
+          <div class="set warm">
+            <h5><span class="dot"></span>Claude's type instincts</h5>
+            <div class="chips">
+              <span class="chip">serif headline</span>
+              <span class="chip">display size</span>
+              <span class="chip">high contrast</span>
+              <span class="chip">editorial</span>
+              <span class="chip">balanced wrap</span>
+            </div>
+          </div>
+          <div class="set dense">
+            <h5><span class="dot"></span>Gemini's type instincts</h5>
+            <div class="chips">
+              <span class="chip">sans throughout</span>
+              <span class="chip">mono numerals</span>
+              <span class="chip">smaller sizes</span>
+              <span class="chip">even hierarchy</span>
+              <span class="chip">functional</span>
+            </div>
+          </div>
+        </div>
+        <p class="scribble">watch the *numbers*. claude sets a big revenue figure like a hero. gemini sets it in mono, in a tile.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Read the color &mdash; earthy warmth vs. signal blue. <span class="pill read">read</span></h2>
+        <p>
+          Palette is the third giveaway, and it tracks the same axis. Claude tends toward warmer,
+          earthier defaults &mdash; clays, creams, muted accents that feel hand-picked. Gemini tends
+          toward cooler, brighter, signal-style color &mdash; blues, greens-for-up, reds-for-down,
+          the language of a status board. Claude colors a <em>brand</em>; Gemini colors a
+          <em>system</em> where color carries meaning.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">defaults.css &mdash; the palettes they reach for unprompted</span></div>
+<pre><span class="cmt">/* Claude's instinct — warm, editorial, brand-led */</span>
+<span class="key">--bg</span>:     <span class="amb">oklch(0.98 0.01 80)</span>;   <span class="cmt">/* warm paper */</span>
+<span class="key">--accent</span>: <span class="amb">oklch(0.63 0.13 47)</span>;   <span class="cmt">/* clay / terracotta */</span>
+<span class="key">--text</span>:   <span class="amb">oklch(0.20 0.01 60)</span>;   <span class="cmt">/* warm near-black */</span>
+
+<span class="cmt">/* Gemini's instinct — cool, functional, signal-led */</span>
+<span class="key">--bg</span>:     <span class="vio">oklch(0.99 0.00 0)</span>;    <span class="cmt">/* clean white */</span>
+<span class="key">--accent</span>: <span class="vio">oklch(0.55 0.16 264)</span>;  <span class="cmt">/* google blue */</span>
+<span class="key">--up</span>:     <span class="vio">oklch(0.62 0.16 145)</span>;  <span class="cmt">/* green delta */</span>
+<span class="key">--down</span>:   <span class="vio">oklch(0.58 0.18 25)</span>;   <span class="cmt">/* red delta */</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Sample the hexes out of both screenshots with any color picker and drop them on a row.
+          You'll <em>see</em> the temperature split &mdash; warm hues clustering on Claude's side, cool
+          on Gemini's. It's the fastest way to make the difference undeniable to a skeptical teammate.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Steer Claude toward data &mdash; ask for density in its own language. <span class="pill steer">steer</span></h2>
+        <p>
+          Claude's warmth is a default, not a ceiling. When you genuinely need a packed,
+          information-dense view, you have to <em>ask</em> &mdash; and ask in spatial, concrete
+          words, because vague requests just get you more warmth. Name the grid, name the count,
+          name the compactness. Claude will happily build a cockpit; it just won't volunteer one.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">steer-claude.txt &mdash; words that pull it toward density</span></div>
+<pre><span class="cmt"># Append to your prompt when you want Gemini-style packing:</span>
+Make this <span class="str">information-dense</span> — a power-user dashboard, not a landing page.
+Use a <span class="str">compact 3-column grid</span> of stat tiles, tight padding.
+Show <span class="str">deltas</span> (▲ / ▼ vs last month) on every metric.
+Numbers in <span class="str">monospace</span>. Minimize whitespace. No big hero.</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>"Make it denser" alone rarely works &mdash; it's too abstract. The phrases that land are
+          <b>spatial and countable</b>: <em>"3-column grid," "tight padding," "show deltas," "no hero."</em>
+          Give the model the layout decision, not the vibe.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Steer Gemini toward warmth &mdash; ask for soul in <em>its</em> own language. <span class="pill steer">steer</span></h2>
+        <p>
+          The reverse holds. Gemini can absolutely produce a warm, editorial, breathing layout
+          &mdash; you just have to counter its density default explicitly. Ask for the air, the
+          serif, the brand palette, the one-thing-per-screen focus. The trick is the same as
+          steering Claude: don't say "make it prettier," say exactly which knob to turn.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">steer-gemini.txt &mdash; words that pull it toward warmth</span></div>
+<pre><span class="cmt"># Append to your prompt when you want Claude-style soul:</span>
+Make this <span class="str">editorial and spacious</span> — a brand page, not a control panel.
+<span class="str">Generous whitespace</span>; one focal metric, set large like a headline.
+A <span class="str">serif display font</span> for headings, warm earthy palette.
+Fewer elements. Let it <span class="str">breathe</span>. Optimize for feel, not count.</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Run Move 06 and Move 07 back to back on the <em>same</em> model. Watch one model produce
+          both souls on command. That's the real lesson: the personality is a <b>starting point you can
+          override</b>, not a wall &mdash; once you know the words.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Hand both a token spec &mdash; the surest way to erase the house style. <span class="pill design">design</span></h2>
+        <p>
+          Prompts steer; <strong>tokens decide</strong>. The most reliable way to get matching
+          output from two different models is to stop describing taste in prose and start handing
+          over the actual values &mdash; your spacing scale, your type, your palette. Give both
+          models the same <code>tokens.css</code> and tell them to use only those, and the
+          warmth-vs-density gap mostly collapses. They diverge in the gaps you leave; close the
+          gaps. (This is exactly the move from <a href="claude-design-partner-2026-06-02.html">Vol. 11</a>.)
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">tokens.css &mdash; the same brief, in numbers both models obey</span></div>
+<pre><span class="cmt">/* Paste this into BOTH, then: "Use ONLY these tokens. No others." */</span>
+<span class="key">:root</span> {
+  <span class="key">--space-1</span>: <span class="amb">8px</span>;  <span class="key">--space-2</span>: <span class="amb">16px</span>;  <span class="key">--space-3</span>: <span class="amb">24px</span>;
+  <span class="key">--font-display</span>: <span class="str">'Geist', serif</span>;
+  <span class="key">--font-body</span>:    <span class="str">'Inter', sans-serif</span>;
+  <span class="key">--accent</span>: <span class="amb">oklch(0.49 0.19 264)</span>;
+  <span class="key">--radius</span>: <span class="amb">12px</span>;
+}</pre>
+        </div>
+        <p class="scribble">prompts argue with the model's taste. tokens replace it. when consistency matters, ship the tokens.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 9 + mobile mock -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Pick the model for the <em>job</em> &mdash; the default soul is a feature when it fits. <span class="pill read">read</span></h2>
+        <p>
+          Here's the practical payoff: when you don't want to fight defaults, just start with the
+          model whose soul already matches the job. Marketing page, brand site, anything that needs
+          to <em>feel</em> human on first glance? Start in Claude &mdash; you're rowing with the
+          current. Internal admin panel, analytics view, anything where users scan dozens of numbers
+          fast? Start in Gemini. You can always steer, but starting aligned is free.
+        </p>
+        <div class="phone-wrap">
+          <div class="phone cl" aria-label="Claude's warm, editorial mobile layout">
+            <span class="tab">Claude</span>
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">coffee co · monthly</div>
+                <div class="t">Subscription<br>Overview</div>
+              </div>
+              <div class="s-body">
+                <div class="s-card"><div class="nm">Revenue this month</div><div class="v">$48,200</div></div>
+                <div class="s-card"><div class="nm">Active subscribers</div><div class="v">1,284</div></div>
+                <div class="s-card"><div class="nm">Churn</div><div class="v">2.1%</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone ge" aria-label="Gemini's dense, gridded mobile layout">
+            <span class="tab">Gemini</span>
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">coffee_co · dashboard</div>
+                <div class="t">Subscription Metrics</div>
+              </div>
+              <div class="s-grid">
+                <div class="s-tile"><div class="nm">Revenue</div><div class="v">$48.2k</div><div class="d">▲ 12%</div></div>
+                <div class="s-tile"><div class="nm">Subs</div><div class="v">1,284</div><div class="d">▲ 4%</div></div>
+                <div class="s-tile"><div class="nm">Churn</div><div class="v">2.1%</div><div class="d">▼ 0.3</div></div>
+                <div class="s-tile"><div class="nm">LTV</div><div class="v">$312</div><div class="d">▲ 6%</div></div>
+              </div>
+              <div class="s-row">
+                <div class="s-line"><span>New this week</span><span>+86</span></div>
+                <div class="s-line"><span>Paused</span><span>23</span></div>
+                <div class="s-line"><span>Avg. bags/mo</span><span>2.4</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone-cap">
+            <p>
+              Same three numbers, same brief, two souls. Claude turns the revenue figure into a
+              headline and shows three things with room to breathe. Gemini packs four tiles plus a
+              detail list above the fold, every metric carrying a delta. Pick the one whose instinct
+              already matches what your user came to do.
+            </p>
+            <p class="scribble">when in doubt: warm for humans deciding, dense for operators scanning.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>Steal from both &mdash; the best output is usually a remix of the two souls. <span class="pill steer">steer</span></h2>
+        <p>
+          The endgame isn't picking a team. It's running both, then cherry-picking. Take Claude's
+          editorial headline and spacing, take Gemini's delta tiles and scannable grid, and tell
+          either model to combine them. "Claude's warmth on the hero, Gemini's density in the
+          stats" is a real, buildable instruction once you can name the parts. The models gave you
+          two strong drafts for the price of one prompt &mdash; your taste is the editor that fuses
+          them.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">remix.txt &mdash; name the part you want from each soul</span></div>
+<pre><span class="cmt"># Feed either model the combined brief once you've seen both:</span>
+Keep the layout <span class="str">warm and editorial up top</span> — a large serif
+headline and one hero metric with generous whitespace (Claude's instinct).
+Below the fold, switch to a <span class="str">dense delta grid</span> — compact
+stat tiles with ▲/▼ changes, monospace numbers (Gemini's instinct).
+<span class="cmt"># One screen, both souls, on purpose.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>This is the whole notebook's thesis in one move: the model is a fast draft engine, and
+          <b>you are the director</b>. Two souls, one editor. Run both, name what you love in each,
+          and ask for the fusion. That output beats either default &mdash; because it has your taste in it.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>One-page cheat sheet ✦</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>Read the soul</h4>
+          <ul>
+            <li><code>padding</code><span>roomy = Claude, tight = Gemini</span></li>
+            <li><code>type</code><span>serif hero vs. mono tiles</span></li>
+            <li><code>color</code><span>warm clay vs. signal blue</span></li>
+            <li><code>count</code><span>3 metrics vs. 6+ tiles</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Steer Claude → dense</h4>
+          <ul>
+            <li><code>grid</code><span>"compact 3-column tiles"</span></li>
+            <li><code>deltas</code><span>"▲/▼ on every metric"</span></li>
+            <li><code>mono</code><span>"numbers in monospace"</span></li>
+            <li><code>no hero</code><span>"power-user, not landing"</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Steer Gemini → warm</h4>
+          <ul>
+            <li><code>air</code><span>"generous whitespace"</span></li>
+            <li><code>serif</code><span>"serif display headline"</span></li>
+            <li><code>focus</code><span>"one focal metric, large"</span></li>
+            <li><code>brand</code><span>"warm earthy palette"</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The tiebreakers</h4>
+          <ul>
+            <li><code>tokens</code><span>same tokens.css → same look</span></li>
+            <li><code>job</code><span>warm for humans, dense for ops</span></li>
+            <li><code>remix</code><span>steal the best of each</span></li>
+            <li><code>you</code><span>your taste is the editor</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 27 · 2026-06-27</small>
+      </div>
+      <div class="end">
+        next entry · <code>tools &gt; talk: letting the agent do the thing, not describe it</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live "warmth → density" knob ─────────────────────
+    // One card morphs between Claude's instincts (warm, roomy, serif,
+    // few metrics) and Gemini's (dense, tight, mono, many metrics).
+    (function () {
+      var knob = document.getElementById("knob");
+      if (!knob) return;
+
+      var render = document.getElementById("render");
+      var body   = document.getElementById("r-body");
+      var kEl     = document.getElementById("r-k");
+      var tEl     = document.getElementById("r-t");
+      var verdict = document.getElementById("verdict");
+
+      var lerp = function (a, b, t) { return a + (b - a) * t; };
+
+      // Three "warm" metrics; the extra ones fade in as you go dense.
+      var WARM = [
+        { nm: "Revenue this month", v: "$48,200" },
+        { nm: "Active subscribers", v: "1,284" },
+        { nm: "Churn", v: "2.1%" },
+      ];
+      var EXTRA = [
+        { nm: "Lifetime value", v: "$312" },
+        { nm: "New this week", v: "+86" },
+        { nm: "Avg. bags / mo", v: "2.4" },
+      ];
+
+      function paint() {
+        var t = +knob.value / 100;             // 0 = Claude, 1 = Gemini
+
+        // Spatial knobs interpolate across the dial.
+        var pad    = lerp(1.5, 0.55, t);        // rem — roomy → tight
+        var padx   = lerp(1.6, 0.7, t);
+        var gap    = lerp(0.95, 0.4, t);
+        var title  = lerp(1.7, 1.0, t);         // rem — hero → label
+        var text   = lerp(0.98, 0.8, t);
+        var radius = lerp(14, 7, t);
+
+        render.style.setProperty("--rpad",   pad.toFixed(2) + "rem");
+        render.style.setProperty("--rpadx",  padx.toFixed(2) + "rem");
+        render.style.setProperty("--rgap",   gap.toFixed(2) + "rem");
+        render.style.setProperty("--rtitle", title.toFixed(2) + "rem");
+        render.style.setProperty("--rtext",  text.toFixed(2) + "rem");
+        render.style.borderRadius = radius.toFixed(0) + "px";
+
+        // Identity flips past the midpoint.
+        var dense = t > 0.5;
+        render.style.setProperty("--rfont", dense ? "'Inter'" : "'Geist'");
+        render.style.setProperty("--rhead",
+          dense
+            ? "linear-gradient(140deg, var(--gem) 0%, var(--accent) 130%)"
+            : "linear-gradient(135deg, var(--claude) 0%, var(--amber) 120%)");
+        render.style.setProperty("--rc", dense ? "oklch(0.86 0.03 264)" : "oklch(0.88 0.02 80)");
+
+        kEl.textContent = dense ? "coffee_co · dashboard" : "coffee co · monthly";
+        tEl.textContent = dense ? "Subscription Metrics" : "Subscription Overview";
+
+        // How many metrics show: 3 when warm, up to 6 when dense.
+        var n = Math.round(lerp(3, 6, t));
+        var rows = WARM.concat(EXTRA).slice(0, n);
+
+        body.innerHTML = rows.map(function (r) {
+          return '<div class="r-stat"><span class="nm">' + r.nm + '</span>'
+               + '<span class="v">' + r.v + '</span></div>';
+        }).join("");
+
+        // Grid up the body once we're firmly in Gemini territory.
+        body.style.gridTemplateColumns = t > 0.6 ? "1fr 1fr" : "1fr";
+
+        if (t < 0.33) {
+          verdict.innerHTML = '<b>This is Claude\'s instinct.</b> Roomy padding, a serif headline, three metrics with breathing space — designed to be felt, not just scanned.';
+        } else if (t < 0.66) {
+          verdict.innerHTML = '<b>The handoff zone.</b> Padding tightens, the headline shrinks, a fourth metric appears — the card is leaving warmth and heading for the cockpit.';
+        } else {
+          verdict.innerHTML = '<b>This is Gemini\'s instinct.</b> Tight grid, mono numerals, six metrics packed in — designed to be scanned fast, not admired.';
+        }
+      }
+
+      knob.addEventListener("input", paint);
+      paint(); // initial
+    })();
+  </script>
+</body>
+</html>

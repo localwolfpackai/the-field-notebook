@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grade It Before They Do — Ten Moves for Putting Your AI Feature on a Rubric · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: stop shipping AI output on vibes. Build a tiny eval harness that grades the model against a rubric — golden cases, an LLM judge, a pass bar, and a CI gate — before your users do it for you. Claude and Gemini, move for move." />
+  <meta property="og:title" content="Grade It Before They Do — Ten Moves for Putting Your AI Feature on a Rubric" />
+  <meta property="og:description" content="An AI feature with no eval is a feature you're testing in production on real users. Here's the smallest harness that grades it first — golden cases, a judge, a score, a gate. Casual, visual, both models." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --pass:       oklch(0.58 0.12 150);
+      --pass-wash:  oklch(0.93 0.07 150);
+      --fail:       oklch(0.58 0.18 25);
+      --fail-wash:  oklch(0.94 0.06 25);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.backend  { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .ok  { color: var(--code-green); }
+    .term .no  { color: oklch(0.72 0.16 25); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live grader panel (output → rubric → verdict) ─────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    .demo .demo-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 700px) { .demo .demo-split { grid-template-columns: 1fr; } }
+
+    /* left: the model's output under test */
+    .demo .sample {
+      background: var(--paper);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      padding: 1rem 1.05rem;
+      margin: 0;
+      min-height: 16rem;
+      border-right: 1px solid oklch(0.86 0.03 80);
+      display: flex; flex-direction: column; gap: 0.7rem;
+    }
+    @media (max-width: 700px) { .demo .sample { border-right: none; border-bottom: 1px solid oklch(0.86 0.03 80); } }
+    .demo .sample .lab {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+    }
+    .demo .sample .txt {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      color: var(--ink-soft);
+      flex: 1;
+    }
+    .demo .sample.bad .txt { border-color: oklch(0.84 0.07 25); }
+    .demo .sample.good .txt { border-color: oklch(0.82 0.07 150); }
+
+    /* right: the rubric verdict */
+    .demo .verdict {
+      padding: 1rem 1.1rem;
+      min-height: 16rem;
+      display: flex; flex-direction: column; gap: 0.55rem;
+    }
+    .demo .verdict .lab {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+    }
+    .crit {
+      display: grid; grid-template-columns: 1.4rem 1fr auto; gap: 0.5rem; align-items: center;
+      font-size: 0.86rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: var(--radius-sm);
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.015 80);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.4s var(--ease-paper), transform 0.4s var(--ease-paper);
+    }
+    .crit.in { opacity: 1; transform: none; }
+    .crit .mk { font-family: 'Geist Mono', monospace; font-weight: 600; text-align: center; }
+    .crit.ok  { background: var(--pass-wash); border-color: oklch(0.82 0.07 150); }
+    .crit.ok  .mk { color: var(--pass); }
+    .crit.no  { background: var(--fail-wash); border-color: oklch(0.84 0.07 25); }
+    .crit.no  .mk { color: var(--fail); }
+    .crit .nm { color: var(--ink); }
+    .crit .sc { font-family: 'Geist Mono', monospace; font-size: 0.74rem; color: var(--ink-mute); }
+    .demo .score {
+      margin-top: auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px dashed oklch(0.84 0.02 80);
+    }
+    .demo .score .big {
+      font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .demo .score .stamp {
+      font-family: 'Caveat', cursive; font-weight: 700; font-size: 1.5rem;
+      padding: 0.1rem 0.8rem; border-radius: 999px;
+      transform: rotate(-3deg);
+    }
+    .demo .score .stamp.pass { color: var(--pass); background: var(--pass-wash); border: 2px solid var(--pass); }
+    .demo .score .stamp.fail { color: var(--fail); background: var(--fail-wash); border: 2px solid var(--fail); }
+    .demo .verdict .empty {
+      margin: auto; color: var(--ink-mute);
+      font-family: 'Caveat', cursive; font-size: 1.25rem; text-align: center;
+    }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.7rem 1.2rem 1rem;
+      flex-wrap: wrap;
+      border-top: 1px solid oklch(0.86 0.03 80);
+    }
+    .demo button {
+      font-family: 'Geist', sans-serif;
+      font-weight: 600;
+      font-size: 0.86rem;
+      color: oklch(0.99 0 0);
+      background: var(--accent);
+      border: none;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper);
+    }
+    .demo button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .demo button:active { transform: translateY(0); }
+    .demo button:disabled { opacity: 0.45; cursor: default; transform: none; filter: none; }
+    .demo button.ghost {
+      background: transparent;
+      color: var(--accent-ink);
+      border: 1px solid oklch(0.82 0.05 264);
+    }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .crit { animation: none; transition: none; }
+    }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .compare .col.claude h4 { color: var(--accent-ink); }
+    .compare .col.gemini h4 { color: oklch(0.45 0.13 300); }
+    .compare .col h4 .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .compare .col.claude h4 .dot { background: var(--accent); }
+    .compare .col.gemini h4 .dot { background: var(--violet); }
+
+    /* ── Mobile mock ─────────────────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 600px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .phone {
+      width: 218px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 30px;
+      padding: 9px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 264 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 20px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 12px 12px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background:
+        radial-gradient(120% 140% at 0% 0%, var(--accent-wash), transparent 60%),
+        linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%);
+      height: 108px;
+      padding: 1.6rem 1rem 0.7rem;
+      color: oklch(0.99 0 0);
+    }
+    .phone .s-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.1rem; margin-top: 0.15rem; }
+    .phone .s-head .meter {
+      margin-top: 0.6rem; height: 7px; border-radius: 999px;
+      background: oklch(1 0 0 / 0.25); overflow: hidden;
+    }
+    .phone .s-head .meter i { display: block; height: 100%; width: 86%; background: oklch(0.92 0.12 150); border-radius: 999px; }
+    .phone .s-list { padding: 0.7rem 0.8rem; display: grid; gap: 0.5rem; }
+    .phone .s-row {
+      display: grid; grid-template-columns: 22px 1fr auto; gap: 0.5rem; align-items: center;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: 10px;
+      padding: 0.45rem 0.55rem;
+    }
+    .phone .s-row .ico {
+      width: 22px; height: 22px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Geist Mono', monospace; font-size: 0.7rem; font-weight: 700;
+    }
+    .phone .s-row.pass .ico { background: var(--pass-wash); color: var(--pass); }
+    .phone .s-row.fail .ico { background: var(--fail-wash); color: var(--fail); }
+    .phone .s-row .nm { font-size: 0.74rem; font-weight: 600; color: var(--ink); line-height: 1.2; }
+    .phone .s-row .ds { font-size: 0.6rem; color: var(--ink-mute); }
+    .phone .s-row .pr { font-family: 'Geist Mono', monospace; font-size: 0.7rem; font-weight: 600; }
+    .phone .s-row.pass .pr { color: var(--pass); }
+    .phone .s-row.fail .pr { color: var(--fail); }
+    .phone-cap { max-width: 40ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.10 264 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 24</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;24</span>
+        <span class="tag">build</span>
+        <span class="tag">evals</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>Grade it <span class="accent">before they do</span> &mdash; ten moves for putting your AI feature on a rubric.</h1>
+
+      <p class="deck">
+        Last entry got the model to hand you a clean object. This one asks the next
+        question: <em>is the object any good?</em> If you don't have an answer, your users
+        are running the eval for you &mdash; live, in production, one-star at a time. Here's
+        the smallest harness that grades the model first: golden cases, a judge, a pass bar,
+        and a gate that stops a bad release. Both models, move for move.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-as_judge-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude as judge" />
+        <img src="https://img.shields.io/badge/Gemini-2.5_flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini 2.5 Flash" />
+        <img src="https://img.shields.io/badge/Vitest-rubric_tests-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest rubric tests" />
+        <img src="https://img.shields.io/badge/GitHub_Actions-CI_gate-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions CI gate" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · a cases file + one judge fn</span>
+        <span><b>Assumes</b> · you ship something an AI generates</span>
+        <span><b>Pairs with</b> · Vol. 23 (structured output)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          The most expensive bug I ever shipped looked perfect in the one example I tried.
+          A support-reply generator &mdash; warm, helpful, fluent. I clicked "looks good,"
+          merged it, and went to bed. By morning it had confidently invented a refund policy
+          that didn't exist, in three real conversations. The output read great. It was just
+          <em>wrong</em>, and I had no way to have known, because my entire test suite was
+          one happy click.
+        </p>
+        <p>
+          That's the gap an eval fills. A regular test asks "did the function return 4?" An
+          eval asks "is this <em>generated</em> answer good enough to show a human?" &mdash;
+          a fuzzier question with no single right string. The trick is to make it answerable
+          anyway: write down what "good" means as a <strong>rubric</strong>, run the model
+          against a handful of <strong>golden cases</strong>, and score each one. You're not
+          chasing perfection. You're building a number that drops when you break something.
+        </p>
+        <p>
+          Below, ten moves get you from zero to a gate. Each has a number, a one-line claim,
+          real code, and a try-it crumb. The panel under this intro is live &mdash; pick a
+          model answer, hit <em>Grade</em>, and watch the rubric mark it pass or fail, one
+          criterion at a time. That's the whole loop: <strong>output in, verdict out.</strong>
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">An eval is just a graded vibe-check</a></li>
+          <li><a href="#h2">Write five golden cases, not five hundred</a></li>
+          <li><a href="#h3">Turn "good" into a rubric you can score</a></li>
+          <li><a href="#h4">The cheap checks run first (no model)</a></li>
+          <li><a href="#h5">Claude as judge — separate doer from grader</a></li>
+          <li><a href="#h6">Gemini as judge — same job, cheaper batch</a></li>
+          <li><a href="#h7">Score the set, set a pass bar</a></li>
+          <li><a href="#h8">Gate the release in CI</a></li>
+          <li><a href="#h9">Every prod bug becomes a new case</a></li>
+          <li><a href="#h10">The trust test — would you ship unread?</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="output to rubric verdict demo">
+      <div class="demo-bar">
+        <span>the loop · output in → verdict out</span>
+        <span class="live"><i></i> live</span>
+      </div>
+      <div class="demo-split">
+        <div class="sample" id="sample">
+          <span class="lab">model answer under test</span>
+          <div class="txt" id="sampleTxt">Pick an answer below, then hit Grade →</div>
+        </div>
+        <div class="verdict" id="verdict">
+          <span class="lab">rubric verdict</span>
+          <div class="empty" id="vEmpty">the rubric grades here ↑<br>criterion by criterion</div>
+        </div>
+      </div>
+      <div class="demo-foot">
+        <button id="grade">▶ Grade the good answer</button>
+        <button class="ghost" id="gradeBad">Grade the bad one</button>
+        <button class="ghost" id="reset">Reset</button>
+        <span class="hint">same rubric, every answer ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>An eval is just a graded vibe-check &mdash; you already do it by hand, ten times a day, badly. <span class="pill model">model</span></h2>
+        <p>
+          Every time you read a model's output and think "yeah, ship it," you ran an eval.
+          The problem isn't that you judge &mdash; it's that you judge once, on one example,
+          from memory, with no record. Change the prompt next week and you have no idea
+          whether you made it better or quietly broke the thing that worked.
+        </p>
+        <p>
+          An eval harness is that same judgment, written down and made repeatable. You fix
+          the inputs (the cases), fix the standard (the rubric), and let a script produce a
+          score you can compare across versions. Nothing exotic &mdash; it's a test suite
+          for outputs that don't have one exact right answer.
+        </p>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Don't confuse this with a unit test. A unit test asserts <code>sum(2,2) === 4</code>.
+          An eval asks <b>"is this answer good?"</b> &mdash; graded, not asserted. You'll use
+          both: deterministic checks where you can, judged checks where you can't.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Write five golden cases, not five hundred &mdash; a tiny set you trust beats a huge one you don't. <span class="pill backend">design</span></h2>
+        <p>
+          The blank-page fear is "I need a thousand examples." You don't. Start with five to
+          ten <em>golden cases</em> &mdash; an input and a note on what a great answer looks
+          like. Cover the boring happy path, then the two or three places you already know
+          the model gets weird: the empty input, the hostile user, the question it should
+          refuse. Those edges are where regressions hide.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cases.ts &mdash; the golden set is the spec</span></div>
+<pre><span class="cmt">// Each case = an input + what "good" means for it.</span>
+<span class="cmt">// This file IS your definition of done. Grow it by hand.</span>
+<span class="key">export const</span> cases = [
+  {
+    id: <span class="str">"happy-path"</span>,
+    input: <span class="str">"Where is my order #4821?"</span>,
+    expect: <span class="str">"Looks up the order, gives status, stays factual."</span>,
+  },
+  {
+    id: <span class="str">"no-such-policy"</span>,
+    input: <span class="str">"Can I get a refund after 90 days?"</span>,
+    expect: <span class="str">"Says it can't confirm; does NOT invent a policy."</span>,  <span class="cmt">// my real bug</span>
+  },
+  {
+    id: <span class="str">"hostile"</span>,
+    input: <span class="str">"your product is garbage, fix it now"</span>,
+    expect: <span class="str">"Stays calm, offers a real next step, no grovelling."</span>,
+  },
+  {
+    id: <span class="str">"empty"</span>,
+    input: <span class="str">""</span>,
+    expect: <span class="str">"Asks a clarifying question, doesn't hallucinate intent."</span>,
+  },
+];</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Seed the file from your <b>own worst moments</b>. The fastest way to a useful eval
+          set is to write down the three outputs that have already embarrassed you. Those are
+          worth more than fifty synthetic prompts.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Turn "good" into a rubric &mdash; vague taste becomes a checklist a machine can run. <span class="pill design">design</span></h2>
+        <p>
+          "Is it good?" is unanswerable. "Does it cite a real order number? Does it avoid
+          inventing policy? Is it under 120 words? Is the tone calm?" &mdash; those are four
+          yes/no questions, and four yes/no questions are a <em>rubric</em>. The move is to
+          decompose the fuzzy whole into specific, independent criteria. Grade each one on
+          its own; never ask for a single holistic vibe-score, because that's just the
+          original problem in a trench coat.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">rubric.ts &mdash; one criterion, one question</span></div>
+<pre><span class="key">export const</span> rubric = [
+  { key: <span class="str">"grounded"</span>,  ask: <span class="str">"Every fact is supported by the input — no invented policy or numbers."</span> },
+  { key: <span class="str">"on-task"</span>,   ask: <span class="str">"Answers what was actually asked, not a nearby question."</span> },
+  { key: <span class="str">"safe"</span>,      ask: <span class="str">"Refuses or defers when it should; no confident guessing."</span> },
+  { key: <span class="str">"tone"</span>,      ask: <span class="str">"Calm and professional, even to a hostile user."</span> },
+  { key: <span class="str">"concise"</span>,   ask: <span class="str">"Under ~120 words; no filler or restated question."</span> },
+];
+<span class="cmt">// each one is independently true/false. that's the whole design.</span></pre>
+        </div>
+        <p class="scribble">one fuzzy score hides failures. five sharp ones expose exactly which one broke.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>The cheap checks run first &mdash; half your rubric needs no model at all. <span class="pill backend">backend</span></h2>
+        <p>
+          Before you spend a single token on a judge, run the criteria a plain function can
+          answer. Length, format, banned phrases, "does it contain the order number that was
+          in the input," valid JSON, no leaked system prompt &mdash; these are deterministic,
+          instant, and free. Code-graded checks are faster and more reliable than any LLM
+          judge, so push everything you can down to this layer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">checks.ts &mdash; deterministic first, judge second</span></div>
+<pre><span class="cmt">// No model needed. Fast, free, never flaky.</span>
+<span class="key">export function</span> codeChecks(answer: <span class="vio">string</span>, input: <span class="vio">string</span>) {
+  <span class="key">return</span> {
+    concise:    answer.split(/\s+/).length &lt;= <span class="amb">120</span>,
+    noFiller:   !/as an ai|i cannot stress|in today's world/i.test(answer),
+    onOrder:    !/#\d+/.test(input) || answer.includes(input.match(/#\d+/)![<span class="amb">0</span>]),
+    noLeak:     !answer.includes(<span class="str">"system prompt"</span>),
+  };
+}
+<span class="cmt">// run these BEFORE the judge — if length already fails,</span>
+<span class="cmt">// you don't need to pay a model to tell you it's verbose.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Sort your rubric into two piles: <b>code-graded</b> (length, format, contains-X) and
+          <b>judge-graded</b> (grounded, on-task, tone). Anything that can be a regex should
+          never be a model call.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Claude as judge &mdash; the model that wrote it can't grade it, so bring in a second one. <span class="pill model">claude</span></h2>
+        <p>
+          For the fuzzy criteria, you let a model grade the answer &mdash; "LLM-as-judge."
+          The one rule that makes it work: <em>separate the doer from the grader.</em> A model
+          will happily praise its own output even when it's mediocre, so the judge gets only
+          the rubric and the answer, never the ego of having authored it. Force a structured
+          verdict (one boolean per criterion) so you get data, not a paragraph. That's last
+          entry's whole trick, pointed at quality control.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">judge.ts &mdash; Claude, tool-forced verdict</span></div>
+<pre><span class="key">import</span> Anthropic <span class="key">from</span> <span class="str">"@anthropic-ai/sdk"</span>;
+<span class="key">const</span> client = <span class="key">new</span> Anthropic();
+
+<span class="key">export async function</span> judge(answer: <span class="vio">string</span>, rubric: Crit[]) {
+  <span class="key">const</span> msg = <span class="key">await</span> client.messages.create({
+    model: <span class="str">"claude-sonnet-4-6"</span>,
+    max_tokens: <span class="amb">400</span>,
+    system: <span class="str">"You are a strict grader. Judge ONLY against the rubric. "</span> +
+            <span class="str">"You did not write this answer. Default to false if unsure."</span>,
+    tools: [{
+      name: <span class="str">"verdict"</span>,
+      description: <span class="str">"Return one boolean per rubric criterion, plus a reason."</span>,
+      input_schema: {
+        type: <span class="str">"object"</span>,
+        properties: Object.fromEntries(rubric.map(c =&gt; [
+          c.key, { type: <span class="str">"object"</span>, properties: {
+            pass:   { type: <span class="str">"boolean"</span> },
+            reason: { type: <span class="str">"string"</span> },
+          }, required: [<span class="str">"pass"</span>,<span class="str">"reason"</span>] },
+        ])),
+        required: rubric.map(c =&gt; c.key),
+      },
+    }],
+    tool_choice: { type: <span class="str">"tool"</span>, name: <span class="str">"verdict"</span> },  <span class="cmt">// no prose escape</span>
+    messages: [{ role: <span class="str">"user"</span>, content:
+      <span class="str">`RUBRIC:\n`</span> + rubric.map(c =&gt; <span class="str">`- ${c.key}: ${c.ask}`</span>).join(<span class="str">"\n"</span>) +
+      <span class="str">`\n\nANSWER TO GRADE:\n${answer}`</span> }],
+  });
+  <span class="key">return</span> msg.content.find(b =&gt; b.type === <span class="str">"tool_use"</span>)!.input;  <span class="cmt">// typed verdict</span>
+}</pre>
+        </div>
+        <p class="scribble">"you did not write this answer" — one line that kills the self-praise problem.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Gemini as judge &mdash; same contract, and a flash model is cheap enough to grade the whole set. <span class="pill model">gemini</span></h2>
+        <p>
+          The judge doesn't have to be expensive. Grading is a smaller job than generating,
+          so a fast, cheap model is usually the right call &mdash; you're running it across
+          every case on every commit. Gemini takes the rubric the same way last entry's cards
+          did: a <code>responseSchema</code> that forces one boolean per criterion, parsed
+          once. Pick whichever judge you trust; the harness around it never changes.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">judge.gemini.ts &mdash; responseSchema verdict</span></div>
+<pre><span class="key">import</span> { GoogleGenerativeAI, SchemaType } <span class="key">from</span> <span class="str">"@google/generative-ai"</span>;
+<span class="key">const</span> genAI = <span class="key">new</span> GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+<span class="key">const</span> model = genAI.getGenerativeModel({
+  model: <span class="str">"gemini-2.5-flash"</span>,            <span class="cmt">// cheap + fast = grade the whole set</span>
+  generationConfig: {
+    responseMimeType: <span class="str">"application/json"</span>,
+    responseSchema: {
+      type: SchemaType.OBJECT,
+      properties: {
+        grounded: { type: SchemaType.BOOLEAN },
+        onTask:   { type: SchemaType.BOOLEAN },
+        safe:     { type: SchemaType.BOOLEAN },
+        tone:     { type: SchemaType.BOOLEAN },
+      },
+      required: [<span class="str">"grounded"</span>,<span class="str">"onTask"</span>,<span class="str">"safe"</span>,<span class="str">"tone"</span>],
+    },
+  },
+});
+
+<span class="key">const</span> res = <span class="key">await</span> model.generateContent(prompt);
+<span class="key">const</span> verdict = JSON.parse(res.response.text());  <span class="cmt">// { grounded: true, ... }</span></pre>
+        </div>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>Claude judge</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Tool-forced verdict + a reason per criterion. Reach for it when the call is <b>subtle</b> &mdash; tone, nuance, "is this subtly wrong."</p>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>Gemini judge</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Schema-forced booleans, flash-cheap. Reach for it for <b>volume</b> &mdash; grading hundreds of cases on every commit without a bill spike.</p>
+          </div>
+        </div>
+        <p class="scribble">the harness doesn't care who judges. swap the model, keep the loop.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Score the set, set a pass bar &mdash; one number you can watch move. <span class="pill backend">backend</span></h2>
+        <p>
+          Now roll it up. Run every case through the code checks and the judge, count the
+          criteria that passed, divide by the total. That's your score. Pick a bar &mdash;
+          say 90% &mdash; below which a build does not ship. The number itself matters less
+          than the <em>direction</em>: when you change a prompt and the score drops, you just
+          caught a regression before a user did. That's the entire payoff.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">run-evals.ts &mdash; the whole harness, one loop</span></div>
+<pre><span class="key">import</span> { cases } <span class="key">from</span> <span class="str">"./cases"</span>;
+<span class="key">import</span> { rubric } <span class="key">from</span> <span class="str">"./rubric"</span>;
+<span class="key">import</span> { generate } <span class="key">from</span> <span class="str">"../feature"</span>;   <span class="cmt">// the thing under test</span>
+<span class="key">import</span> { judge }    <span class="key">from</span> <span class="str">"./judge"</span>;
+
+<span class="key">let</span> pass = <span class="amb">0</span>, total = <span class="amb">0</span>;
+<span class="key">for</span> (<span class="key">const</span> c <span class="key">of</span> cases) {
+  <span class="key">const</span> answer  = <span class="key">await</span> generate(c.input);   <span class="cmt">// run YOUR feature</span>
+  <span class="key">const</span> verdict = <span class="key">await</span> judge(answer, rubric); <span class="cmt">// grade it</span>
+  <span class="key">for</span> (<span class="key">const</span> { key } <span class="key">of</span> rubric) {
+    total++;
+    <span class="key">if</span> (verdict[key].pass) pass++;
+    <span class="key">else</span> console.log(<span class="str">`✗ ${c.id} / ${key}: ${verdict[key].reason}`</span>);
+  }
+}
+
+<span class="key">const</span> score = pass / total;
+console.log(<span class="str">`score: ${(score*100).toFixed(1)}%`</span>);
+<span class="key">if</span> (score &lt; <span class="amb">0.9</span>) process.exit(<span class="amb">1</span>);   <span class="cmt">// ← the bar. fail the build.</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Watch the <b>per-criterion failures</b>, not just the headline number. "Score dropped
+          to 82%" is a shrug; "<code>grounded</code> failed on the refund case" is a bug report
+          that tells you exactly what to fix.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Gate the release in CI &mdash; an eval nobody runs is a journal entry, not a guardrail. <span class="pill frontend">ci</span></h2>
+        <p>
+          The harness only protects you if it runs without you remembering to run it. Wire
+          it into the same place your tests live &mdash; a GitHub Actions step on every pull
+          request. Because <code>run-evals</code> exits non-zero below the bar, a regression
+          turns the check red and blocks the merge. The eval stops being something you do and
+          becomes something the repo enforces.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">.github/workflows/evals.yml</span></div>
+<pre><span class="key">name</span>: evals
+<span class="key">on</span>: [pull_request]
+<span class="key">jobs</span>:
+  grade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        <span class="key">with</span>: { node-version: <span class="amb">20</span> }
+      - run: npm ci
+      - run: npx tsx evals/run-evals.ts   <span class="cmt"># non-zero below the bar → red ✗</span>
+        <span class="key">env</span>:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}</pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Add <b>required status checks</b> on your main branch so the eval job has to pass before
+          anyone can merge. Now "the score went down" isn't a Slack message someone might miss
+          &mdash; it's a wall.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Every prod bug becomes a new case &mdash; the set grows from reality, not imagination. <span class="pill polish">polish</span></h2>
+        <p>
+          Here's the habit that compounds. When something slips through to a user &mdash; the
+          invented refund policy, the weird tone, the truncated answer &mdash; don't just fix
+          it. Add it to <code>cases.ts</code> first, watch the eval fail, <em>then</em> fix
+          until it passes. Now that exact failure can never come back silently. Your golden
+          set stops being a guess about what might break and becomes a memory of everything
+          that already did.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cases.ts &mdash; a bug report, frozen into a test</span></div>
+<pre><span class="cmt">// 2026-06-22: shipped. invented a "loyalty discount" that</span>
+<span class="cmt">// doesn't exist. caught by a customer, not by us. never again:</span>
+{
+  id: <span class="str">"no-loyalty-discount"</span>,
+  input: <span class="str">"Do I get a loyalty discount on this?"</span>,
+  expect: <span class="str">"Says it can't confirm discounts; does not invent one."</span>,
+  regression: <span class="key">true</span>,   <span class="cmt">// ← born from a real incident</span>
+},</pre>
+        </div>
+        <p class="scribble">this is the loop that makes the harness smarter than you are. let it.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>The trust test &mdash; would you let this feature answer a real user without you reading it first? <span class="pill polish">polish</span></h2>
+        <p>
+          That's the whole bar, same as last entry, pointed one level up. If your golden set
+          covers the ways it fails, your rubric grades the things that matter, and the gate
+          blocks a bad score from shipping &mdash; then yes, you can let it run unwatched,
+          because the harness is watching. If you still feel the need to read every output by
+          hand before it goes live, you've found the criterion your rubric is missing. Go add
+          it as a case.
+        </p>
+        <div class="phone-wrap">
+          <div class="phone" aria-label="mobile preview of an eval run dashboard">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">evals · run #214</div>
+                <div class="t">Support replies</div>
+                <div class="meter"><i></i></div>
+              </div>
+              <div class="s-list">
+                <div class="s-row pass">
+                  <div class="ico">✓</div>
+                  <div><div class="nm">happy-path</div><div class="ds">grounded · on-task · tone</div></div>
+                  <div class="pr">5/5</div>
+                </div>
+                <div class="s-row pass">
+                  <div class="ico">✓</div>
+                  <div><div class="nm">hostile</div><div class="ds">stayed calm, gave a step</div></div>
+                  <div class="pr">5/5</div>
+                </div>
+                <div class="s-row fail">
+                  <div class="ico">✗</div>
+                  <div><div class="nm">no-such-policy</div><div class="ds">invented a refund window</div></div>
+                  <div class="pr">3/5</div>
+                </div>
+                <div class="s-row pass">
+                  <div class="ico">✓</div>
+                  <div><div class="nm">empty</div><div class="ds">asked to clarify</div></div>
+                  <div class="pr">5/5</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-cap">
+            <p>
+              One red row out of four, and the build is blocked &mdash; exactly as it should
+              be. The dashboard isn't the point; the <em>exit code</em> is. But seeing
+              <code>no-such-policy</code> drop to 3/5 tells you in one glance which case
+              regressed and why. That's the difference between a number and a guardrail.
+            </p>
+            <p class="scribble">86% overall, but one case failed the bar. red. good. that's the system working.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>One-page cheat sheet ✦</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The harness</h4>
+          <ul>
+            <li><code>1</code><span>golden cases (5–10, hand-picked)</span></li>
+            <li><code>2</code><span>rubric: fuzzy "good" → yes/no list</span></li>
+            <li><code>3</code><span>code checks first, judge second</span></li>
+            <li><code>4</code><span>score the set, set a bar</span></li>
+            <li><code>5</code><span>gate the merge in CI</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Claude judge</h4>
+          <ul>
+            <li><code>tool</code><span>verdict shape as <code>input_schema</code></span></li>
+            <li><code>force</code><span><code>tool_choice</code> — no prose</span></li>
+            <li><code>sep</code><span>"you did not write this"</span></li>
+            <li><code>use</code><span>subtle / nuanced calls</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>Gemini judge</h4>
+          <ul>
+            <li><code>flash</code><span><code>gemini-2.5-flash</code> = cheap</span></li>
+            <li><code>schema</code><span>booleans in <code>responseSchema</code></span></li>
+            <li><code>read</code><span><code>JSON.parse(.text())</code></span></li>
+            <li><code>use</code><span>volume / every-commit runs</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The trust test</h4>
+          <ul>
+            <li><code>doer≠judge</code><span>never grade your own</span></li>
+            <li><code>per-crit</code><span>read which one failed</span></li>
+            <li><code>exit 1</code><span>below bar → red build</span></li>
+            <li><code>bug→case</code><span>every incident, a new case</span></li>
+            <li><code>ship</code><span>run unread? then it's done</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 24 · 2026-06-24</small>
+      </div>
+      <div class="end">
+        next entry · <code>cost & latency: the two dials every AI feature ships with</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live "output → rubric → verdict" demo ────────────────────────────
+    (function () {
+      var sampleEl  = document.getElementById("sample");
+      var txtEl     = document.getElementById("sampleTxt");
+      var verdictEl = document.getElementById("verdict");
+      var emptyEl   = document.getElementById("vEmpty");
+      var goodBtn   = document.getElementById("grade");
+      var badBtn    = document.getElementById("gradeBad");
+      var resetBtn  = document.getElementById("reset");
+      if (!sampleEl || !goodBtn) return;
+
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // The rubric — five fixed criteria, same for every answer.
+      var RUBRIC = [
+        { key: "grounded", label: "grounded",  ask: "no invented facts" },
+        { key: "onTask",   label: "on-task",   ask: "answers the question" },
+        { key: "safe",     label: "safe",      ask: "defers when unsure" },
+        { key: "tone",     label: "tone",      ask: "calm + professional" },
+        { key: "concise",  label: "concise",   ask: "under ~120 words" }
+      ];
+
+      // Two pre-graded answers to the SAME input. The verdicts are fixed —
+      // a real harness would call a judge; here the determinism is the point.
+      var SAMPLES = {
+        good: {
+          text: '"I can’t confirm a refund after 90 days from here — our standard window is 30 days, and anything past that needs a human to check your account. I’ve flagged this to the support team and someone will reply within one business day with a definite answer."',
+          verdict: { grounded: true, onTask: true, safe: true, tone: true, concise: true }
+        },
+        bad: {
+          text: '"Absolutely! You’re in luck — we offer a special 90-day loyalty refund policy plus a 15% goodwill credit on your next order, so you’re fully covered. Just reply YES and I’ll process the full refund and the bonus credit right away. Thanks for being such a valued customer in today’s fast-paced world!"',
+          verdict: { grounded: false, onTask: true, safe: false, tone: true, concise: false }
+        }
+      };
+
+      var timers = [];
+      function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+      function reset() {
+        clearTimers();
+        sampleEl.className = "sample";
+        txtEl.innerHTML = "Pick an answer below, then hit Grade →";
+        verdictEl.querySelectorAll(".crit, .score").forEach(function (n) { n.remove(); });
+        if (!verdictEl.contains(emptyEl)) verdictEl.appendChild(emptyEl);
+        emptyEl.style.display = "";
+        goodBtn.disabled = false; badBtn.disabled = false;
+      }
+
+      function grade(which) {
+        clearTimers();
+        var s = SAMPLES[which];
+        goodBtn.disabled = true; badBtn.disabled = true;
+
+        // show the answer under test
+        sampleEl.className = "sample " + (which === "good" ? "good" : "bad");
+        txtEl.innerHTML = '<span class="lab" style="display:block;margin-bottom:.4rem;">answer · ' +
+          (which === "good" ? "candidate A" : "candidate B") + '</span>' + s.text;
+
+        // clear the verdict pane
+        verdictEl.querySelectorAll(".crit, .score").forEach(function (n) { n.remove(); });
+        emptyEl.style.display = "none";
+
+        var passCount = 0;
+        RUBRIC.forEach(function (c) { if (s.verdict[c.key]) passCount++; });
+        var total = RUBRIC.length;
+
+        // reveal each criterion one at a time
+        RUBRIC.forEach(function (c, i) {
+          var ok = s.verdict[c.key];
+          var row = document.createElement("div");
+          row.className = "crit " + (ok ? "ok" : "no");
+          row.innerHTML =
+            '<span class="mk">' + (ok ? "✓" : "✗") + '</span>' +
+            '<span class="nm">' + c.label + ' <span style="color:var(--ink-mute);font-size:.8em;">· ' + c.ask + '</span></span>' +
+            '<span class="sc">' + (ok ? "pass" : "fail") + '</span>';
+          verdictEl.appendChild(row);
+          var delay = reduce ? 0 : 130 * (i + 1);
+          timers.push(setTimeout(function () { row.classList.add("in"); }, delay));
+        });
+
+        // the score + stamp lands last
+        var scorePct = Math.round((passCount / total) * 100);
+        var passed = scorePct >= 90;
+        var scoreRow = document.createElement("div");
+        scoreRow.className = "score";
+        scoreRow.innerHTML =
+          '<span class="big">' + passCount + '/' + total + ' · ' + scorePct + '%</span>' +
+          '<span class="stamp ' + (passed ? "pass" : "fail") + '">' +
+            (passed ? "SHIP ✓" : "BLOCK ✗") + '</span>';
+        var finalDelay = reduce ? 0 : 130 * (total + 1) + 120;
+        timers.push(setTimeout(function () {
+          verdictEl.appendChild(scoreRow);
+          goodBtn.disabled = false; badBtn.disabled = false;
+        }, finalDelay));
+      }
+
+      goodBtn.addEventListener("click", function () { grade("good"); });
+      badBtn.addEventListener("click", function () { grade("bad"); });
+      resetBtn.addEventListener("click", reset);
+    })();
+  </script>
+</body>
+</html>

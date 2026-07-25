@@ -1,0 +1,1474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Two Dials — Ten Moves for Shipping an AI Feature That Doesn't Cost a Fortune or Make People Wait · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: every AI feature ships with two dials nobody tells beginners about — cost and latency. Here are ten moves to read them, route around them, cache them, and stream them, before the bill or the spinner kills your launch. Claude and Gemini, move for move." />
+  <meta property="og:title" content="The Two Dials — Cost & Latency, the Two Numbers Every AI Feature Ships With" />
+  <meta property="og:description" content="Your AI feature has two hidden dials: what each call costs and how long it makes someone wait. Here's the smallest set of moves to keep both honest — model tiers, caching, token budgets, streaming, and a routing rule. Casual, visual, both models." />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule:       oklch(0.86 0.04 230);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --violet:     oklch(0.55 0.16 300);
+      --violet-wash:oklch(0.94 0.05 300);
+      --code-bg:    oklch(0.22 0.012 60);
+      --code-ink:   oklch(0.93 0.01 80);
+      --code-mute:  oklch(0.68 0.015 80);
+      --code-accent:oklch(0.78 0.15 80);
+      --code-blue:  oklch(0.78 0.10 240);
+      --code-green: oklch(0.80 0.13 145);
+      --code-violet:oklch(0.78 0.12 300);
+      --cheap:      oklch(0.58 0.12 150);
+      --cheap-wash: oklch(0.93 0.07 150);
+      --pricey:     oklch(0.62 0.16 30);
+      --pricey-wash:oklch(0.95 0.06 30);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+      --measure: 68ch;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom,
+          transparent 0,
+          transparent 31px,
+          var(--rule-soft) 31px,
+          var(--rule-soft) 32px),
+        linear-gradient(to right,
+          transparent 0,
+          transparent calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) - 1px),
+          var(--margin-soft) calc(max(2rem, 7vw) + 1px),
+          transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Geist', 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      color: var(--ink);
+    }
+    p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    code:not(pre code) {
+      background: var(--paper-deep);
+      border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.06em 0.4em;
+      border-radius: 5px;
+      font-size: 0.92em;
+      color: var(--ink);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--paper);
+      border: 1px solid oklch(0.78 0.012 80);
+      border-bottom-width: 2px;
+      padding: 0.12em 0.55em;
+      border-radius: 5px;
+      font-size: 0.85em;
+      color: var(--ink);
+      box-shadow: 0 1px 0 oklch(0.88 0.012 80);
+      min-width: 1.4em;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) clamp(2rem, 5vw, 5rem);
+      position: relative;
+    }
+
+    /* Top hole-punch row */
+    .holes {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8%;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .holes span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--paper-deep);
+      box-shadow: inset 0 1px 1px oklch(0.78 0.02 80);
+    }
+
+    /* HEADER ------------------------------------------------ */
+    header.masthead {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding-top: 2.75rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .crumbs {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .crumbs span.dot { color: var(--margin); }
+    .crumbs .tag {
+      background: var(--margin-soft);
+      color: var(--margin);
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .crumbs .home {
+      margin-left: auto;
+      color: var(--accent-ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.05 264);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.028em;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--amber-wash) 62%, var(--amber-wash) 92%, transparent 92%);
+      padding: 0 0.1em;
+    }
+    .deck {
+      font-size: clamp(1.05rem, 0.96rem + 0.4vw, 1.25rem);
+      color: var(--ink-soft);
+      max-width: 60ch;
+      margin-top: 0.4rem;
+    }
+    .byline {
+      display: flex; gap: 0.75rem; align-items: center;
+      font-family: 'Geist', sans-serif; font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--margin);
+      margin-top: 0.6rem;
+    }
+    .byline .swatch {
+      width: 22px; height: 22px;
+      background: var(--margin);
+      border-radius: 50%;
+      position: relative;
+    }
+    .byline .swatch::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+    }
+
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .badges img { height: 20px; border-radius: 3px; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding-top: 1.1rem;
+      border-top: 1px dashed oklch(0.82 0.02 80);
+      margin-top: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-row b { color: var(--ink); font-weight: 600; }
+
+    /* INTRO ------------------------------------------------ */
+    section.intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 760px) { section.intro { grid-template-columns: 1fr; } }
+    .intro p { max-width: var(--measure); }
+    .intro p + p { margin-top: 0.9rem; }
+    .intro .lede::first-letter {
+      font-family: 'Geist', serif;
+      font-weight: 800;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.85;
+      padding: 0.18rem 0.55rem 0 0;
+      color: var(--margin);
+    }
+
+    /* TOC card */
+    .toc {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      transform: rotate(-0.4deg);
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 12px 28px -20px oklch(0.40 0.06 80 / 0.4);
+    }
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 1.5rem;
+      width: 60px; height: 18px;
+      background: oklch(0.78 0.13 68 / 0.55);
+      border-radius: 2px;
+      transform: rotate(-2deg);
+      box-shadow: 0 1px 2px oklch(0.40 0.06 80 / 0.2);
+    }
+    .toc h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--margin);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .toc ol {
+      list-style: none;
+      padding: 0; margin: 0;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.32rem;
+    }
+    .toc li {
+      counter-increment: toc;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.4rem;
+      font-size: 0.94rem;
+      align-items: baseline;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--margin);
+      letter-spacing: 0.04em;
+    }
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted oklch(0.78 0.02 80);
+    }
+    .toc a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+    /* HACK BLOCKS ------------------------------------------- */
+    .hack {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: clamp(0.5rem, 1vw, 1rem);
+      margin: 0 0 3rem;
+      scroll-margin-top: 2rem;
+    }
+    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+
+    .hack .nbr {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 0.25rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .hack .nbr { text-align: left; font-size: 2.4rem; }
+    }
+    .hack h2 {
+      font-size: clamp(1.35rem, 1.05rem + 1vw, 1.85rem);
+      margin-bottom: 0.5rem;
+    }
+    .hack h2 .pill {
+      display: inline-block;
+      vertical-align: middle;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-wash);
+      color: var(--accent-ink);
+      padding: 0.18em 0.6em;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+      position: relative; top: -2px;
+    }
+    .hack h2 .pill.frontend { background: var(--accent-wash); color: var(--accent-ink); }
+    .hack h2 .pill.backend  { background: var(--paper-deep); color: var(--ink-soft); }
+    .hack h2 .pill.model    { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .hack h2 .pill.polish   { background: var(--amber-wash); color: oklch(0.42 0.13 68); }
+    .hack h2 .pill.design   { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
+    .hack h2 .pill.money    { background: var(--cheap-wash); color: oklch(0.34 0.10 150); }
+
+    .hack > .body > p { max-width: var(--measure); }
+    .hack > .body > p + p { margin-top: 0.7rem; }
+    .hack > .body > * + * { margin-top: 0.9rem; }
+
+    /* Terminal / code blocks */
+    .term {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.15 0.01 60), 0 14px 32px -24px oklch(0.10 0.01 60 / 0.6);
+      font-size: 0.88rem;
+    }
+    .term .bar {
+      background: oklch(0.30 0.012 60);
+      padding: 0.5rem 0.9rem;
+      display: flex; gap: 0.45rem; align-items: center;
+      border-bottom: 1px solid oklch(0.18 0.01 60);
+    }
+    .term .bar .d {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: oklch(0.50 0.05 30);
+    }
+    .term .bar .d:nth-child(2) { background: oklch(0.65 0.10 80); }
+    .term .bar .d:nth-child(3) { background: oklch(0.55 0.10 145); }
+    .term .bar .label {
+      margin-left: 0.6rem;
+      color: var(--code-mute);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .term pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .term .cmt { color: var(--code-mute); font-style: italic; }
+    .term .key { color: var(--code-blue); }
+    .term .str { color: var(--code-green); }
+    .term .amb { color: var(--code-accent); }
+    .term .vio { color: var(--code-violet); }
+    .term .prompt { color: var(--code-green); user-select: none; }
+    .term .out { color: var(--code-mute); }
+    .term .ok  { color: var(--code-green); }
+    .term .no  { color: oklch(0.72 0.16 25); }
+
+    /* Try-it sidecards */
+    .tryit {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--sage-wash);
+      border: 1px solid oklch(0.82 0.06 145);
+      border-left: 3px solid var(--sage);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .tryit .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: oklch(0.36 0.10 145);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .tryit b { color: var(--ink); }
+
+    .heads-up {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--margin-soft);
+      border: 1px solid oklch(0.82 0.08 27);
+      border-left: 3px solid var(--margin);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.94rem;
+    }
+    .heads-up .badge {
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--margin);
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .heads-up b { color: var(--ink); }
+
+    /* Margin scribbles */
+    .scribble {
+      position: relative;
+      padding-left: 1.1rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--margin);
+      max-width: 38ch;
+    }
+    .scribble::before {
+      content: '←';
+      position: absolute;
+      left: 0; top: 0.05em;
+      color: var(--margin);
+    }
+
+    /* ── Live "the two dials" panel ─────────────────────────── */
+    .demo {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-md);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 oklch(0.86 0.03 80), 0 14px 30px -22px oklch(0.40 0.06 80 / 0.45);
+    }
+    .demo .demo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-deep);
+      border-bottom: 1px solid oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+    }
+    .demo .demo-bar .live {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--margin);
+    }
+    .demo .demo-bar .live i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--margin);
+      display: inline-block;
+      animation: pulse 1.4s var(--ease-paper) infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.35; transform: scale(0.7);} }
+
+    /* tier picker */
+    .dials { padding: 1.1rem 1.15rem 0.4rem; }
+    .dials .q {
+      font-family: 'Geist Mono', monospace; font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+      margin-bottom: 0.55rem;
+    }
+    .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
+    @media (max-width: 560px) { .tiers { grid-template-columns: 1fr; } }
+    .tier {
+      text-align: left;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-paper), border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    .tier:hover { transform: translateY(-2px); border-color: oklch(0.78 0.06 264); }
+    .tier.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
+    .tier .nm { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--ink); }
+    .tier .ds { font-size: 0.7rem; color: var(--ink-mute); margin-top: 0.1rem; }
+    .tier .chips { display: flex; gap: 0.3rem; margin-top: 0.45rem; flex-wrap: wrap; }
+    .tier .chip {
+      font-family: 'Geist Mono', monospace; font-size: 0.6rem;
+      padding: 0.12em 0.45em; border-radius: 999px; letter-spacing: 0.03em;
+    }
+    .chip.fast  { background: var(--cheap-wash); color: oklch(0.34 0.10 150); }
+    .chip.smart { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .chip.cheap { background: var(--amber-wash);  color: oklch(0.42 0.13 68); }
+
+    /* meters */
+    .meters {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem;
+      padding: 0.9rem 1.15rem 0.4rem;
+    }
+    @media (max-width: 560px) { .meters { grid-template-columns: 1fr; } }
+    .meter-box {
+      background: var(--paper);
+      border: 1px solid oklch(0.9 0.015 80);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+    }
+    .meter-box .ml {
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .meter-box .mv {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.5rem; letter-spacing: -0.02em; margin-top: 0.15rem;
+      transition: color 0.3s var(--ease-paper);
+    }
+    .meter-box .track {
+      height: 8px; border-radius: 999px; background: var(--paper-deep);
+      overflow: hidden; margin-top: 0.5rem;
+    }
+    .meter-box .track i {
+      display: block; height: 100%; width: 0;
+      border-radius: 999px;
+      transition: width 0.6s var(--ease-paper), background 0.3s;
+    }
+    .meter-box.cost .track i  { background: var(--pricey); }
+    .meter-box.speed .track i { background: var(--cheap); }
+    .meter-box .sub { font-size: 0.68rem; color: var(--ink-mute); margin-top: 0.4rem; }
+
+    .demo .demo-foot {
+      display: flex; gap: 0.6rem; align-items: center;
+      padding: 0.5rem 1.15rem 1rem;
+      flex-wrap: wrap;
+    }
+    .demo .verdict-line {
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .demo .verdict-line b { color: var(--ink); }
+    .demo .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: var(--margin);
+      margin-left: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .demo .demo-bar .live i, .meter-box .track i, .tier { animation: none; transition: none; }
+    }
+
+    /* ── Side-by-side model compare ─────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .compare .col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .compare .col.claude h4 { color: var(--accent-ink); }
+    .compare .col.gemini h4 { color: oklch(0.45 0.13 300); }
+    .compare .col h4 .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .compare .col.claude h4 .dot { background: var(--accent); }
+    .compare .col.gemini h4 .dot { background: var(--violet); }
+
+    /* ── Price table ─────────────────────── */
+    .ptable {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem;
+      background: var(--paper);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .ptable th, .ptable td {
+      text-align: left; padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid oklch(0.92 0.015 80);
+    }
+    .ptable th {
+      font-family: 'Geist Mono', monospace; font-size: 0.64rem;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
+      background: var(--paper-deep);
+    }
+    .ptable tr:last-child td { border-bottom: none; }
+    .ptable td.model { font-weight: 600; color: var(--ink); }
+    .ptable td.num { font-family: 'Geist Mono', monospace; text-align: right; }
+    .ptable .badge-cheap { color: oklch(0.34 0.10 150); font-weight: 600; }
+    .ptable .badge-mid   { color: oklch(0.42 0.13 68);  font-weight: 600; }
+    .ptable .badge-top   { color: oklch(0.42 0.14 300); font-weight: 600; }
+
+    /* ── Mobile mock ─────────────────────── */
+    .phone-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin: 1.1rem 0;
+    }
+    @media (max-width: 600px) { .phone-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .phone {
+      width: 218px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 30px;
+      padding: 9px;
+      box-shadow: 0 20px 50px -28px oklch(0.20 0.05 264 / 0.7), inset 0 0 0 1px oklch(0.30 0.01 60);
+      flex-shrink: 0;
+    }
+    .phone .screen {
+      background: var(--paper);
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .phone .notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 20px;
+      background: oklch(0.16 0.01 60);
+      border-radius: 0 0 12px 12px;
+      z-index: 3;
+    }
+    .phone .s-head {
+      background:
+        radial-gradient(120% 140% at 0% 0%, var(--accent-wash), transparent 60%),
+        linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%);
+      height: 116px;
+      padding: 1.6rem 1rem 0.7rem;
+      color: oklch(0.99 0 0);
+    }
+    .phone .s-head .k {
+      font-family: 'Geist Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;
+    }
+    .phone .s-head .t { font-family: 'Geist', serif; font-weight: 700; font-size: 1.1rem; margin-top: 0.15rem; }
+    .phone .s-head .dials2 { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .phone .s-head .d2 { flex: 1; }
+    .phone .s-head .d2 .lab { font-size: 0.54rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+    .phone .s-head .d2 .val { font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1rem; margin-top: 0.05rem; }
+    .phone .s-list { padding: 0.7rem 0.8rem; display: grid; gap: 0.5rem; }
+    .phone .s-row {
+      display: grid; grid-template-columns: 24px 1fr auto; gap: 0.5rem; align-items: center;
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.88 0.02 80);
+      border-radius: 10px;
+      padding: 0.45rem 0.55rem;
+    }
+    .phone .s-row .ico {
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Geist Mono', monospace; font-size: 0.62rem; font-weight: 700;
+    }
+    .phone .s-row.cheap .ico { background: var(--cheap-wash); color: oklch(0.34 0.10 150); }
+    .phone .s-row.top   .ico { background: var(--violet-wash); color: oklch(0.42 0.14 300); }
+    .phone .s-row .nm { font-size: 0.74rem; font-weight: 600; color: var(--ink); line-height: 1.2; }
+    .phone .s-row .ds { font-size: 0.6rem; color: var(--ink-mute); }
+    .phone .s-row .pr { font-family: 'Geist Mono', monospace; font-size: 0.66rem; font-weight: 600; color: var(--ink-soft); }
+    .phone-cap { max-width: 40ch; }
+    .phone-cap p { font-size: 0.95rem; }
+    .phone-cap .scribble { margin-top: 0.6rem; }
+
+    /* ── Cheat sheet ─────────────────────── */
+    section.cheat {
+      background: var(--paper-alt);
+      border: 1px solid oklch(0.86 0.03 80);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+      margin: 1rem 0 3rem;
+      position: relative;
+    }
+    section.cheat::before {
+      content: '';
+      position: absolute; top: -10px; right: 2rem;
+      width: 70px; height: 20px;
+      background: oklch(0.62 0.10 264 / 0.4);
+      border-radius: 2px; transform: rotate(2deg);
+    }
+    section.cheat h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: var(--accent-ink);
+      margin-bottom: 1rem;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.1rem 1.6rem;
+    }
+    .cheat-col h4 {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--margin); margin-bottom: 0.5rem;
+      border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
+    }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col li {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      font-size: 0.86rem; color: var(--ink-soft);
+    }
+    .cheat-col li code {
+      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+    }
+
+    /* ── Footer ─────────────────────── */
+    footer.sig {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: space-between; align-items: flex-end;
+      border-top: 2px solid var(--ink);
+      padding-top: 1.2rem;
+      margin-top: 1rem;
+    }
+    footer.sig .name {
+      font-family: 'Geist', sans-serif; font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    footer.sig .name small {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+    }
+    footer.sig .end {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ink-mute);
+      text-align: right;
+    }
+    footer.sig .end code { color: var(--accent-ink); }
+
+    ::selection { background: oklch(0.78 0.13 68 / 0.55); color: var(--ink); }
+
+    @media print {
+      body { background: white; }
+      .term, .demo { box-shadow: none; }
+      .holes, .demo .demo-foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="holes" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <header class="masthead">
+      <div class="crumbs">
+        <span>Field Notebook</span>
+        <span class="dot">•</span>
+        <span>Vol. 25</span>
+        <span class="dot">•</span>
+        <span>2026&nbsp;·&nbsp;06&nbsp;·&nbsp;25</span>
+        <span class="tag">build</span>
+        <span class="tag">cost</span>
+        <span class="tag">latency</span>
+        <a class="home" href="../index.html">← all entries</a>
+      </div>
+
+      <h1>The two <span class="accent">dials</span> &mdash; ten moves so your AI feature doesn't cost a fortune or make people wait.</h1>
+
+      <p class="deck">
+        Last entry put your feature on a rubric so it ships <em>good</em>. This one is about
+        the two numbers nobody warns a beginner about: what each call <strong>costs</strong>,
+        and how long it makes someone <strong>wait</strong>. Both are dials, not fixed facts &mdash;
+        and most of the times they're stuck at "expensive" and "slow," it's a choice you didn't
+        know you were making. Here's how to read them and turn them down. Both models, move for move.
+      </p>
+
+      <div class="byline">
+        <span class="swatch" aria-hidden="true"></span>
+        <span>&mdash;Lupo · The Mess is the Method</span>
+      </div>
+
+      <div class="badges" aria-label="stack badges">
+        <img src="https://img.shields.io/badge/Claude-Haiku_%E2%86%92_Sonnet-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude Haiku to Sonnet routing" />
+        <img src="https://img.shields.io/badge/Gemini-Flash_%E2%86%92_Pro-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini Flash to Pro routing" />
+        <img src="https://img.shields.io/badge/prompt_caching-on-2EA043?style=flat-square&logo=redis&logoColor=white" alt="prompt caching on" />
+        <img src="https://img.shields.io/badge/streaming-TTFT-8957E5?style=flat-square&logo=serverless&logoColor=white" alt="streaming for time to first token" />
+      </div>
+
+      <div class="meta-row">
+        <span><b>Read</b> · ~12 min</span>
+        <span><b>Surface</b> · a router fn + a usage log</span>
+        <span><b>Assumes</b> · you ship something that calls a model</span>
+        <span><b>Pairs with</b> · Vol. 22 (streaming) · Vol. 24 (evals)</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="lede">
+          My first AI feature worked beautifully in the demo and arrived with a $400 surprise
+          at the end of the month. I'd wired every request &mdash; including "what's 2+2"-tier
+          questions &mdash; to the biggest, smartest model, then stuffed the entire knowledge
+          base into every prompt, fresh, every time. It was correct. It was also slow enough
+          that people stopped using it, and costly enough that I almost killed it. Nothing was
+          broken. I just had both dials cranked to the wall and couldn't see the dials.
+        </p>
+        <p>
+          That's the thing about cost and latency: they're invisible until they're a problem,
+          and by then they feel like a property of "using AI" rather than choices you made.
+          They're choices. <strong>Cost</strong> is mostly which model you picked and how many
+          tokens you sent it. <strong>Latency</strong> is mostly how big the job is and whether
+          the user stares at a spinner or watches words appear. Every move below turns one of
+          those two dials down without making the output worse.
+        </p>
+        <p>
+          Ten moves, each with a number, a one-line claim, real code, and a try-it crumb. The
+          panel under this intro is live &mdash; pick a model tier for a job and watch the two
+          dials move in real time. Smart isn't always right; cheap isn't always wrong. The
+          whole skill is <strong>matching the dial to the job.</strong>
+        </p>
+      </div>
+
+      <aside class="toc" aria-label="Table of contents">
+        <h3>The ten moves ↓</h3>
+        <ol>
+          <li><a href="#h1">Every call has a price tag — learn to read it</a></li>
+          <li><a href="#h2">Don't send a genius to do a clerk's job</a></li>
+          <li><a href="#h3">Route by difficulty, not by default</a></li>
+          <li><a href="#h4">Cache the part of the prompt that never changes</a></li>
+          <li><a href="#h5">Cap the output — max_tokens is a cost lever</a></li>
+          <li><a href="#h6">Latency is felt, not measured — stream it</a></li>
+          <li><a href="#h7">Batch the work that nobody is waiting on</a></li>
+          <li><a href="#h8">Log usage on every call, or you're flying blind</a></li>
+          <li><a href="#h9">Set a budget the code actually enforces</a></li>
+          <li><a href="#h10">The two-dial test — cheaper or faster, for free?</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="the two dials interactive demo">
+      <div class="demo-bar">
+        <span>the two dials · pick a tier for this job</span>
+        <span class="live"><i></i> live</span>
+      </div>
+
+      <div class="dials">
+        <div class="q">job · <b id="jobName">classify a support email into one of 6 buckets</b></div>
+        <div class="tiers" id="tiers">
+          <button class="tier on" data-tier="cheap">
+            <div class="nm">Haiku · Flash</div>
+            <div class="ds">the cheap, fast tier</div>
+            <div class="chips"><span class="chip fast">fast</span><span class="chip cheap">~1×</span></div>
+          </button>
+          <button class="tier" data-tier="mid">
+            <div class="nm">Sonnet · Flash-2.5</div>
+            <div class="ds">the balanced workhorse</div>
+            <div class="chips"><span class="chip smart">smarter</span><span class="chip cheap">~4×</span></div>
+          </button>
+          <button class="tier" data-tier="top">
+            <div class="nm">Opus · Gemini Pro</div>
+            <div class="ds">the heavy reasoner</div>
+            <div class="chips"><span class="chip smart">smartest</span><span class="chip cheap">~20×</span></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="meters">
+        <div class="meter-box cost">
+          <div class="ml"><span>cost / 1k requests</span><span id="costPct">low</span></div>
+          <div class="mv" id="costVal">$0.30</div>
+          <div class="track"><i id="costBar"></i></div>
+          <div class="sub" id="costSub">a rounding error at this volume.</div>
+        </div>
+        <div class="meter-box speed">
+          <div class="ml"><span>time to answer</span><span id="speedPct">snappy</span></div>
+          <div class="mv" id="speedVal">0.4s</div>
+          <div class="track"><i id="speedBar"></i></div>
+          <div class="sub" id="speedSub">feels instant, no spinner needed.</div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Right call.</b> A 6-bucket classification is a clerk's job — the cheap tier nails it for pennies.</span>
+        <span class="hint">try the heavy model on this ↑</span>
+      </div>
+    </div>
+
+    <!-- MOVE 1 -->
+    <article class="hack" id="h1" style="margin-top:3rem;">
+      <div class="nbr">01</div>
+      <div class="body">
+        <h2>Every call has a price tag &mdash; and it's printed on the response, you just never looked. <span class="pill money">money</span></h2>
+        <p>
+          You pay per token, in and out. Every model response hands back a <code>usage</code>
+          object telling you exactly how many of each you spent &mdash; and most beginners
+          never read it once. Multiply input tokens by the input price, output tokens by the
+          (usually higher) output price, and you have the real cost of that one call. Do it
+          once and the abstract bill becomes a number you can actually steer.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cost.ts &mdash; the number was on the response all along</span></div>
+<pre><span class="cmt">// Both SDKs hand back token counts. Price them yourself.</span>
+<span class="key">const</span> msg = <span class="key">await</span> client.messages.create({ <span class="cmt">/* … */</span> });
+
+console.log(msg.usage);
+<span class="out">// { input_tokens: 1840, output_tokens: 215 }</span>
+
+<span class="cmt">// Claude Haiku 4.5 list price (per million tokens):</span>
+<span class="key">const</span> IN = <span class="amb">1.00</span> / <span class="amb">1_000_000</span>;   <span class="cmt">// $1.00 / Mtok in</span>
+<span class="key">const</span> OUT = <span class="amb">5.00</span> / <span class="amb">1_000_000</span>;  <span class="cmt">// $5.00 / Mtok out</span>
+
+<span class="key">const</span> cost = msg.usage.input_tokens  * IN
+           + msg.usage.output_tokens * OUT;
+console.log(<span class="str">`this call: $${cost.toFixed(<span class="amb">5</span>)}`</span>);
+<span class="out">// this call: $0.00292  ← times a million requests, that's $2,920</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Output tokens almost always cost more than input &mdash; often <b>4–5×</b>. So a chatty
+          model that pads every answer isn't just annoying, it's the expensive one. Move 05 turns
+          that into a lever.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 2 -->
+    <article class="hack" id="h2">
+      <div class="nbr">02</div>
+      <div class="body">
+        <h2>Don't send a genius to do a clerk's job &mdash; the smartest model is the wrong default. <span class="pill model">model</span></h2>
+        <p>
+          The instinct is to reach for the biggest model so quality is never the problem. But
+          most of what an app does is clerical: classify this, extract that, reformat this,
+          answer a FAQ. A small fast model does clerical work perfectly &mdash; and a frontier
+          model on the same task is slower, pricier, and no more correct. Reaching for the top
+          tier by default is like couriering every envelope by helicopter.
+        </p>
+        <div class="ptable-wrap">
+        <table class="ptable" aria-label="rough model tiers">
+          <thead>
+            <tr><th>Tier</th><th>Claude</th><th>Gemini</th><th>Good at</th><th class="num">Rel. cost</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="badge-cheap">cheap · fast</td>
+              <td class="model">Haiku 4.5</td>
+              <td class="model">2.5 Flash</td>
+              <td>classify, extract, format, FAQ</td>
+              <td class="num">~1×</td>
+            </tr>
+            <tr>
+              <td class="badge-mid">balanced</td>
+              <td class="model">Sonnet 4.6</td>
+              <td class="model">2.5 Flash</td>
+              <td>drafting, summaries, tool use</td>
+              <td class="num">~4×</td>
+            </tr>
+            <tr>
+              <td class="badge-top">heavy</td>
+              <td class="model">Opus / Fable</td>
+              <td class="model">2.5 Pro</td>
+              <td>multi-step reasoning, hard code</td>
+              <td class="num">~20×</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="scribble">"relative cost" is a feel, not a quote — list prices move. always check the current pricing page.</p>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>List every model call your app makes and write one word next to each: <b>clerk</b> or
+          <b>thinker</b>. Every "clerk" pointed at a frontier model is free money on the table &mdash;
+          drop it a tier and watch nothing get worse.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 3 -->
+    <article class="hack" id="h3">
+      <div class="nbr">03</div>
+      <div class="body">
+        <h2>Route by difficulty, not by default &mdash; let a cheap model triage before a smart one swings. <span class="pill backend">backend</span></h2>
+        <p>
+          Once jobs split into clerk and thinker, you can pick the model <em>per request</em>
+          instead of per app. The pattern is a tiny <code>route()</code> function: cheap tier
+          for the easy 80%, escalate to the heavy tier only when the input is genuinely hard.
+          You can route on something dumb-but-effective (length, a keyword, a category) or let
+          the cheap model itself flag "this one's above my pay grade" and hand it up.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">route.ts &mdash; one function decides the tier</span></div>
+<pre><span class="cmt">// The whole optimization is choosing the model on purpose.</span>
+<span class="key">type</span> Tier = <span class="str">"cheap"</span> | <span class="str">"heavy"</span>;
+
+<span class="key">const</span> MODELS = {
+  cheap: <span class="str">"claude-haiku-4-5"</span>,    <span class="cmt">// fast clerk</span>
+  heavy: <span class="str">"claude-sonnet-4-6"</span>,   <span class="cmt">// bring it out only when needed</span>
+};
+
+<span class="key">function</span> route(task: Task): Tier {
+  <span class="key">if</span> (task.kind === <span class="str">"classify"</span>) <span class="key">return</span> <span class="str">"cheap"</span>;     <span class="cmt">// clerical</span>
+  <span class="key">if</span> (task.kind === <span class="str">"extract"</span>)  <span class="key">return</span> <span class="str">"cheap"</span>;
+  <span class="key">if</span> (task.input.length &lt; <span class="amb">600</span>)      <span class="key">return</span> <span class="str">"cheap"</span>;     <span class="cmt">// small = easy, usually</span>
+  <span class="key">return</span> <span class="str">"heavy"</span>;                              <span class="cmt">// the genuinely hard 20%</span>
+}
+
+<span class="key">const</span> answer = <span class="key">await</span> client.messages.create({
+  model: MODELS[route(task)],   <span class="cmt">// ← the dial, set per request</span>
+  max_tokens: <span class="amb">400</span>,
+  messages: [{ role: <span class="str">"user"</span>, content: task.input }],
+});</pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Routing has a failure mode: sending a hard job to the cheap tier and shipping a worse
+          answer to save a cent. That's exactly what <b>Vol. 24's eval harness</b> catches &mdash;
+          run both tiers against your golden cases and let the score tell you where "cheap" stops
+          being safe.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 4 -->
+    <article class="hack" id="h4">
+      <div class="nbr">04</div>
+      <div class="body">
+        <h2>Cache the part of the prompt that never changes &mdash; stop paying to re-read your own instructions. <span class="pill money">money</span></h2>
+        <p>
+          Most prompts are a big fixed chunk &mdash; system instructions, a style guide, a
+          knowledge base, a few examples &mdash; followed by one small variable bit (the user's
+          actual question). You're paying full input price to send that fixed chunk on every
+          single call. <em>Prompt caching</em> lets the provider remember it: mark the stable
+          prefix once, and repeat calls read it from cache at a fraction of the price and
+          latency. The bigger and more repeated your prefix, the more this saves.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">cache.ts &mdash; mark the stable prefix, pay once</span></div>
+<pre><span class="cmt">// Claude: cache_control on the block that doesn't change.</span>
+<span class="key">await</span> client.messages.create({
+  model: <span class="str">"claude-sonnet-4-6"</span>,
+  system: [
+    {
+      type: <span class="str">"text"</span>,
+      text: BIG_KNOWLEDGE_BASE,           <span class="cmt">// 20k tokens, same every call</span>
+      cache_control: { type: <span class="str">"ephemeral"</span> },  <span class="cmt">// ← cache this</span>
+    },
+  ],
+  messages: [{ role: <span class="str">"user"</span>, content: userQuestion }],  <span class="cmt">// the only fresh part</span>
+});
+<span class="cmt">// first call: writes the cache (small surcharge).</span>
+<span class="cmt">// every call after: reads it ~10× cheaper + faster, within the TTL.</span></pre>
+        </div>
+        <div class="compare">
+          <div class="col claude">
+            <h4><span class="dot"></span>Claude</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Explicit: add <code>cache_control</code> to the block. You decide what's cacheable and the <code>usage</code> reports <code>cache_read</code> vs <code>cache_creation</code> tokens so you can see it working.</p>
+          </div>
+          <div class="col gemini">
+            <h4><span class="dot"></span>Gemini</h4>
+            <p style="font-size:0.92rem;color:var(--ink-soft);">Context caching via a cached-content handle you create once and reference by name &mdash; same idea, you register the big stable context and reuse it across calls.</p>
+          </div>
+        </div>
+        <p class="scribble">a 20k-token prefix re-sent 1,000 times is 20M tokens you bought twice. cache it and that bill nearly vanishes.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 5 -->
+    <article class="hack" id="h5">
+      <div class="nbr">05</div>
+      <div class="body">
+        <h2>Cap the output &mdash; <code>max_tokens</code> is a cost lever, not just a safety net. <span class="pill backend">backend</span></h2>
+        <p>
+          Output tokens are the expensive ones, and a model with no ceiling will happily write
+          you an essay when you wanted a sentence. Set <code>max_tokens</code> to the real size
+          of the answer you need, and tell the model to be brief in the prompt. You cut cost and
+          latency at the same time &mdash; fewer tokens to generate means fewer tokens to pay
+          for <em>and</em> fewer to wait on. Two dials, one knob.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">brief.ts &mdash; size the answer to the need</span></div>
+<pre><span class="cmt">// A 1-word category does not need 1,024 tokens of headroom.</span>
+<span class="key">await</span> client.messages.create({
+  model: <span class="str">"claude-haiku-4-5"</span>,
+  max_tokens: <span class="amb">8</span>,          <span class="cmt">// ← the answer is one of six words. cap it.</span>
+  system: <span class="str">"Reply with ONLY the category name. No preamble, no punctuation."</span>,
+  messages: [{ role: <span class="str">"user"</span>, content: email }],
+});
+<span class="out">// "billing"   ← 1 output token instead of 60 tokens of "Sure! This email is about…"</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Audit your prompts for the phrase the model loves &mdash; "Sure, here's…", "I'd be happy
+          to…". Every one of those is output tokens you're paying for and a user is waiting on.
+          Add <b>"answer directly, no preamble"</b> and shrink <code>max_tokens</code> to fit.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 6 -->
+    <article class="hack" id="h6">
+      <div class="nbr">06</div>
+      <div class="body">
+        <h2>Latency is felt, not measured &mdash; stream the answer so the wait stops feeling like a wait. <span class="pill frontend">frontend</span></h2>
+        <p>
+          Here's the quiet trick: you often can't make the model finish faster, but you can make
+          it <em>feel</em> instant by showing the first words the moment they exist. The number
+          that matters to a human isn't total time &mdash; it's <strong>time to first token</strong>.
+          A four-second answer that starts streaming at 400ms feels alive; the same answer behind
+          a spinner feels broken. This is Vol. 22's whole move, pointed at the latency dial.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">stream.ts &mdash; first token fast, rest as it arrives</span></div>
+<pre><span class="key">const</span> stream = <span class="key">await</span> client.messages.stream({
+  model: <span class="str">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="amb">400</span>,
+  messages: [{ role: <span class="str">"user"</span>, content: prompt }],
+});
+
+stream.on(<span class="str">"text"</span>, (chunk) =&gt; {
+  process.stdout.write(chunk);   <span class="cmt">// paint each token the instant it lands</span>
+});                              <span class="cmt">// TTFT ~0.4s — the wait is over before it began</span></pre>
+        </div>
+        <div class="heads-up">
+          <span class="badge">heads up</span>
+          <div>Streaming doesn't lower cost or true latency &mdash; it lowers <b>perceived</b> latency,
+          which is the one your users actually rate. Pair it with Move 02: a cheap model that
+          streams beats a smart model behind a spinner for almost every interactive surface.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 7 -->
+    <article class="hack" id="h7">
+      <div class="nbr">07</div>
+      <div class="body">
+        <h2>Batch the work nobody is waiting on &mdash; offline jobs don't need real-time prices. <span class="pill money">money</span></h2>
+        <p>
+          Not every call has a human tapping their foot. Nightly summaries, bulk tagging,
+          re-embedding a corpus, backfilling data &mdash; that work has no latency requirement
+          at all, so don't pay the real-time premium for it. Both providers offer a <em>batch</em>
+          mode that runs jobs asynchronously, within a window, at a steep discount (often ~50%).
+          If nobody's waiting, latency is free to spend &mdash; trade it for cost.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">batch.ts &mdash; async work, discounted</span></div>
+<pre><span class="cmt">// 10,000 product descriptions to tag overnight? Not a chat. Batch it.</span>
+<span class="key">const</span> batch = <span class="key">await</span> client.messages.batches.create({
+  requests: products.map((p) =&gt; ({
+    custom_id: p.id,
+    params: {
+      model: <span class="str">"claude-haiku-4-5"</span>,   <span class="cmt">// cheap tier + batch = floor price</span>
+      max_tokens: <span class="amb">40</span>,
+      messages: [{ role: <span class="str">"user"</span>, content: tagPrompt(p) }],
+    },
+  })),
+});
+<span class="cmt">// poll batch.id until done. ~50% off, because you traded "now" for "by morning."</span></pre>
+        </div>
+        <p class="scribble">interactive? stream it. overnight? batch it. the dial you don't need is the dial you sell.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 8 -->
+    <article class="hack" id="h8">
+      <div class="nbr">08</div>
+      <div class="body">
+        <h2>Log usage on every call &mdash; you can't tune a dial you can't see. <span class="pill backend">backend</span></h2>
+        <p>
+          You optimize what you measure. Wrap every model call so it records the model, the
+          token counts, the latency, and the computed cost &mdash; one row per request. Now
+          "the AI is expensive" becomes "the summarizer is 80% of the bill and it's on the heavy
+          tier for no reason." A thin logging wrapper is the single highest-leverage thing in
+          this whole entry, because it turns every other move from a guess into a measurement.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">meter.ts &mdash; wrap once, see everything</span></div>
+<pre><span class="key">export async function</span> metered(model: <span class="vio">string</span>, params: <span class="vio">any</span>) {
+  <span class="key">const</span> t0 = performance.now();
+  <span class="key">const</span> res = <span class="key">await</span> client.messages.create({ model, ...params });
+  <span class="key">const</span> ms = performance.now() - t0;
+
+  log.insert({
+    model,
+    in_tok:  res.usage.input_tokens,
+    out_tok: res.usage.output_tokens,
+    cached:  res.usage.cache_read_input_tokens ?? <span class="amb">0</span>,
+    cost:    price(model, res.usage),   <span class="cmt">// Move 01's math, reused</span>
+    latency_ms: Math.round(ms),
+    route:   params._route,             <span class="cmt">// which tier the router picked</span>
+  });
+  <span class="key">return</span> res;
+}
+<span class="cmt">// one dashboard query later: cost by feature, p95 latency by model. now you can aim.</span></pre>
+        </div>
+        <div class="tryit">
+          <span class="badge">try it</span>
+          <div>Before you optimize anything, ship the logger and let it run for a day. Then sort by
+          total cost descending. The top two rows are your entire optimization to-do list &mdash;
+          the rest is rounding error.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- MOVE 9 -->
+    <article class="hack" id="h9">
+      <div class="nbr">09</div>
+      <div class="body">
+        <h2>Set a budget the code enforces &mdash; a cap nobody trips is a hope, not a limit. <span class="pill polish">polish</span></h2>
+        <p>
+          The $400 surprise happens because nothing in the code knows about money. Fix that:
+          give each feature (or user, or tenant) a spend ceiling, increment it from the same
+          usage you're already logging, and refuse the call when it's blown. A runaway loop, a
+          scraper hammering your endpoint, a prompt-injection that makes the model talk forever
+          &mdash; all of them hit a wall instead of a credit card. Same shape as Vol. 24's CI
+          gate: a number, a bar, a hard stop.
+        </p>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+            <span class="label">budget.ts &mdash; the wall that stops the surprise</span></div>
+<pre><span class="key">const</span> DAILY_CAP = <span class="amb">25.00</span>;  <span class="cmt">// dollars, per feature, per day</span>
+
+<span class="key">async function</span> guarded(model: <span class="vio">string</span>, params: <span class="vio">any</span>) {
+  <span class="key">const</span> spent = <span class="key">await</span> today.spend(params.feature);
+  <span class="key">if</span> (spent &gt;= DAILY_CAP) {
+    <span class="key">throw new</span> Error(<span class="str">`budget hit: ${params.feature} spent $${spent.toFixed(<span class="amb">2</span>)}`</span>);
+  }
+  <span class="key">const</span> res = <span class="key">await</span> metered(model, params);      <span class="cmt">// Move 08's wrapper</span>
+  <span class="key">await</span> today.add(params.feature, price(model, res.usage));
+  <span class="key">return</span> res;
+}
+<span class="cmt">// now the worst case is a blocked request + an alert — not a four-figure invoice.</span></pre>
+        </div>
+        <p class="scribble">a budget in a spreadsheet is a wish. a budget in an <code>if</code> statement is a guardrail.</p>
+      </div>
+    </article>
+
+    <!-- MOVE 10 -->
+    <article class="hack" id="h10">
+      <div class="nbr">10</div>
+      <div class="body">
+        <h2>The two-dial test &mdash; could this call be cheaper or faster without getting worse? <span class="pill polish">polish</span></h2>
+        <p>
+          That's the whole entry in one question, asked of every call your app makes. Could a
+          smaller model do this job just as well? Is the fixed part of this prompt cached? Is the
+          output capped to the answer's real size? Does the user see the first token fast, or
+          stare at a spinner? If the honest answer to any of those is "no," you've found a dial
+          stuck at the wall &mdash; and turning it down costs you nothing but the minute it takes.
+          The eval harness from last entry is your safety net: change a dial, re-run the cases,
+          ship only if the score holds.
+        </p>
+        <div class="phone-wrap">
+          <div class="phone" aria-label="mobile preview of a per-feature cost and latency dashboard">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="s-head">
+                <div class="k">usage · today</div>
+                <div class="t">Cost &amp; latency</div>
+                <div class="dials2">
+                  <div class="d2"><div class="lab">spend</div><div class="val">$6.18</div></div>
+                  <div class="d2"><div class="lab">p95 latency</div><div class="val">0.6s</div></div>
+                </div>
+              </div>
+              <div class="s-list">
+                <div class="s-row cheap">
+                  <div class="ico">H</div>
+                  <div><div class="nm">email triage</div><div class="ds">Haiku · cached · streamed</div></div>
+                  <div class="pr">$0.40</div>
+                </div>
+                <div class="s-row cheap">
+                  <div class="ico">F</div>
+                  <div><div class="nm">bulk tagging</div><div class="ds">Flash · batched overnight</div></div>
+                  <div class="pr">$1.10</div>
+                </div>
+                <div class="s-row top">
+                  <div class="ico">S</div>
+                  <div><div class="nm">deep summaries</div><div class="ds">Sonnet · only the hard 20%</div></div>
+                  <div class="pr">$4.68</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-cap">
+            <p>
+              Same three features that used to be $40 a day, now $6 &mdash; not because anything
+              got worse, but because each call finally sits on the right tier, reads its prompt
+              from cache, and only the genuinely hard 20% touches the heavy model. The dashboard
+              isn't the point; the <em>routing</em> behind it is.
+            </p>
+            <p class="scribble">nothing here got dumber. it just stopped overpaying for the easy stuff.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" aria-label="cheat sheet">
+      <h3>One-page cheat sheet ✦</h3>
+      <div class="cheat-grid">
+        <div class="cheat-col">
+          <h4>The cost dial</h4>
+          <ul>
+            <li><code>1</code><span>read <code>usage</code>, price it yourself</span></li>
+            <li><code>2</code><span>clerk job → cheap model</span></li>
+            <li><code>3</code><span>route per request, not per app</span></li>
+            <li><code>4</code><span>cache the stable prefix</span></li>
+            <li><code>5</code><span>cap <code>max_tokens</code> to fit</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The latency dial</h4>
+          <ul>
+            <li><code>TTFT</code><span>first token &gt; total time</span></li>
+            <li><code>stream</code><span>paint tokens as they land</span></li>
+            <li><code>small</code><span>cheap tier = lower latency too</span></li>
+            <li><code>brief</code><span>fewer out tokens = faster</span></li>
+            <li><code>batch</code><span>no-wait work → async + cheap</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>See &amp; gate it</h4>
+          <ul>
+            <li><code>wrap</code><span>log model · tokens · ms · $</span></li>
+            <li><code>sort</code><span>by cost desc → top 2 = the list</span></li>
+            <li><code>cap</code><span>budget in an <code>if</code>, not a wish</span></li>
+            <li><code>alert</code><span>block + ping, never invoice</span></li>
+          </ul>
+        </div>
+        <div class="cheat-col">
+          <h4>The two-dial test</h4>
+          <ul>
+            <li><code>cheaper?</code><span>smaller model do this?</span></li>
+            <li><code>cached?</code><span>fixed prefix paid once?</span></li>
+            <li><code>capped?</code><span>output sized to the need?</span></li>
+            <li><code>felt?</code><span>first token fast?</span></li>
+            <li><code>safe?</code><span>re-run evals, score holds</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <div class="name">
+        —Lupo
+        <small>The Mess is the Method · Field Notebook · Vol. 25 · 2026-06-25</small>
+      </div>
+      <div class="end">
+        next entry · <code>retrieval without the hype: when your AI actually needs a database</code> →
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── Live "the two dials" demo ────────────────────────────
+    (function () {
+      var tiersEl  = document.getElementById("tiers");
+      if (!tiersEl) return;
+
+      var costVal = document.getElementById("costVal");
+      var costBar = document.getElementById("costBar");
+      var costPct = document.getElementById("costPct");
+      var costSub = document.getElementById("costSub");
+      var speedVal = document.getElementById("speedVal");
+      var speedBar = document.getElementById("speedBar");
+      var speedPct = document.getElementById("speedPct");
+      var speedSub = document.getElementById("speedSub");
+      var verdict  = document.getElementById("verdict");
+
+      // The job is fixed: a 6-bucket classification (a clerk's job).
+      // Each tier shows what the SAME easy job costs on that tier —
+      // the point is that the cheap tier is the right call here.
+      var TIERS = {
+        cheap: {
+          cost: "$0.30",  costW: 8,   costTag: "low",      costSub: "a rounding error at this volume.",
+          speed: "0.4s",  speedW: 92, speedTag: "snappy",  speedSub: "feels instant, no spinner needed.",
+          verdict: '<b>Right call.</b> A 6-bucket classification is a clerk’s job — the cheap tier nails it for pennies.'
+        },
+        mid: {
+          cost: "$1.20",  costW: 30,  costTag: "4×",   costSub: "4× the price for the same right answer.",
+          speed: "0.9s",  speedW: 72, speedTag: "fine",    speedSub: "still fast, but you gained nothing here.",
+          verdict: '<b>Overkill.</b> The balanced model gets the same label, slower and pricier. Save it for drafting, not sorting.'
+        },
+        top: {
+          cost: "$6.00",  costW: 100, costTag: "20×",  costSub: "20× the bill to put one word in a box.",
+          speed: "2.4s",  speedW: 28, speedTag: "sluggish", speedSub: "a human is now waiting on a trivial task.",
+          verdict: '<b>The $400 mistake.</b> Frontier reasoning on a clerical job — max cost, max wait, identical output. This is the trap.'
+        }
+      };
+
+      var buttons = Array.prototype.slice.call(tiersEl.querySelectorAll(".tier"));
+
+      function paint(tier) {
+        var t = TIERS[tier];
+        costVal.textContent = t.cost;
+        costPct.textContent = t.costTag;
+        costSub.textContent = t.costSub;
+        speedVal.textContent = t.speed;
+        speedPct.textContent = t.speedTag;
+        speedSub.textContent = t.speedSub;
+        verdict.innerHTML = t.verdict;
+        // set widths + colors directly — the CSS transition does the tween.
+        costBar.style.width  = t.costW + "%";
+        speedBar.style.width = t.speedW + "%";
+        // tint the cost value red as it climbs, green when it's cheap
+        costVal.style.color = t.costW > 60 ? "var(--pricey)" : (t.costW > 20 ? "var(--amber)" : "var(--cheap)");
+        speedVal.style.color = t.speedW > 60 ? "var(--cheap)" : (t.speedW > 40 ? "var(--amber)" : "var(--pricey)");
+      }
+
+      buttons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          buttons.forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+          paint(b.getAttribute("data-tier"));
+        });
+      });
+
+      // initial paint (cheap is selected by default)
+      paint("cheap");
+    })();
+  </script>
+</body>
+</html>
