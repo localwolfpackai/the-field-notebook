@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Field Notebook — launch card</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f1ea;
+    --ink: #17140f;
+    --ink-soft: #57514644;
+    --ink-mid: #6b6358;
+    --line: #d9d2c4;
+    --red: #c0392b;
+    --accent: #2f5de0;
+  }
+  body { display: grid; place-items: center; background: #2a2723; min-height: 100vh; padding: 24px; font-family: 'Inter', system-ui, sans-serif; }
+
+  /* 1200x630 OG card */
+  .card {
+    width: 1200px; height: 630px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.32fr 1fr;
+    box-shadow: 0 40px 120px -40px #000a;
+  }
+
+  /* faint ruled-paper hint on the left, very subtle — ties to the product without copying it */
+  .card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 46px, #0000000a 46px, #0000000a 47px);
+    pointer-events: none;
+  }
+
+  /* LEFT — the pitch */
+  .left { padding: 46px 56px 44px; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+  .kicker { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink-mid); text-transform: uppercase; }
+  .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+
+  .stat { display: flex; align-items: baseline; gap: 16px; margin-top: 20px; }
+  .stat .num { font-size: 138px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.8; color: var(--ink); }
+  .stat .num-label { font-size: 21px; font-weight: 700; line-height: 1.15; color: var(--ink); max-width: 8ch; }
+  .stat .num-label span { display: block; color: var(--ink-mid); font-weight: 500; }
+
+  h1 { margin-top: 24px; font-size: 37px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.07; color: var(--ink); max-width: 17ch; }
+  h1 .hl { color: var(--accent); }
+
+  .sub { margin-top: 15px; font-size: 18px; font-weight: 450; line-height: 1.4; color: var(--ink-mid); max-width: 36ch; }
+
+  .foot { margin-top: auto; display: flex; align-items: center; gap: 16px; padding-top: 22px; }
+  .foot .url { font-size: 16px; font-weight: 600; color: var(--ink); font-family: 'Inter', monospace; }
+  .foot .sep { color: var(--line); }
+  .foot .by { font-size: 16px; font-weight: 500; color: var(--ink-mid); }
+
+  /* RIGHT — the artifact, framed like a piece on a wall */
+  .right { position: relative; z-index: 1; display: grid; place-items: center; padding: 40px 48px 40px 8px; }
+  .frame {
+    width: 100%; max-width: 400px; aspect-ratio: 3/3.5;
+    background: #fbf8f1;
+    border: 1px solid #e2dccd;
+    border-radius: 10px;
+    box-shadow: 0 30px 60px -28px #4a3f2e66, 0 4px 10px -4px #0002;
+    transform: rotate(2.2deg);
+    overflow: hidden;
+    position: relative;
+  }
+  /* washi tape */
+  .frame::before {
+    content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+    width: 116px; height: 26px; background: #e6b84088; border-radius: 2px; z-index: 3;
+  }
+  .mini { padding: 30px 26px; height: 100%; display: flex; flex-direction: column; position: relative; }
+  .mini::before { content: ''; position: absolute; top: 0; bottom: 0; left: 20px; width: 2px; background: #e0796e55; }
+  .mini-vol { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a89a86; padding-left: 18px; }
+  .mini-title { margin-top: 14px; font-size: 27px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: #17140f; padding-left: 18px; }
+  .mini-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; padding-left: 18px; }
+  .mini-pills span { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: #eae2d1; color: #6b6358; }
+  .mini-pills span.b { background: #dfe6fb; color: #2f5de0; }
+  .mini-pills span.r { background: #f7dcd7; color: #c0392b; }
+  .mini-body { margin-top: 18px; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: #6b6358; }
+  .mini-code { margin-top: auto; margin-left: 18px; background: #201d18; border-radius: 7px; padding: 12px 14px; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; color: #d7cfc2; }
+  .mini-code .k { color: #9db4ff; } .mini-code .s { color: #8fce9b; } .mini-code .c { color: #7d7466; }
+
+  /* corner mark */
+  .mark { position: absolute; bottom: 20px; right: 24px; z-index: 4; font-size: 13px; font-weight: 500; color: var(--ink-mid); letter-spacing: 0.01em; }
+  .mark b { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="left">
+      <div class="kicker"><span class="dot"></span> Lupo Studios · autonomous publishing</div>
+
+      <div class="stat">
+        <div class="num">34</div>
+        <div class="num-label">issues<span>in six weeks</span></div>
+      </div>
+
+      <h1>A Claude routine wrote a <span class="hl">field guide</span> to building with AI. I directed it.</h1>
+
+      <p class="sub">One scheduled agent, running on its own for six weeks — one consistent design system, one voice, 34 volumes. I set the brief, curated, and shipped it.</p>
+
+      <div class="foot">
+        <span class="url">localwolfpackai.github.io/the-field-notebook</span>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="frame">
+        <div class="mini">
+          <div class="mini-vol">Vol. 36 · tool use</div>
+          <div class="mini-title">When the model gets a verb</div>
+          <div class="mini-pills"><span class="b">tool use</span><span>verbs</span><span class="r">supervised</span></div>
+          <div class="mini-body">Let your app act — look something up, book a table, issue a refund — while you keep a hand on the risky moves.</div>
+          <div class="mini-code"><span class="c">// a $340 refund waits for your tap</span><br><span class="k">approved_by</span>: <span class="s">"human"</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mark"><b>The Mess is the Method</b> · 2026-07-25 · IG @_lupo</div>
+  </div>
+</body>
+</html>
