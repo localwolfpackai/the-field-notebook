@@ -77,7 +77,7 @@
     .meta-row b { color: var(--ink); font-weight: 600; }
 
     /* FEATURE (latest) */
-    .feature { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(1.25rem, 3vw, 2.5rem); align-items: stretch; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem); margin-bottom: 3rem; position: relative; overflow: hidden; }
+    .feature { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(1.25rem, 3vw, 2.5rem); align-items: stretch; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem); margin-bottom: 3rem; position: relative;  }
     .feature::before { content: ''; position: absolute; top: -10px; left: 2rem; width: 72px; height: 20px; background: oklch(0.78 0.13 68 / 0.5); border-radius: 2px; transform: rotate(-2deg); }
     @media (max-width: 760px) { .feature { grid-template-columns: 1fr; } }
     .feature .kicker { font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--margin); }
@@ -90,7 +90,7 @@
         radial-gradient(120% 120% at 100% 0%, var(--violet-wash), transparent 55%),
         radial-gradient(110% 120% at 0% 100%, var(--accent-wash), transparent 55%),
         var(--paper); display: flex; align-items: center; justify-content: center; min-height: 14rem; padding: 1.2rem; }
-    .mini-card { width: 100%; max-width: 19rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.6); }
+    .mini-card { width: 100%; max-width: min(19rem, 100%); background: var(--paper); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.6); }
     .mini-card .mc-top { height: 4.5rem; background: linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%); display: flex; align-items: flex-start; gap: 0.4rem; padding: 0.55rem 0.6rem; }
     .mini-card .mc-tag { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; background: oklch(1 0 0 / 0.9); color: var(--accent-ink); padding: 0.2em 0.6em; border-radius: 999px; }
     .mini-card .mc-body { padding: 0.75rem 0.85rem 0.9rem; }
@@ -107,7 +107,7 @@
     .month-head .count { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--margin); letter-spacing: 0.04em; }
     .month-head .note { font-family: 'Caveat', cursive; font-size: 1.25rem; color: var(--ink-mute); margin-left: auto; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); justify-content: start; gap: 1.25rem; }
     .entry { display: flex; flex-direction: column; background: var(--paper); border: 1px solid oklch(0.84 0.03 80); border-radius: var(--radius-md); padding: 1.35rem 1.4rem; box-shadow: 0 1px 0 oklch(0.90 0.02 80); transition: transform 0.18s var(--ease-paper), box-shadow 0.18s var(--ease-paper), border-color 0.18s; position: relative; }
     .entry:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -26px oklch(0.40 0.06 264 / 0.55); border-color: oklch(0.78 0.06 264); }
     .entry .top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.55rem; }

@@ -10,27 +10,19 @@ aesthetic — ruled paper, red margin, Caveat handwritten accents, dark terminal
 
 ## What's in here
 
-34 entries, May–July 2026, organized into month folders. The arc runs from GitHub basics
-for AI-era builders → wiring frontends to models → Claude Design → agents and MCP →
-streaming and structured output → grading the output on a rubric → tuning cost & latency →
-giving the model a memory with retrieval → reading how Claude and Gemini design the same
-screen differently → letting the model reason on a visible scratchpad with extended thinking →
-giving the model eyes with multimodal vision → cutting a repetitive bill ~90% with
-prompt caching → making the model author a design-system token contract before it writes
-a single component → taking the built app off localhost and putting it live (key server-side,
-rate-limited, spend-capped, deployed in one command) → defending that live app from the first
-weird input: prompt injection, fenced in depth and logged → opening the painted-over
-windows on the running app with observability: trace every call, tag it with a request ID, add
-a 👍/👎, sample real conversations, replay the bad one, watch the drift, and close the loop by
-feeding the worst answer back into the eval harness so it never ships twice → treating
-the prompt that runs it all as the product it is: pull it out of the code, give it a version
-number, diff two versions like a PR, score both against the evals before you pick a winner,
-A/B a small canary on real traffic, ship the winner behind a flag, and roll back in one line
-when the metric moves the wrong way → and finally handing the model real verbs with tool use:
-describe a tool as JSON, let the model choose it, run the function yourself and feed the result
-back, loop until it stops asking — then fence it in so a talkative model can't do something
-expensive: split read tools from write tools, whitelist the verbs, require a human OK before
-anything irreversible, dry-run first, cap the loop, and log every call the model made.
+34 entries, May–July 2026, organized into month folders. The collection moves through
+three eras — see the catalog below for the full per-entry breakdown.
+
+**May — GitHub for AI-era builders.** The basics for people who learned to build with AI
+before they learned the platform: branches, PRs, the collaboration loop, and the undo book.
+
+**June — building with Claude & Gemini.** The core craft — wiring frontends to models,
+Claude Design, agents and MCP, streaming and structured output, evals, cost and latency,
+retrieval, extended thinking, vision, prompt caching, and design-system tokens.
+
+**July — ship it and defend it.** Taking the built app to the world and keeping it there:
+deploying safely, defending against prompt injection, observability, versioning the prompt
+like code, and finally handing the model real verbs with tool use.
 
 ```
 .

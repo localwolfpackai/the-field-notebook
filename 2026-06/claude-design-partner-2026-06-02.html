@@ -494,7 +494,7 @@
     /* Design-knob panel */
     .knobs {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); justify-content: start;
       gap: 0.7rem;
     }
     .knob {
@@ -589,7 +589,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -664,6 +664,11 @@
       .term { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -737,18 +742,18 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>What's inside ↓</h3>
         <ol>
-          <li><a href="#m1">Pick your partner — warmth vs. density</a></li>
-          <li><a href="#m2">Prompt the design, not the feature</a></li>
-          <li><a href="#m3">Artifacts as a live canvas</a></li>
-          <li><a href="#m4">The five design knobs</a></li>
-          <li><a href="#m5">Kill the AI tells</a></li>
-          <li><a href="#m6">Let type carry the layout</a></li>
-          <li><a href="#m7">Warmth is a recipe, not a vibe</a></li>
-          <li><a href="#m8">Ask for the grid out loud</a></li>
-          <li><a href="#m9">The PageConfig move</a></li>
-          <li><a href="#m10">Iterate by screenshot</a></li>
-          <li><a href="#m11">Light by default, dark on purpose</a></li>
-          <li><a href="#m12">Lift it out of the panel</a></li>
+          <li><span class="pill design">design</span> <a href="#m1">Pick your partner — warmth vs. density</a></li>
+          <li><span class="pill prompt">prompt</span> <a href="#m2">Prompt the design, not the feature</a></li>
+          <li><span class="pill canvas">canvas</span> <a href="#m3">Artifacts as a live canvas</a></li>
+          <li><span class="pill design">design</span> <a href="#m4">The five design knobs</a></li>
+          <li><span class="pill design">design</span> <a href="#m5">Kill the AI tells</a></li>
+          <li><span class="pill design">design</span> <a href="#m6">Let type carry the layout</a></li>
+          <li><span class="pill design">design</span> <a href="#m7">Warmth is a recipe, not a vibe</a></li>
+          <li><span class="pill design">design</span> <a href="#m8">Ask for the grid out loud</a></li>
+          <li><span class="pill prompt">prompt</span> <a href="#m9">The PageConfig move</a></li>
+          <li><span class="pill canvas">canvas</span> <a href="#m10">Iterate by screenshot</a></li>
+          <li><span class="pill design">design</span> <a href="#m11">Light by default, dark on purpose</a></li>
+          <li><span class="pill workflow">workflow</span> <a href="#m12">Lift it out of the panel</a></li>
         </ol>
       </aside>
     </section>

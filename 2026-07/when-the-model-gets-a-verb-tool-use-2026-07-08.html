@@ -224,12 +224,6 @@
       background: var(--paper);
     }
 
-    .badges {
-      display: flex; flex-wrap: wrap; gap: 0.4rem;
-      margin-top: 0.4rem;
-    }
-    .badges img { height: 20px; border-radius: 3px; }
-
     .meta-row {
       display: flex; flex-wrap: wrap; gap: 1.25rem;
       font-family: 'Geist Mono', monospace;
@@ -592,13 +586,20 @@
         radial-gradient(120% 120% at 100% 0%, var(--write-wash), transparent 55%),
         radial-gradient(110% 120% at 0% 100%, var(--read-wash), transparent 55%),
         var(--paper);
-      min-height: 18rem;
+      min-height: 12rem;
     }
     .board-head {
       font-family: 'Geist Mono', monospace; font-size: 0.62rem;
       text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-mute);
     }
     .steps { display: grid; gap: 0.45rem; }
+    .steps-idle {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+      color: var(--ink-mute); opacity: 0.75; padding: 0.4rem 0;
+    }
+    .steps-idle .arrow { font-size: 1rem; }
+    .board.running .steps-idle, .board.done .steps-idle { display: none; }
     .step {
       display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: start;
       background: var(--paper);
@@ -837,7 +838,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); justify-content: start;
       gap: 1.1rem 1.6rem;
     }
     .cheat-col h4 {
@@ -846,15 +847,18 @@
       color: var(--margin); margin-bottom: 0.5rem;
       border-bottom: 1px dashed oklch(0.82 0.06 27); padding-bottom: 0.35rem;
     }
-    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+    .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.6rem; }
     .cheat-col li {
-      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
-      font-size: 0.86rem; color: var(--ink-soft);
+      display: flex; flex-direction: column; gap: 0.15rem;
+      font-size: 0.86rem; color: var(--ink-soft); min-width: 0;
     }
     .cheat-col li code {
-      font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
-      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+      display: inline-block; align-self: flex-start; max-width: 100%;
+      font-size: 0.76rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
+      padding: 0.1em 0.4em; border-radius: 4px;
+      white-space: normal; overflow-wrap: anywhere; word-break: break-word;
     }
+    .cheat-col li span { color: var(--ink-mute); }
 
     /* ── Footer ─────── */
     footer.sig {
@@ -893,6 +897,17 @@
       .term, .demo { box-shadow: none; }
       .holes, .demo .demo-foot { display: none; }
     }
+      .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+    .sbadge { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.02em;
+      background: var(--paper-alt, oklch(0.96 0.018 85)); border: 1px solid oklch(0.86 0.03 80);
+      border-left: 3px solid var(--pill-c, oklch(0.55 0.02 80)); border-radius: 5px;
+      padding: 0.22em 0.55em; color: var(--ink-soft, #5a544a); white-space: nowrap; }
+    .sbadge b { color: var(--ink, #2a261f); font-weight: 600; }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -931,10 +946,10 @@
       </div>
 
       <div class="badges" aria-label="stack badges">
-        <img src="https://img.shields.io/badge/Claude-tool%20use-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude tool use" />
-        <img src="https://img.shields.io/badge/tools-read%20%2F%20write-1F6FEB?style=flat-square&logo=json&logoColor=white" alt="read and write tools" />
-        <img src="https://img.shields.io/badge/writes-human%20OK-2EA043?style=flat-square&logo=gnometerminal&logoColor=white" alt="human approval before writes" />
-        <img src="https://img.shields.io/badge/every%20call-logged-DB6D28?style=flat-square&logo=grafana&logoColor=white" alt="every tool call logged" />
+        <span class="sbadge" style="--pill-c:#D97757"><b>Claude</b> tool use</span>
+        <span class="sbadge" style="--pill-c:#1F6FEB"><b>tools</b> read / write</span>
+        <span class="sbadge" style="--pill-c:#2EA043"><b>writes</b> human OK</span>
+        <span class="sbadge" style="--pill-c:#DB6D28"><b>every call</b> logged</span>
       </div>
 
       <div class="meta-row">
@@ -973,68 +988,22 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The ten moves ↓</h3>
         <ol>
-          <li><a href="#h1">See the gap — a model with no hands</a></li>
-          <li><a href="#h2">Describe a tool as JSON</a></li>
-          <li><a href="#h3">Let the model choose the tool</a></li>
-          <li><a href="#h4">Run it yourself, feed the result back</a></li>
-          <li><a href="#h5">Loop until the model stops asking</a></li>
-          <li><a href="#h6">Split read tools from write tools</a></li>
-          <li><a href="#h7">Whitelist the verbs — nothing off-menu</a></li>
-          <li><a href="#h8">Put a human in front of writes</a></li>
-          <li><a href="#h9">Dry-run, then cap the loop</a></li>
-          <li><a href="#h10">Log every call the model made</a></li>
+          <li><span class="pill read">read</span> <a href="#h1">See the gap — a model with no hands</a></li>
+          <li><span class="pill setup">setup</span> <a href="#h2">Describe a tool as JSON</a></li>
+          <li><span class="pill setup">setup</span> <a href="#h3">Let the model choose the tool</a></li>
+          <li><span class="pill loop">loop</span> <a href="#h4">Run it yourself, feed the result back</a></li>
+          <li><span class="pill loop">loop</span> <a href="#h5">Loop until the model stops asking</a></li>
+          <li><span class="pill guard">guard</span> <a href="#h6">Split read tools from write tools</a></li>
+          <li><span class="pill guard">guard</span> <a href="#h7">Whitelist the verbs — nothing off-menu</a></li>
+          <li><span class="pill write">write</span> <a href="#h8">Put a human in front of writes</a></li>
+          <li><span class="pill guard">guard</span> <a href="#h9">Dry-run, then cap the loop</a></li>
+          <li><span class="pill guard">guard</span> <a href="#h10">Log every call the model made</a></li>
         </ol>
       </aside>
     </section>
 
-    <!-- LIVE DEMO -->
-    <div class="demo" aria-label="tool-call approval loop demo">
-      <div class="demo-bar">
-        <span>the support agent · pick a user ask, watch it reach for tools &mdash; and approve the write</span>
-        <span class="live"><i></i> agent loop</span>
-      </div>
-
-      <div class="bench">
-        <div class="versions" id="versions">
-          <div class="versions-lbl">pick a user ask →</div>
-          <button class="ver-card sel" data-kind="read" data-c="status" aria-pressed="true">
-            <div class="vhead"><span class="vtag">read</span><span class="vname">&ldquo;Where&rsquo;s my order 4471?&rdquo;</span></div>
-            <div class="vline">needs: lookupOrder — read-only, auto-runs</div>
-          </button>
-          <button class="ver-card" data-kind="write" data-c="cancel" aria-pressed="false">
-            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Cancel order 4471.&rdquo;</span></div>
-            <div class="vline">needs: cancelOrder — irreversible, asks you first</div>
-          </button>
-          <button class="ver-card" data-kind="write" data-c="refund" aria-pressed="false">
-            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Refund me for 4471.&rdquo;</span></div>
-            <div class="vline">needs: issueRefund($) — money moves, asks you first</div>
-          </button>
-
-          <button class="run-btn" id="runBtn">▶ run the agent</button>
-        </div>
-
-        <div class="board" id="board">
-          <div class="board-head">agent loop · <span id="scored">idle</span></div>
-          <div class="steps" id="steps"><!-- steps injected --></div>
-          <div class="gate" id="gate">
-            <div class="g-head"><span>⚠ write tool — needs your OK</span></div>
-            <div class="g-body" id="gateBody">The model wants to call <code>cancelOrder(4471)</code>.</div>
-            <div class="g-btns">
-              <button class="g-btn ok" id="okBtn">✓ approve</button>
-              <button class="g-btn no" id="noBtn">✕ deny</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="demo-foot">
-        <span class="verdict-line" id="verdict"><b>Pick an ask, then run the agent.</b> Read tools fire on their own. Write tools stop at a gate and wait for a human &mdash; that gate is the whole difference between &ldquo;handy&rdquo; and &ldquo;a stranger&rsquo;s typo just refunded $340.&rdquo;</span>
-        <span class="hint">run it ↑</span>
-      </div>
-    </div>
-
     <!-- MOVE 1 -->
-    <article class="hack" id="h1" style="margin-top:3rem;">
+    <article class="hack" id="h1">
       <div class="nbr">01</div>
       <div class="body">
         <h2>See the gap &mdash; a model with no hands. <span class="pill read">read</span></h2>
@@ -1434,6 +1403,52 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
       </div>
     </article>
 
+    <!-- LIVE DEMO -->
+    <div class="demo" aria-label="tool-call approval loop demo" style="margin-top:3rem;">
+      <div class="demo-bar">
+        <span>the support agent · pick a user ask, watch it reach for tools &mdash; and approve the write</span>
+        <span class="live"><i></i> agent loop</span>
+      </div>
+
+      <div class="bench">
+        <div class="versions" id="versions">
+          <div class="versions-lbl">pick a user ask →</div>
+          <button class="ver-card sel" data-kind="read" data-c="status" aria-pressed="true">
+            <div class="vhead"><span class="vtag">read</span><span class="vname">&ldquo;Where&rsquo;s my order 4471?&rdquo;</span></div>
+            <div class="vline">needs: lookupOrder — read-only, auto-runs</div>
+          </button>
+          <button class="ver-card" data-kind="write" data-c="cancel" aria-pressed="false">
+            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Cancel order 4471.&rdquo;</span></div>
+            <div class="vline">needs: cancelOrder — irreversible, asks you first</div>
+          </button>
+          <button class="ver-card" data-kind="write" data-c="refund" aria-pressed="false">
+            <div class="vhead"><span class="vtag">write</span><span class="vname">&ldquo;Refund me for 4471.&rdquo;</span></div>
+            <div class="vline">needs: issueRefund($) — money moves, asks you first</div>
+          </button>
+
+          <button class="run-btn" id="runBtn">▶ run the agent</button>
+        </div>
+
+        <div class="board" id="board">
+          <div class="board-head">agent loop · <span id="scored">idle</span></div>
+          <div class="steps" id="steps"><div class="steps-idle"><span class="arrow">←</span> pick a user ask, then hit <b>run</b></div></div>
+          <div class="gate" id="gate">
+            <div class="g-head"><span>⚠ write tool — needs your OK</span></div>
+            <div class="g-body" id="gateBody">The model wants to call <code>cancelOrder(4471)</code>.</div>
+            <div class="g-btns">
+              <button class="g-btn ok" id="okBtn">✓ approve</button>
+              <button class="g-btn no" id="noBtn">✕ deny</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-foot">
+        <span class="verdict-line" id="verdict"><b>Pick an ask, then run the agent.</b> Read tools fire on their own. Write tools stop at a gate and wait for a human &mdash; that gate is the whole difference between &ldquo;handy&rdquo; and &ldquo;a stranger&rsquo;s typo just refunded $340.&rdquo;</span>
+        <span class="hint">run it ↑</span>
+      </div>
+    </div>
+
     <!-- CHEAT SHEET -->
     <section class="cheat" aria-label="cheat sheet">
       <h3>The one-page cheat sheet ✂</h3>
@@ -1442,7 +1457,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
           <h4>Wire the loop</h4>
           <ul>
             <li><code>{name, description, input_schema}</code><span>a tool is a description</span></li>
-            <li><code>tools</code> on the call<span>hand over the menu</span></li>
+            <li><code>tools</code><span>on the call — hand over the menu</span></li>
             <li><code>stop_reason: 'tool_use'</code><span>the raised hand</span></li>
             <li><code>tool_result + call.id</code><span>feed the fact back</span></li>
           </ul>
@@ -1484,9 +1499,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         <small>The Mess is the Method · Field Notebook · Vol. 36 · tool use</small>
       </div>
       <div class="end">
-        built on the <code>describe → choose → run → feed → loop</code> loop, fenced by <code>read / write · human OK · log</code><br />
-        give the model a verb · keep the keys · keep the tape<br />
-        <strong>The Mess is the Method.</strong>
+        give the model a verb · keep the keys · keep the tape
       </div>
     </footer>
   </div>
@@ -1568,10 +1581,13 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
 
       function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
+      var IDLE_HTML = '<div class="steps-idle"><span class="arrow">←</span> pick a user ask, then hit <b>run</b></div>';
+
       function reset() {
         clearTimers();
         running = false;
-        stepsEl.innerHTML = '';
+        stepsEl.innerHTML = IDLE_HTML;
+        board.classList.remove('running', 'done');
         gate.classList.remove('show');
         scored.textContent = 'idle';
         runBtn.classList.remove('running');
@@ -1599,6 +1615,8 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
 
       function finish(text) {
         scored.textContent = 'done';
+        board.classList.remove('running');
+        board.classList.add('done');
         runBtn.classList.remove('running');
         runBtn.textContent = '▶ run again';
         verdict.innerHTML = text;
@@ -1608,6 +1626,8 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
       function run() {
         var sc = scenarios[current];
         reset();
+        stepsEl.innerHTML = '';
+        board.classList.add('running');
         running = true;
         runBtn.classList.add('running');
         runBtn.textContent = 'agent running…';

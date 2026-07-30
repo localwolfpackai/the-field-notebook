@@ -528,7 +528,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -603,6 +603,11 @@
       .term { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -674,16 +679,16 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The ten moves ↓</h3>
         <ol>
-          <li><a href="#m1">Pick your partner — warmth vs. density</a></li>
-          <li><a href="#m2">Write the prompt like a spec</a></li>
-          <li><a href="#m3">Artifacts as a live canvas</a></li>
-          <li><a href="#m4">The design knobs that make it feel made</a></li>
-          <li><a href="#m5">Gemini: prompt → <code>PageConfig</code> → Next.js</a></li>
-          <li><a href="#m6">Wire the model in — streaming</a></li>
-          <li><a href="#m7">The open notebook — a local test script</a></li>
-          <li><a href="#m8">Iterate by screenshot</a></li>
-          <li><a href="#m9">The eval loop — stay honest</a></li>
-          <li><a href="#m10">Ship the thing</a></li>
+          <li><span class="pill design">design</span> <a href="#m1">Pick your partner — warmth vs. density</a></li>
+          <li><span class="pill claude">claude</span> <a href="#m2">Write the prompt like a spec</a></li>
+          <li><span class="pill claude">claude</span> <a href="#m3">Artifacts as a live canvas</a></li>
+          <li><span class="pill design">design</span> <a href="#m4">The design knobs that make it feel made</a></li>
+          <li><span class="pill gemini">gemini</span> <a href="#m5">Gemini: prompt → <code>PageConfig</code> → Next.js</a></li>
+          <li><span class="pill engineer">engineer</span> <a href="#m6">Wire the model in — streaming</a></li>
+          <li><span class="pill engineer">engineer</span> <a href="#m7">The open notebook — a local test script</a></li>
+          <li><span class="pill design">design</span> <a href="#m8">Iterate by screenshot</a></li>
+          <li><span class="pill engineer">engineer</span> <a href="#m9">The eval loop — stay honest</a></li>
+          <li><span class="pill ship">ship</span> <a href="#m10">Ship the thing</a></li>
         </ol>
       </aside>
     </section>

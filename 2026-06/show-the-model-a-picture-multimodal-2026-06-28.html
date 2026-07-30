@@ -217,12 +217,6 @@
       background: var(--paper);
     }
 
-    .badges {
-      display: flex; flex-wrap: wrap; gap: 0.4rem;
-      margin-top: 0.4rem;
-    }
-    .badges img { height: 20px; border-radius: 3px; }
-
     .meta-row {
       display: flex; flex-wrap: wrap; gap: 1.25rem;
       font-family: 'Geist Mono', monospace;
@@ -792,7 +786,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); justify-content: start;
       gap: 1.1rem 1.6rem;
     }
     .cheat-col h4 {
@@ -803,12 +797,12 @@
     }
     .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
     .cheat-col li {
-      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      display: flex; flex-direction: column;  gap: 0.15rem; 
       font-size: 0.86rem; color: var(--ink-soft);
-    }
-    .cheat-col li code {
+     min-width: 0;}
+    .cheat-col li code { display: inline-block; align-self: flex-start; max-width: 100%;
       font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
-      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: normal; overflow-wrap: anywhere; word-break: break-word;
     }
 
     /* ── Footer ─────────────────────── */
@@ -848,6 +842,17 @@
       .term, .demo { box-shadow: none; }
       .holes, .demo .demo-foot { display: none; }
     }
+      .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+    .sbadge { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.02em;
+      background: var(--paper-alt, oklch(0.96 0.018 85)); border: 1px solid oklch(0.86 0.03 80);
+      border-left: 3px solid var(--pill-c, oklch(0.55 0.02 80)); border-radius: 5px;
+      padding: 0.22em 0.55em; color: var(--ink-soft, #5a544a); white-space: nowrap; }
+    .sbadge b { color: var(--ink, #2a261f); font-weight: 600; }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -885,10 +890,10 @@
       </div>
 
       <div class="badges" aria-label="stack badges">
-        <img src="https://img.shields.io/badge/Claude-Vision-58A6B4?style=flat-square&logo=anthropic&logoColor=white" alt="Claude vision" />
-        <img src="https://img.shields.io/badge/Gemini-Multimodal-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini multimodal" />
-        <img src="https://img.shields.io/badge/input-base64_or_url-D97757?style=flat-square&logo=files&logoColor=white" alt="image input base64 or url" />
-        <img src="https://img.shields.io/badge/pairs_with-structured_output-2EA043?style=flat-square&logo=json&logoColor=white" alt="pairs with structured output" />
+        <span class="sbadge" style="--pill-c:#58A6B4"><b>Claude</b> Vision</span>
+        <span class="sbadge" style="--pill-c:#4285F4"><b>Gemini</b> Multimodal</span>
+        <span class="sbadge" style="--pill-c:#D97757"><b>input</b> base64 or url</span>
+        <span class="sbadge" style="--pill-c:#2EA043"><b>pairs with</b> structured output</span>
       </div>
 
       <div class="meta-row">
@@ -926,16 +931,16 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The ten moves ↓</h3>
         <ol>
-          <li><a href="#h1">Attach the image — one new content block</a></li>
-          <li><a href="#h2">Read the shape — image in, text out</a></li>
-          <li><a href="#h3">Ask for findings, not a paragraph</a></li>
-          <li><a href="#h4">Point at one region — crop the question</a></li>
-          <li><a href="#h5">Send many images — and label them</a></li>
-          <li><a href="#h6">Tune resolution — pixels are tokens</a></li>
-          <li><a href="#h7">URL or base64 — pick the right intake</a></li>
-          <li><a href="#h8">Know what it can't see — the honest limits</a></li>
-          <li><a href="#h9">Turn a screen into a build spec</a></li>
-          <li><a href="#h10">Verify with the same eval harness</a></li>
+          <li><span class="pill setup">setup</span> <a href="#h1">Attach the image — one new content block</a></li>
+          <li><span class="pill read">read</span> <a href="#h2">Read the shape — image in, text out</a></li>
+          <li><span class="pill see">see</span> <a href="#h3">Ask for findings, not a paragraph</a></li>
+          <li><span class="pill see">see</span> <a href="#h4">Point at one region — crop the question</a></li>
+          <li><span class="pill see">see</span> <a href="#h5">Send many images — and label them</a></li>
+          <li><span class="pill cost">cost</span> <a href="#h6">Tune resolution — pixels are tokens</a></li>
+          <li><span class="pill setup">setup</span> <a href="#h7">URL or base64 — pick the right intake</a></li>
+          <li><span class="pill gotcha">gotcha</span> <a href="#h8">Know what it can't see — the honest limits</a></li>
+          <li><span class="pill ship">ship</span> <a href="#h9">Turn a screen into a build spec</a></li>
+          <li><span class="pill ship">ship</span> <a href="#h10">Verify with the same eval harness</a></li>
         </ol>
       </aside>
     </section>
@@ -1409,9 +1414,7 @@ im.save(<span class="str">"small.png"</span>)        <span class="cmt"># readabl
       </div>
       <div class="end">
         built from the <code>vision</code> cookbook<br />
-        one image block · stop describing<br />
-        <strong>The Mess is the Method.</strong>
-      </div>
+        one image block · stop describing<br /></div>
     </footer>
   </div>
 

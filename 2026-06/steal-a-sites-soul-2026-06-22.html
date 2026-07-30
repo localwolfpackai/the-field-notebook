@@ -430,7 +430,7 @@
     /* Swatch row — extracted palette */
     .palette {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); justify-content: start;
       gap: 0.6rem;
     }
     .sw {
@@ -551,7 +551,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -627,6 +627,11 @@
       .term, .tree { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -705,15 +710,15 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The nine moves ↓</h3>
         <ol>
-          <li><a href="#h1">Write the one-paragraph brief first</a></li>
-          <li><a href="#h2">Extract tokens by <code>getComputedStyle</code></a></li>
-          <li><a href="#h3">Pin the stack so it can't relitigate</a></li>
-          <li><a href="#h4">Wire <code>tokens.json</code> into <code>@theme</code></a></li>
-          <li><a href="#h5">Build primitives with a screenshot diff loop</a></li>
-          <li><a href="#h6">The hero: aura + glass + grid in one</a></li>
-          <li><a href="#h7">Assemble pages — structure, not copy</a></li>
-          <li><a href="#h8">The gotcha list (incl. the injection trap)</a></li>
-          <li><a href="#h9">Test at four widths, then ship</a></li>
+          <li><span class="pill prompt">prompt</span> <a href="#h1">Write the one-paragraph brief first</a></li>
+          <li><span class="pill browser">browser</span> <a href="#h2">Extract tokens by <code>getComputedStyle</code></a></li>
+          <li><span class="pill prompt">prompt</span> <a href="#h3">Pin the stack so it can't relitigate</a></li>
+          <li><span class="pill terminal">scaffold</span> <a href="#h4">Wire <code>tokens.json</code> into <code>@theme</code></a></li>
+          <li><span class="pill terminal">build</span> <a href="#h5">Build primitives with a screenshot diff loop</a></li>
+          <li><span class="pill terminal">build</span> <a href="#h6">The hero: aura + glass + grid in one</a></li>
+          <li><span class="pill prompt">prompt</span> <a href="#h7">Assemble pages — structure, not copy</a></li>
+          <li><span class="pill browser">field-tested</span> <a href="#h8">The gotcha list (incl. the injection trap)</a></li>
+          <li><span class="pill terminal">verify</span> <a href="#h9">Test at four widths, then ship</a></li>
         </ol>
       </aside>
     </section>

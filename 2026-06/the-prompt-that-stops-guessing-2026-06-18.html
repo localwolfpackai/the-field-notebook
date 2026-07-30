@@ -441,7 +441,7 @@
     /* the constraint checklist grid */
     .shortcut-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); justify-content: start;
       gap: 0.7rem;
     }
     .shortcut {
@@ -507,7 +507,7 @@
     /* pull stat */
     .stat-band {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); justify-content: start;
       gap: 1rem;
       margin: 0 0 3rem;
       padding: 1.3rem clamp(1rem, 2vw, 1.6rem);
@@ -565,7 +565,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -648,6 +648,11 @@
       .term, .stat-band { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -721,14 +726,14 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>What's inside ↓</h3>
         <ol>
-          <li><a href="#h1">Front-load the dealbreakers</a></li>
-          <li><a href="#h2">The plan-execution lock</a></li>
-          <li><a href="#h3">Negative constraints (the "do NOT" list)</a></li>
-          <li><a href="#h4">Audit first, edit never (until you say go)</a></li>
-          <li><a href="#h5">"Ask me 3 questions before you touch anything"</a></li>
-          <li><a href="#h6">Name the file, kill the guess</a></li>
-          <li><a href="#h7">Demand the status check</a></li>
-          <li><a href="#h8">Protect the danger zones out loud</a></li>
+          <li><span class="pill constraint">constraint</span> <a href="#h1">Front-load the dealbreakers</a></li>
+          <li><span class="pill flow">flow</span> <a href="#h2">The plan-execution lock</a></li>
+          <li><span class="pill constraint">constraint</span> <a href="#h3">Negative constraints (the "do NOT" list)</a></li>
+          <li><span class="pill flow">flow</span> <a href="#h4">Audit first, edit never (until you say go)</a></li>
+          <li><span class="pill mindset">mindset</span> <a href="#h5">"Ask me 3 questions before you touch anything"</a></li>
+          <li><span class="pill constraint">constraint</span> <a href="#h6">Name the file, kill the guess</a></li>
+          <li><span class="pill flow">flow</span> <a href="#h7">Demand the status check</a></li>
+          <li><span class="pill mindset">mindset</span> <a href="#h8">Protect the danger zones out loud</a></li>
         </ol>
       </aside>
     </section>

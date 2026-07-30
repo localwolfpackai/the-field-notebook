@@ -428,7 +428,7 @@
     /* Keyboard demo (inline shortcuts) */
     .shortcut-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); justify-content: start;
       gap: 0.7rem;
     }
     .shortcut {
@@ -518,7 +518,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -593,6 +593,11 @@
       .term { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -661,19 +666,19 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>What's inside ↓</h3>
         <ol>
-          <li><a href="#h1">The <kbd>.</kbd> key opens VS Code in the browser</a></li>
-          <li><a href="#h2">The <kbd>?</kbd> shortcut menu</a></li>
-          <li><a href="#h3">Fuzzy file finder with <kbd>t</kbd></a></li>
-          <li><a href="#h4">URL hacks (blame, raw, find)</a></li>
-          <li><a href="#h5">Search operators that actually work</a></li>
-          <li><a href="#h6"><code>gh dash</code> — terminal dashboard</a></li>
-          <li><a href="#h7"><code>gh copilot</code> — explain &amp; suggest</a></li>
-          <li><a href="#h8"><code>gh extension install</code></a></li>
-          <li><a href="#h9"><code>gh alias set</code> — your shortcuts</a></li>
-          <li><a href="#h10">The profile README trick</a></li>
-          <li><a href="#h11">Gists as a snippet library</a></li>
-          <li><a href="#h12">Saved replies + draft PRs</a></li>
-          <li><a href="#h13"><code>gh repo view --web</code> &amp; friends</a></li>
+          <li><span class="pill browser">browser</span> <a href="#h1">The <kbd>.</kbd> key opens VS Code in the browser</a></li>
+          <li><span class="pill browser">browser</span> <a href="#h2">The <kbd>?</kbd> shortcut menu</a></li>
+          <li><span class="pill browser">browser</span> <a href="#h3">Fuzzy file finder with <kbd>t</kbd></a></li>
+          <li><span class="pill browser">browser</span> <a href="#h4">URL hacks (blame, raw, find)</a></li>
+          <li><span class="pill browser">browser</span> <a href="#h5">Search operators that actually work</a></li>
+          <li><span class="pill terminal">terminal</span> <a href="#h6"><code>gh dash</code> — terminal dashboard</a></li>
+          <li><span class="pill terminal">terminal</span> <a href="#h7"><code>gh copilot</code> — explain &amp; suggest</a></li>
+          <li><span class="pill terminal">terminal</span> <a href="#h8"><code>gh extension install</code></a></li>
+          <li><span class="pill terminal">terminal</span> <a href="#h9"><code>gh alias set</code> — your shortcuts</a></li>
+          <li><span class="pill workflow">workflow</span> <a href="#h10">The profile README trick</a></li>
+          <li><span class="pill workflow">workflow</span> <a href="#h11">Gists as a snippet library</a></li>
+          <li><span class="pill workflow">workflow</span> <a href="#h12">Saved replies + draft PRs</a></li>
+          <li><span class="pill terminal">terminal</span> <a href="#h13"><code>gh repo view --web</code> &amp; friends</a></li>
         </ol>
       </aside>
     </section>

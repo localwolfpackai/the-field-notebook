@@ -536,7 +536,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -611,6 +611,11 @@
       .term { box-shadow: none; }
       .holes { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -684,15 +689,15 @@
         <h3>The build order ↓</h3>
         <ol>
           <li><a href="#s1">The mental model: agent = loop + tools</a></li>
-          <li><a href="#s2">Hello, model — your first call</a></li>
-          <li><a href="#s3">Define a tool the model can ask for</a></li>
-          <li><a href="#s4">The loop — run the tool, hand it back</a></li>
-          <li><a href="#s5">Let it chain — multi-step on its own</a></li>
-          <li><a href="#s6">Stop conditions — no runaway loops</a></li>
-          <li><a href="#s7">Structured output you can trust</a></li>
-          <li><a href="#s8">The open notebook — a test harness</a></li>
-          <li><a href="#s9">Stream it so it feels alive</a></li>
-          <li><a href="#s10">Wrap it as a CLI &amp; ship</a></li>
+          <li><span class="pill code">code</span> <a href="#s2">Hello, model — your first call</a></li>
+          <li><span class="pill concept">concept</span> <a href="#s3">Define a tool the model can ask for</a></li>
+          <li><span class="pill loop">the loop</span> <a href="#s4">The loop — run the tool, hand it back</a></li>
+          <li><span class="pill loop">the loop</span> <a href="#s5">Let it chain — multi-step on its own</a></li>
+          <li><span class="pill concept">concept</span> <a href="#s6">Stop conditions — no runaway loops</a></li>
+          <li><span class="pill code">code</span> <a href="#s7">Structured output you can trust</a></li>
+          <li><span class="pill concept">concept</span> <a href="#s8">The open notebook — a test harness</a></li>
+          <li><span class="pill code">code</span> <a href="#s9">Stream it so it feels alive</a></li>
+          <li><span class="pill loop">ship it</span> <a href="#s10">Wrap it as a CLI &amp; ship</a></li>
         </ol>
       </aside>
     </section>

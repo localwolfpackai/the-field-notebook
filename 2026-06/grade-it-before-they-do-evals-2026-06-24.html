@@ -213,12 +213,6 @@
       background: var(--paper);
     }
 
-    .badges {
-      display: flex; flex-wrap: wrap; gap: 0.4rem;
-      margin-top: 0.4rem;
-    }
-    .badges img { height: 20px; border-radius: 3px; }
-
     .meta-row {
       display: flex; flex-wrap: wrap; gap: 1.25rem;
       font-family: 'Geist Mono', monospace;
@@ -745,7 +739,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); justify-content: start;
       gap: 1.1rem 1.6rem;
     }
     .cheat-col h4 {
@@ -756,12 +750,12 @@
     }
     .cheat-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
     .cheat-col li {
-      display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: baseline;
+      display: flex; flex-direction: column;  gap: 0.15rem; 
       font-size: 0.86rem; color: var(--ink-soft);
-    }
-    .cheat-col li code {
+     min-width: 0;}
+    .cheat-col li code { display: inline-block; align-self: flex-start; max-width: 100%;
       font-size: 0.78rem; background: var(--paper); border: 1px solid oklch(0.86 0.03 80);
-      padding: 0.05em 0.35em; border-radius: 4px; white-space: nowrap;
+      padding: 0.05em 0.35em; border-radius: 4px; white-space: normal; overflow-wrap: anywhere; word-break: break-word;
     }
 
     /* ── Footer ─────────────────────── */
@@ -801,6 +795,17 @@
       .term, .demo { box-shadow: none; }
       .holes, .demo .demo-foot { display: none; }
     }
+      .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+    .sbadge { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.02em;
+      background: var(--paper-alt, oklch(0.96 0.018 85)); border: 1px solid oklch(0.86 0.03 80);
+      border-left: 3px solid var(--pill-c, oklch(0.55 0.02 80)); border-radius: 5px;
+      padding: 0.22em 0.55em; color: var(--ink-soft, #5a544a); white-space: nowrap; }
+    .sbadge b { color: var(--ink, #2a261f); font-weight: 600; }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -838,10 +843,10 @@
       </div>
 
       <div class="badges" aria-label="stack badges">
-        <img src="https://img.shields.io/badge/Claude-as_judge-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Claude as judge" />
-        <img src="https://img.shields.io/badge/Gemini-2.5_flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini 2.5 Flash" />
-        <img src="https://img.shields.io/badge/Vitest-rubric_tests-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest rubric tests" />
-        <img src="https://img.shields.io/badge/GitHub_Actions-CI_gate-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions CI gate" />
+        <span class="sbadge" style="--pill-c:#D97757"><b>Claude</b> as judge</span>
+        <span class="sbadge" style="--pill-c:#4285F4"><b>Gemini</b> 2.5 flash</span>
+        <span class="sbadge" style="--pill-c:#6E9F18"><b>Vitest</b> rubric tests</span>
+        <span class="sbadge" style="--pill-c:#2088FF"><b>GitHub Actions</b> CI gate</span>
       </div>
 
       <div class="meta-row">
@@ -881,16 +886,16 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The ten moves ↓</h3>
         <ol>
-          <li><a href="#h1">An eval is just a graded vibe-check</a></li>
-          <li><a href="#h2">Write five golden cases, not five hundred</a></li>
-          <li><a href="#h3">Turn "good" into a rubric you can score</a></li>
-          <li><a href="#h4">The cheap checks run first (no model)</a></li>
-          <li><a href="#h5">Claude as judge — separate doer from grader</a></li>
-          <li><a href="#h6">Gemini as judge — same job, cheaper batch</a></li>
-          <li><a href="#h7">Score the set, set a pass bar</a></li>
-          <li><a href="#h8">Gate the release in CI</a></li>
-          <li><a href="#h9">Every prod bug becomes a new case</a></li>
-          <li><a href="#h10">The trust test — would you ship unread?</a></li>
+          <li><span class="pill model">model</span> <a href="#h1">An eval is just a graded vibe-check</a></li>
+          <li><span class="pill backend">design</span> <a href="#h2">Write five golden cases, not five hundred</a></li>
+          <li><span class="pill design">design</span> <a href="#h3">Turn "good" into a rubric you can score</a></li>
+          <li><span class="pill backend">backend</span> <a href="#h4">The cheap checks run first (no model)</a></li>
+          <li><span class="pill model">claude</span> <a href="#h5">Claude as judge — separate doer from grader</a></li>
+          <li><span class="pill model">gemini</span> <a href="#h6">Gemini as judge — same job, cheaper batch</a></li>
+          <li><span class="pill backend">backend</span> <a href="#h7">Score the set, set a pass bar</a></li>
+          <li><span class="pill frontend">ci</span> <a href="#h8">Gate the release in CI</a></li>
+          <li><span class="pill polish">polish</span> <a href="#h9">Every prod bug becomes a new case</a></li>
+          <li><span class="pill polish">polish</span> <a href="#h10">The trust test — would you ship unread?</a></li>
         </ol>
       </aside>
     </section>

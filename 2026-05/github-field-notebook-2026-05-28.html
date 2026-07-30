@@ -449,6 +449,11 @@
       body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 29px, var(--rule-soft) 29px, var(--rule-soft) 30px); }
       .masthead .stamp { font-size: 1.25rem; top: -0.1rem; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -476,18 +481,18 @@
       <aside class="toc-card" aria-label="Table of contents">
         <h4>Today's pages</h4>
         <ol>
-          <li><a href="#h1">Install the CLI, skip the web</a></li>
-          <li><a href="#h2">Auth once, forget forever</a></li>
-          <li><a href="#h3">Clone like a grown-up</a></li>
-          <li><a href="#h4">Branches are scratch paper</a></li>
-          <li><a href="#h5">Commit small, commit often</a></li>
-          <li><a href="#h6">The status / diff / log triad</a></li>
-          <li><a href="#h7">PRs from the terminal</a></li>
-          <li><a href="#h8">Let Claude write the PR body</a></li>
-          <li><a href="#h9">.gitignore before your first push</a></li>
-          <li><a href="#h10">Stash beats panic</a></li>
-          <li><a href="#h11">Aliases for the lazy</a></li>
-          <li><a href="#h12">Read the diff before you ship</a></li>
+          <li><span class="entry-tag">setup</span> <a href="#h1">Install the CLI, skip the web</a></li>
+          <li><span class="entry-tag">setup</span> <a href="#h2">Auth once, forget forever</a></li>
+          <li><span class="entry-tag">setup</span> <a href="#h3">Clone like a grown-up</a></li>
+          <li><span class="entry-tag sage">daily driver</span> <a href="#h4">Branches are scratch paper</a></li>
+          <li><span class="entry-tag sage">daily driver</span> <a href="#h5">Commit small, commit often</a></li>
+          <li><span class="entry-tag sage">daily driver</span> <a href="#h6">The status / diff / log triad</a></li>
+          <li><span class="entry-tag">PR flow</span> <a href="#h7">PRs from the terminal</a></li>
+          <li><span class="entry-tag amber">AI workflow</span> <a href="#h8">Let Claude write the PR body</a></li>
+          <li><span class="entry-tag amber">safety</span> <a href="#h9">.gitignore before your first push</a></li>
+          <li><span class="entry-tag">recovery</span> <a href="#h10">Stash beats panic</a></li>
+          <li><span class="entry-tag">setup</span> <a href="#h11">Aliases for the lazy</a></li>
+          <li><span class="entry-tag amber">safety</span> <a href="#h12">Read the diff before you ship</a></li>
         </ol>
       </aside>
     </section>

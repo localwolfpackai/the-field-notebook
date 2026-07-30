@@ -491,6 +491,8 @@
       color: var(--ink);
     }
     .demo .demo-stage .typed { white-space: pre-wrap; }
+    .demo .stage-idle { color: var(--ink-mute); font-style: italic; opacity: 0.8; }
+    .demo.streaming .stage-idle, .demo.streamed .stage-idle { display: none; }
     .demo .caret {
       display: inline-block;
       width: 0.55ch;
@@ -633,7 +635,7 @@
     }
     .cheat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); justify-content: start;
       gap: 1rem;
     }
     .cheat-col h4 {
@@ -707,6 +709,11 @@
       .term, .demo { box-shadow: none; }
       .holes, .demo .demo-foot { display: none; }
     }
+      .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
+      font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
+    }
+    .toc li a, .toc-card li a { display: inline; }
   </style>
 </head>
 <body>
@@ -780,15 +787,15 @@
       <aside class="toc" aria-label="Table of contents">
         <h3>The nine moves ↓</h3>
         <ol>
-          <li><a href="#h1">Kill the spinner — why streaming wins</a></li>
-          <li><a href="#h2">The stream contract (SSE, both models)</a></li>
-          <li><a href="#h3">The reader loop — the whole trick</a></li>
-          <li><a href="#h4">The typewriter, done with taste</a></li>
-          <li><a href="#h5">Claude vs Gemini — same idea, two SDKs</a></li>
-          <li><a href="#h6">Stop button &amp; abort, the right way</a></li>
-          <li><a href="#h7">Stream straight into Markdown</a></li>
-          <li><a href="#h8">The graceful fail (streams break)</a></li>
-          <li><a href="#h9">The feel test — does it breathe?</a></li>
+          <li><span class="pill model">model</span> <a href="#h1">Kill the spinner — why streaming wins</a></li>
+          <li><span class="pill backend">backend</span> <a href="#h2">The stream contract (SSE, both models)</a></li>
+          <li><span class="pill frontend">frontend</span> <a href="#h3">The reader loop — the whole trick</a></li>
+          <li><span class="pill polish">polish</span> <a href="#h4">The typewriter, done with taste</a></li>
+          <li><span class="pill model">model</span> <a href="#h5">Claude vs Gemini — same idea, two SDKs</a></li>
+          <li><span class="pill frontend">frontend</span> <a href="#h6">Stop button &amp; abort, the right way</a></li>
+          <li><span class="pill design">design</span> <a href="#h7">Stream straight into Markdown</a></li>
+          <li><span class="pill backend">backend</span> <a href="#h8">The graceful fail (streams break)</a></li>
+          <li><span class="pill polish">polish</span> <a href="#h9">The feel test — does it breathe?</a></li>
         </ol>
       </aside>
     </section>
@@ -800,7 +807,7 @@
         <span class="live"><i></i> streaming</span>
       </div>
       <div class="demo-stage">
-        <span class="typed" id="typed"></span><span class="caret" id="caret" aria-hidden="true">.</span>
+        <span class="stage-idle" id="stageIdle">Hit ▶ Stream it — the reply lands here token by token.</span><span class="typed" id="typed"></span><span class="caret" id="caret" aria-hidden="true">.</span>
       </div>
       <div class="demo-foot">
         <button id="run">▶ Stream it</button>
@@ -1348,7 +1355,9 @@
       var caret = document.getElementById("caret");
       var runBtn = document.getElementById("run");
       var resetBtn = document.getElementById("reset");
+      var demo = document.querySelector(".demo");
       if (!typed || !runBtn) return;
+      caret.style.display = "none";  // hidden until streaming starts
 
       // Canned "model response" delivered in lumpy bursts, the way a real
       // stream arrives — so the smoothing in the typewriter has something to do.
@@ -1390,7 +1399,7 @@
           feedTimer = null;
           // re-enable once the drain finishes
           var wait = setInterval(function () {
-            if (!queue.length) { clearInterval(wait); runBtn.disabled = false; runBtn.textContent = "▶ Stream again"; }
+            if (!queue.length) { clearInterval(wait); demo.classList.remove("streaming"); demo.classList.add("streamed"); runBtn.disabled = false; runBtn.textContent = "▶ Stream again"; }
           }, 120);
           return;
         }
@@ -1408,12 +1417,14 @@
         stopTimers();
         queue = ""; shown = ""; idx = 0;
         paint("");
+        demo.classList.add("streaming"); demo.classList.remove("streamed");
         runBtn.disabled = true;
         runBtn.textContent = "streaming…";
         caret.style.display = "inline-block";
         if (reduce) {
           // reduced-motion: just show the whole thing, no typewriter
           paint(BURSTS.join(""));
+          demo.classList.remove("streaming"); demo.classList.add("streamed");
           runBtn.disabled = false;
           runBtn.textContent = "▶ Stream again";
           return;
@@ -1430,6 +1441,8 @@
         stopTimers();
         queue = ""; shown = ""; idx = 0;
         paint("");
+        demo.classList.remove("streaming", "streamed");
+        caret.style.display = "none";
         runBtn.disabled = false;
         runBtn.textContent = "▶ Stream it";
       }
