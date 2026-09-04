@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Project Analysis — The Field Notebook Health Dashboard · Lupo</title>
+  <meta name="description" content="Automated health scan of localwolfpackai/the-field-notebook: builds, dependencies, pull requests, security, and content integrity." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        oklch(0.20 0.01 60);
+      --ink-soft:   oklch(0.42 0.015 60);
+      --ink-mute:   oklch(0.60 0.012 60);
+      --paper:      oklch(0.985 0.012 85);
+      --paper-alt:  oklch(0.96 0.018 85);
+      --paper-deep: oklch(0.93 0.022 85);
+      --rule-soft:  oklch(0.92 0.025 230);
+      --margin:     oklch(0.70 0.13 27);
+      --margin-soft:oklch(0.92 0.06 27);
+      --accent:     oklch(0.49 0.19 264);
+      --accent-ink: oklch(0.40 0.18 264);
+      --accent-wash:oklch(0.93 0.05 250);
+      --sage:       oklch(0.55 0.10 145);
+      --sage-wash:  oklch(0.93 0.06 145);
+      --amber:      oklch(0.65 0.14 68);
+      --amber-wash: oklch(0.96 0.07 85);
+      --red:        oklch(0.55 0.20 25);
+      --red-wash:   oklch(0.95 0.06 25);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
+      line-height: 1.62;
+      color: var(--ink);
+      background: var(--paper);
+      background-image:
+        repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--rule-soft) 31px, var(--rule-soft) 32px),
+        linear-gradient(to right, transparent 0, transparent calc(max(2rem, 7vw) - 1px), var(--margin-soft) calc(max(2rem, 7vw) - 1px), var(--margin-soft) calc(max(2rem, 7vw) + 1px), transparent calc(max(2rem, 7vw) + 1px));
+      background-attachment: fixed;
+    }
+    h1, h2, h3 { font-family: 'Geist', serif; font-weight: 700; letter-spacing: -0.018em; margin: 0; }
+    a { color: var(--accent-ink); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: 'Geist Mono', monospace; font-size: 0.9em; }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) 4rem; }
+
+    .crumbs { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .crumbs .tag { background: var(--accent-wash); color: var(--accent-ink); padding: 0.15em 0.55em; border-radius: 999px; font-size: 0.7rem; }
+    h1 { font-size: clamp(2rem, 1.2rem + 3.5vw, 3.4rem); margin-top: 1rem; }
+    .deck { color: var(--ink-soft); max-width: 62ch; margin-top: 0.75rem; }
+    .meta { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed oklch(0.82 0.02 80); }
+
+    /* Score ring */
+    .hero { display: grid; grid-template-columns: 200px 1fr; gap: 2rem; align-items: center; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: 2rem; margin: 2rem 0; }
+    .score-ring { position: relative; width: 180px; height: 180px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring .bg { fill: none; stroke: var(--paper-deep); stroke-width: 12; }
+    .score-ring .fg { fill: none; stroke: var(--sage); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 57; transition: stroke-dashoffset 1.2s var(--ease-paper); }
+    .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Geist', serif; }
+    .score-num strong { font-size: 2.8rem; font-weight: 800; line-height: 1; color: var(--sage); }
+    .score-num span { font-size: 0.75rem; color: var(--ink-mute); font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
+    .hero-copy h2 { font-size: 1.35rem; margin-bottom: 0.5rem; }
+    .hero-copy p { margin: 0; color: var(--ink-soft); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .pill { font-family: 'Geist Mono', monospace; font-size: 0.72rem; padding: 0.3em 0.7em; border-radius: 999px; letter-spacing: 0.03em; }
+    .pill.green { background: var(--sage-wash); color: var(--sage); }
+    .pill.amber { background: var(--amber-wash); color: var(--amber); }
+    .pill.red { background: var(--red-wash); color: var(--red); }
+
+    /* Summary cards */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 2rem 0; }
+    .card { background: var(--paper-alt); border: 1px solid oklch(0.88 0.02 80); border-radius: var(--radius-md); padding: 1.25rem; }
+    .card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .card h3 { font-size: 0.95rem; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .status-dot.green { background: var(--sage); box-shadow: 0 0 0 3px var(--sage-wash); }
+    .status-dot.amber { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-wash); }
+    .status-dot.red { background: var(--red); box-shadow: 0 0 0 3px var(--red-wash); }
+    .card p { margin: 0; font-size: 0.92rem; color: var(--ink-soft); }
+    .card .score-mini { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--ink-mute); margin-top: 0.6rem; }
+
+    /* Issues */
+    section { margin: 2.5rem 0; }
+    section > h2 { font-size: 1.25rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--margin-soft); }
+    .issue { background: var(--paper-alt); border-left: 4px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .issue.critical { border-left-color: var(--red); }
+    .issue.healthy { border-left-color: var(--sage); }
+    .issue h4 { font-size: 0.95rem; margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
+    .issue p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+    .fix { margin-top: 0.6rem; font-size: 0.85rem; padding: 0.6rem 0.8rem; background: var(--paper); border-radius: var(--radius-sm); border: 1px dashed oklch(0.85 0.02 80); }
+    .fix strong { color: var(--accent-ink); font-size: 0.78rem; font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .suggest-list { list-style: none; padding: 0; margin: 0; }
+    .suggest-list li { padding: 0.75rem 0; border-bottom: 1px dashed oklch(0.88 0.02 80); font-size: 0.92rem; }
+    .suggest-list li:last-child { border-bottom: none; }
+
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px dashed oklch(0.82 0.02 80); font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+    @media (max-width: 640px) {
+      .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+      .pill-row { justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .score-ring .fg { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="crumbs">
+        <span>Smart Project Analysis</span>
+        <span>•</span>
+        <span>the-field-notebook</span>
+        <span class="tag">2026-09-04</span>
+      </div>
+      <h1>Project Health Dashboard</h1>
+      <p class="deck">Automated scan of <strong>localwolfpackai/the-field-notebook</strong> — a static HTML publication with no build step, deployed via GitHub Pages.</p>
+      <p class="meta">Branch: <code>cursor/smart-project-analysis-b686</code> · Scanned: Sep 4, 2026 · <a href="../index.html">← back to Field Notebook</a></p>
+    </header>
+
+    <div class="hero">
+      <div class="score-ring" aria-label="Overall health score 87 percent">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="bg" cx="90" cy="90" r="70" />
+          <circle class="fg" cx="90" cy="90" r="70" />
+        </svg>
+        <div class="score-num">
+          <strong>87%</strong>
+          <span>Health</span>
+        </div>
+      </div>
+      <div class="hero-copy">
+        <h2>Your project is in good shape — a few housekeeping items remain.</h2>
+        <p>GitHub Pages is live and serving all 34 entries. There are no broken links, no failed builds, and no stale pull requests. The main gaps are outdated contributor docs, duplicate volume numbers in two entries, and no automated CI for link-checking.</p>
+        <div class="pill-row">
+          <span class="pill green">0 Critical</span>
+          <span class="pill amber">5 Needs Attention</span>
+          <span class="pill green">6 Healthy</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="top"><h3>Builds &amp; Deploy</h3><span class="status-dot green" title="Healthy"></span></div>
+        <p>GitHub Pages builds succeed. Site is live at <code>localwolfpackai.github.io/the-field-notebook</code>.</p>
+        <div class="score-mini">Score: 95 / 100</div>
+      </div>
+      <div class="card">
+        <div class="top"><h3>Dependencies</h3><span class="status-dot green" title="Healthy"></span></div>
+        <p>No <code>package.json</code>, lockfile, or runtime dependencies. Zero supply-chain risk from npm/pip.</p>
+        <div class="score-mini">Score: 100 / 100</div>
+      </div>
+      <div class="card">
+        <div class="top"><h3>Pull Requests</h3><span class="status-dot green" title="Healthy"></span></div>
+        <p>0 open PRs. No stale or unmerged work waiting for review.</p>
+        <div class="score-mini">Score: 100 / 100</div>
+      </div>
+      <div class="card">
+        <div class="top"><h3>Security</h3><span class="status-dot amber" title="Needs attention"></span></div>
+        <p>All assets use HTTPS. External Google Fonts CDN on every page. Dependabot not enabled (low risk for static HTML).</p>
+        <div class="score-mini">Score: 85 / 100</div>
+      </div>
+      <div class="card">
+        <div class="top"><h3>Documentation</h3><span class="status-dot amber" title="Needs attention"></span></div>
+        <p><code>DOCS.md</code> still says "not yet under version control." <code>SKILL.md</code> has the same stale note.</p>
+        <div class="score-mini">Score: 75 / 100</div>
+      </div>
+      <div class="card">
+        <div class="top"><h3>Content Integrity</h3><span class="status-dot amber" title="Needs attention"></span></div>
+        <p>34 entries on disk match index and catalog. Two duplicate volume numbers found (Vol. 17 and Vol. 21).</p>
+        <div class="score-mini">Score: 85 / 100</div>
+      </div>
+    </div>
+
+    <section id="critical">
+      <h2>🔴 Critical Issues</h2>
+      <div class="issue healthy">
+        <h4>✅ None found</h4>
+        <p>No broken builds, missing entry files, or security vulnerabilities were detected.</p>
+      </div>
+    </section>
+
+    <section id="attention">
+      <h2>🟡 Needs Attention</h2>
+
+      <div class="issue">
+        <h4><span class="status-dot amber"></span> Stale contributor documentation</h4>
+        <p><code>DOCS.md</code> (line 150) and <code>SKILL.md</code> (line 30) still say the project is not yet under version control — but it has been on GitHub since July 2026.</p>
+        <div class="fix"><strong>Suggested fix</strong> — Update the Status section in <code>DOCS.md</code> to reflect the live repo and GitHub Pages URL. Remove the "not pushing to git yet" note from <code>SKILL.md</code>.</div>
+      </div>
+
+      <div class="issue">
+        <h4><span class="status-dot amber"></span> Duplicate volume numbers</h4>
+        <p>Two pairs of entries share the same Vol. number in their mastheads:</p>
+        <p style="margin-top:0.4rem"><code>Vol. 17</code> — <code>build-an-ai-app-2026-06-17.html</code> and <code>devtools-context-extractor-2026-06-09.html</code><br>
+        <code>Vol. 21</code> — <code>steal-a-sites-soul-2026-06-22.html</code> and <code>texture-layer-2026-06-21.html</code></p>
+        <div class="fix"><strong>Suggested fix</strong> — Pick canonical numbers (DOCS.md catalog is the source of truth) and update the masthead crumbs in the affected HTML files.</div>
+      </div>
+
+      <div class="issue">
+        <h4><span class="status-dot amber"></span> No CI / GitHub Actions workflows</h4>
+        <p>The repo has no <code>.github/workflows/</code> directory. GitHub Pages uses the built-in legacy builder (which works), but there is no automated link checker or HTML validator on push.</p>
+        <div class="fix"><strong>Suggested fix</strong> — Add a lightweight workflow that runs <code>htmlhint</code> or a link checker on every push to <code>main</code>.</div>
+      </div>
+
+      <div class="issue">
+        <h4><span class="status-dot amber"></span> Project activity gap</h4>
+        <p>Last commit was <strong>July 30, 2026</strong> (~35 days ago). No open issues or PRs signal pending work.</p>
+        <div class="fix"><strong>Suggested fix</strong> — If the collection is still active, schedule the next entry or archive the project with a final status update in README.</div>
+      </div>
+
+      <div class="issue">
+        <h4><span class="status-dot amber"></span> External font CDN dependency</h4>
+        <p>All 35 HTML pages load Geist, Inter, Caveat, and Geist Mono from Google Fonts. Offline readers and privacy-conscious users cannot load fonts without network access.</p>
+        <div class="fix"><strong>Suggested fix</strong> — Optional: self-host font files or add a <code>@font-face</code> fallback stack so pages remain readable offline.</div>
+      </div>
+    </section>
+
+    <section id="healthy">
+      <h2>🟢 Healthy</h2>
+
+      <div class="issue healthy">
+        <h4>GitHub Pages deployment</h4>
+        <p>Status: <strong>built</strong>. HTTPS enforced. Index and all 34 entry pages return HTTP 200.</p>
+      </div>
+      <div class="issue healthy">
+        <h4>Link integrity</h4>
+        <p>All 34 <code>index.html</code> entry links resolve to files on disk. Every entry links back to <code>../index.html</code>.</p>
+      </div>
+      <div class="issue healthy">
+        <h4>Entry count consistency</h4>
+        <p>README, DOCS catalog, and index all report 34 entries — matches the file count (6 + 23 + 5 by month).</p>
+      </div>
+      <div class="issue healthy">
+        <h4>No package vulnerabilities</h4>
+        <p>Static HTML with no <code>package.json</code>, <code>requirements.txt</code>, or other dependency manifests. Nothing to audit or update.</p>
+      </div>
+      <div class="issue healthy">
+        <h4>HTTPS everywhere</h4>
+        <p>Zero <code>http://</code> resource references across all HTML files.</p>
+      </div>
+      <div class="issue healthy">
+        <h4>Pull request hygiene</h4>
+        <p>No open, stale, or abandoned pull requests.</p>
+      </div>
+    </section>
+
+    <section id="suggestions">
+      <h2>Smart Suggestions</h2>
+      <ul class="suggest-list">
+        <li><strong>Quick win (5 min):</strong> Edit <code>DOCS.md</code> Status section → replace "Not yet under version control" with the live GitHub Pages URL and repo link.</li>
+        <li><strong>Quick win (10 min):</strong> Fix duplicate Vol. 17 and Vol. 21 masthead crumbs in the four affected HTML files.</li>
+        <li><strong>Automation:</strong> Add <code>.github/workflows/link-check.yml</code> using <code>lycheeverse/lychee-action</code> to catch broken links on every push.</li>
+        <li><strong>Branch protection:</strong> Enable branch protection on <code>main</code> (currently unprotected) to require PR reviews before merge.</li>
+        <li><strong>Live site:</strong> <a href="https://localwolfpackai.github.io/the-field-notebook/" target="_blank" rel="noopener">localwolfpackai.github.io/the-field-notebook</a></li>
+        <li><strong>Repo:</strong> <a href="https://github.com/localwolfpackai/the-field-notebook" target="_blank" rel="noopener">github.com/localwolfpackai/the-field-notebook</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>Generated by Cursor Cloud Agent · Smart Project Analysis</span>
+      <span><a href="ANALYSIS.md">Markdown report</a> · <a href="../index.html">Field Notebook</a></span>
+    </footer>
+  </div>
+</body>
+</html>
