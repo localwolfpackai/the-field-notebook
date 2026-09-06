@@ -147,7 +147,7 @@ The signature is **—Lupo**, with **"The Mess is the Method"** as a secondary m
 
 ## Status
 
-Not yet under version control — a git push is coming. When it lands, `index.html` is the
-intended entry point and this file is the contributor guide.
+On GitHub since July 2026 and live on [GitHub Pages](https://localwolfpackai.github.io/the-field-notebook/).
+`index.html` is the entry point and this file is the contributor guide.
 
 —Lupo · The Mess is the Method · 2026-07-21
