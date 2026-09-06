@@ -30,7 +30,6 @@ jobs:
           fail: true
           args: >-
             --no-progress
-            --exclude-mail
             --max-retries 3
             --timeout 20
             --exclude '^https://fonts\.(googleapis|gstatic)\.com'
