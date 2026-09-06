@@ -33,5 +33,6 @@ jobs:
             --max-retries 3
             --timeout 20
             --exclude '^https://fonts\.(googleapis|gstatic)\.com'
+            --exclude '^(file:///Users/|https://github\.com/pulls$|https://github\.com/localwolfpackai/the-field-notebook/settings/pages$)'
             './**/*.html'
             './**/*.md'
