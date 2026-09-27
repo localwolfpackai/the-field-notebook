@@ -26,3 +26,12 @@ Full catalog with per-entry summaries: [DOCS.md](DOCS.md).
 ---
 
 —Lupo · The Mess is the Method
+
+## Design & Architecture
+
+The Field Notebook employs a strict, zero-build, OKLCH-based design system that emulates physical notebook paper. For a comprehensive look into the CSS and visual layout rules, see the recent audit and documentation:
+
+- [AUDIT.md](AUDIT.md) — Findings and structural review of the project's padding, spacing, and CSS constraints.
+- [DESIGN.md](DESIGN.md) — The core design system tokens, typography scales, and OKLCH palette.
+- [AGENTS.md](AGENTS.md) — Directives for LLMs/Agents working in this codebase.
+- [CLAUDE.md](CLAUDE.md) — Persona and systemic constraints for Claude code assistants.
