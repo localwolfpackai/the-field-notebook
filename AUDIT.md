@@ -1,5 +1,16 @@
 # Comprehensive Front-End and Design Audit
 
+## Shipped from this audit (2026-10-05)
+
+The write-up landed before the CSS did. These pieces of it are now in the pages:
+
+- The 27 guides that share `.toc` use `gap: 0.6rem` and a `1.8rem` number column. The older GitHub field notebook (`.toc-card`) uses the same `0.6rem` list gap.
+- Every HTML page draws a `:focus-visible` ring in `--accent`.
+- The index names `--line`, `--on-accent`, and a `--space-*` scale, wraps the catalog in `<main>`, and keeps pills to one word.
+- Step blocks (`.hack`) use `minmax(0, 1fr)` plus `min-width: 0` on the text cell, so a long terminal line scrolls inside the card on a phone instead of dragging the whole page sideways.
+
+Still open, on purpose: entry pages still repeat their CSS instead of sharing a file (that is the zero-build rule), and `ship-2026-07-25-launch/social-card.html` still uses hex. Do not "fix" that card by adding a build step.
+
 ## 1. STRUCTURE & SEMANTICS
 
 *   **Finding:** The markup uses logical semantic tags across pages (`<header>`, `<section>`, `<article>`, `<aside>`, `<footer>`).

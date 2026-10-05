@@ -31,12 +31,26 @@
       --amber-wash: oklch(0.96 0.07 85);
       --violet:     oklch(0.55 0.16 300);
       --violet-wash:oklch(0.94 0.05 300);
+      --line:       oklch(0.86 0.03 80);
+      --line-strong:oklch(0.84 0.03 80);
+      --line-hot:   oklch(0.78 0.06 264);
+      --on-accent:  oklch(0.99 0.008 85);
+      --paper-glass:oklch(0.99 0.008 85 / 0.92);
+      --space-xs:   0.4rem;
+      --space-sm:   0.8rem;
+      --space-md:   1.25rem;
+      --space-lg:   2.5rem;
+      --space-xl:   3rem;
       --radius-sm: 6px;
       --radius-md: 12px;
       --radius-lg: 18px;
       --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
     }
     *, *::before, *::after { box-sizing: border-box; }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
     html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
     body {
       margin: 0;
@@ -77,39 +91,39 @@
     .meta-row b { color: var(--ink); font-weight: 600; }
 
     /* FEATURE (latest) */
-    .feature { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(1.25rem, 3vw, 2.5rem); align-items: stretch; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem); margin-bottom: 3rem; position: relative;  }
+    .feature { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(var(--space-md), 3vw, var(--space-lg)); align-items: stretch; background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(var(--space-md), 3vw, 2rem); margin-bottom: var(--space-xl); position: relative;  }
     .feature::before { content: ''; position: absolute; top: -10px; left: 2rem; width: 72px; height: 20px; background: oklch(0.78 0.13 68 / 0.5); border-radius: 2px; transform: rotate(-2deg); }
     @media (max-width: 760px) { .feature { grid-template-columns: 1fr; } }
     .feature .kicker { font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--margin); }
     .feature h2 { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.3rem); font-weight: 800; letter-spacing: -0.02em; margin: 0.3rem 0 0.7rem; }
     .feature p { color: var(--ink-soft); max-width: 50ch; }
     .feature .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
-    .feature .go { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem; font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.92rem; color: oklch(0.99 0 0); background: var(--accent); padding: 0.55rem 1.2rem; border-radius: 999px; transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper); }
+    .feature .go { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem; font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.92rem; color: var(--on-accent); background: var(--accent); padding: 0.55rem 1.2rem; border-radius: 999px; transition: transform 0.15s var(--ease-paper), filter 0.15s var(--ease-paper); }
     .feature .go:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .feature .preview { border-radius: var(--radius-md); overflow: hidden; border: 1px solid oklch(0.86 0.03 80); background:
+    .feature .preview { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line); background:
         radial-gradient(120% 120% at 100% 0%, var(--violet-wash), transparent 55%),
         radial-gradient(110% 120% at 0% 100%, var(--accent-wash), transparent 55%),
         var(--paper); display: flex; align-items: center; justify-content: center; min-height: 14rem; padding: 1.2rem; }
-    .mini-card { width: 100%; max-width: min(19rem, 100%); background: var(--paper); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.6); }
+    .mini-card { width: 100%; max-width: min(19rem, 100%); background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 18px 40px -30px oklch(0.40 0.10 264 / 0.6); }
     .mini-card .mc-top { height: 4.5rem; background: linear-gradient(135deg, var(--violet) 0%, var(--accent) 100%); display: flex; align-items: flex-start; gap: 0.4rem; padding: 0.55rem 0.6rem; }
-    .mini-card .mc-tag { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; background: oklch(1 0 0 / 0.9); color: var(--accent-ink); padding: 0.2em 0.6em; border-radius: 999px; }
-    .mini-card .mc-body { padding: 0.75rem 0.85rem 0.9rem; }
+    .mini-card .mc-tag { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; background: var(--paper-glass); color: var(--accent-ink); padding: 0.2em 0.6em; border-radius: 999px; }
+    .mini-card .mc-body { display: grid; gap: 0.45rem; padding: 0.75rem 0.85rem 0.9rem; }
     .mini-card .mc-title { font-family: 'Geist', serif; font-weight: 700; font-size: 1.02rem; }
-    .mini-card .mc-sub { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
-    .mini-card .mc-row { display: flex; gap: 0.9rem; margin-top: 0.6rem; font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink); }
+    .mini-card .mc-sub { color: var(--ink-soft); font-size: 0.82rem; }
+    .mini-card .mc-row { display: flex; gap: 0.9rem; font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink); }
     .mini-json { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--ink-mute); margin-top: 0.7rem; line-height: 1.45; }
     .mini-json .k { color: var(--violet); } .mini-json .s { color: var(--sage); }
 
     /* MONTH SECTIONS */
-    .month { margin-bottom: 2.75rem; scroll-margin-top: 1.5rem; }
+    .month { margin-bottom: var(--space-xl); scroll-margin-top: 1.5rem; }
     .month-head { display: flex; align-items: baseline; gap: 0.8rem; border-bottom: 2px solid var(--ink); padding-bottom: 0.5rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
     .month-head h3 { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); }
     .month-head .count { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--margin); letter-spacing: 0.04em; }
     .month-head .note { font-family: 'Caveat', cursive; font-size: 1.25rem; color: var(--ink-mute); margin-left: auto; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); justify-content: start; gap: 1.25rem; }
-    .entry { display: flex; flex-direction: column; background: var(--paper); border: 1px solid oklch(0.84 0.03 80); border-radius: var(--radius-md); padding: 1.35rem 1.4rem; box-shadow: 0 1px 0 oklch(0.90 0.02 80); transition: transform 0.18s var(--ease-paper), box-shadow 0.18s var(--ease-paper), border-color 0.18s; position: relative; }
-    .entry:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -26px oklch(0.40 0.06 264 / 0.55); border-color: oklch(0.78 0.06 264); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); justify-content: start; gap: var(--space-md); }
+    .entry { display: flex; flex-direction: column; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 1.35rem 1.4rem; box-shadow: 0 1px 0 oklch(0.90 0.02 80); transition: transform 0.18s var(--ease-paper), box-shadow 0.18s var(--ease-paper), border-color 0.18s; position: relative; }
+    .entry:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -26px oklch(0.40 0.06 264 / 0.55); border-color: var(--line-hot); }
     .entry .top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.55rem; }
     .entry .vol { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--margin); }
     .entry .date { font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: var(--ink-mute); }
@@ -117,7 +131,7 @@
     .entry h4 a { color: var(--ink); }
     .entry:hover h4 a { color: var(--accent-ink); }
     .entry p { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; flex: 1; }
-    .entry .pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
+    .entry .pills { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-sm); }
     .pill { font-family: 'Geist Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.22em 0.65em; border-radius: 999px; background: var(--paper-deep); color: var(--ink-soft); }
     .pill.build { background: var(--accent-wash); color: var(--accent-ink); }
     .pill.design { background: var(--sage-wash); color: oklch(0.36 0.10 145); }
@@ -149,7 +163,7 @@
         <span>Field Notebook</span>
         <span class="dot">•</span>
         <span>The Index</span>
-        <span class="tag">34 entries</span>
+        <span class="tag">34</span>
       </div>
 
       <h1>The <span class="accent">Field Notebook</span> — building with AI, one move at a time.</h1>
@@ -175,6 +189,7 @@
       </div>
     </header>
 
+    <main>
     <!-- FEATURE: latest -->
     <section class="feature" aria-label="Latest entry">
       <div>
@@ -186,7 +201,7 @@
           Ten moves — five to wire it up, five to keep it safe — and a live demo where a $340 refund waits for your tap.
         </p>
         <div class="tags">
-          <span class="pill build">tool use</span>
+          <span class="pill build">tools</span>
           <span class="pill new">verbs</span>
           <span class="pill agent">supervised</span>
         </div>
@@ -199,7 +214,7 @@
             <div class="mc-title">Handy on top, supervised underneath</div>
             <div class="mc-sub">the model asks; a human owns the moment money moves.</div>
             <div class="mc-row"><span>🔎 read</span><span>↩ write</span><span>1 tap</span></div>
-            <div class="mc-sub" style="margin-top:0.6rem;">Look-ups run on their own. Refunds wait for your OK. Every step is logged.</div>
+            <div class="mc-sub">Look-ups run on their own. Refunds wait for your OK. Every step is logged.</div>
           </div>
         </div>
       </div>
@@ -218,7 +233,7 @@
           <div class="top"><span class="vol">Vol. 36</span><span class="date">07 · 08</span></div>
           <h4><a href="2026-07/when-the-model-gets-a-verb-tool-use-2026-07-08.html">When the Model Gets a Verb</a></h4>
           <p>Tool use lets your app act — look something up, book a table, issue a refund — while you keep a hand on the risky moves. Inside: a live demo where a $340 refund waits for your tap.</p>
-          <div class="pills"><span class="pill build">tool use</span><span class="pill new">verbs</span></div>
+          <div class="pills"><span class="pill build">tools</span><span class="pill new">verbs</span></div>
         </article>
 
         <article class="entry">
@@ -232,7 +247,7 @@
           <div class="top"><span class="vol">Vol. 34</span><span class="date">07 · 06</span></div>
           <h4><a href="2026-07/the-answer-you-never-see-observability-2026-07-06.html">The Answer You Never See</a></h4>
           <p>A live app with no feedback loop looks fine even when it's wrong. Ten moves to see what it's really telling people — and make sure a bad answer never ships twice.</p>
-          <div class="pills"><span class="pill agent">observe</span><span class="pill new">feedback loop</span></div>
+          <div class="pills"><span class="pill agent">observe</span><span class="pill new">loop</span></div>
         </article>
 
         <article class="entry">
@@ -265,14 +280,14 @@
           <div class="top"><span class="vol">Vol. 31</span><span class="date">06 · 30</span></div>
           <h4><a href="2026-06/ship-the-tokens-first-design-systems-2026-06-30.html">Ship the Tokens First</a></h4>
           <p>Stop asking for a "nice landing page" and getting AI slop. Ten moves: make the model author the design tokens first — one JSON contract of color scale, type ramp, 8pt spacing, radius, motion — then build every component against it. A live token knob that repaints the whole card as one.</p>
-          <div class="pills"><span class="pill design">design system</span><span class="pill new">tokens</span></div>
+          <div class="pills"><span class="pill design">system</span><span class="pill new">tokens</span></div>
         </article>
 
         <article class="entry">
           <div class="top"><span class="vol">Vol. 30</span><span class="date">06 · 29</span></div>
           <h4><a href="2026-06/the-90-percent-off-dial-prompt-caching-2026-06-29.html">The 90%-Off Dial</a></h4>
           <p>Stop re-paying full price to make the model re-read the same system prompt every call. Ten moves: mark the stable prefix with one cache marker, order stable-first / volatile-last, read the hit counters, and cut a repetitive bill ~90%. A live cold→warm ledger you can flip.</p>
-          <div class="pills"><span class="pill build">caching</span><span class="pill new">−90% bill</span></div>
+          <div class="pills"><span class="pill build">caching</span><span class="pill new">−90%</span></div>
         </article>
 
         <article class="entry">
@@ -293,7 +308,7 @@
           <div class="top"><span class="vol">Vol. 27</span><span class="date">06 · 27</span></div>
           <h4><a href="2026-06/same-prompt-two-souls-claude-vs-gemini-design-2026-06-27.html">Same Prompt, Two Souls</a></h4>
           <p>One identical prompt, two different-looking apps. Read the warmth-vs-density split between Claude and Gemini, learn the words that steer each, and remix the best of both. Ten moves, a live knob you can drag.</p>
-          <div class="pills"><span class="pill design">design</span><span class="pill new">two models</span></div>
+          <div class="pills"><span class="pill design">design</span><span class="pill new">compare</span></div>
         </article>
 
         <article class="entry">
@@ -405,14 +420,14 @@
           <div class="top"><span class="vol">Vol. 11</span><span class="date">06 · 02</span></div>
           <h4><a href="2026-06/claude-design-partner-2026-06-02.html">Designed, Not Generated</a></h4>
           <p>Twelve moves for directing Claude Artifacts so the UI looks made, not auto-spat — the design vocabulary, the knobs, the AI tells to kill.</p>
-          <div class="pills"><span class="pill design">claude design</span><span class="pill build">artifacts</span></div>
+          <div class="pills"><span class="pill design">claude</span><span class="pill build">artifacts</span></div>
         </article>
 
         <article class="entry">
           <div class="top"><span class="vol">Vol. 10</span><span class="date">06 · 01</span></div>
           <h4><a href="2026-06/the-agent-loop-2026-06-01.html">The Agent Loop</a></h4>
           <p>An AI agent is just a while loop with tools. Build one from a single API call up to a streaming CLI — in plain developer language.</p>
-          <div class="pills"><span class="pill agent">agent</span><span class="pill build">from scratch</span></div>
+          <div class="pills"><span class="pill agent">agent</span><span class="pill build">start</span></div>
         </article>
 
         <article class="entry">
@@ -459,7 +474,7 @@
           <div class="top"><span class="vol">Vol. 03</span><span class="date">05 · 28</span></div>
           <h4><a href="2026-05/github-field-notebook-2026-05-28.html">GitHub Field Notebook</a></h4>
           <p>Twelve habits that actually stick — gh CLI, branches, PRs, Claude Code workflows. Step-by-step, casual, no fluff.</p>
-          <div class="pills"><span class="pill github">github</span><span class="pill agent">claude code</span></div>
+          <div class="pills"><span class="pill github">github</span><span class="pill agent">claude</span></div>
         </article>
 
         <article class="entry">
@@ -478,6 +493,7 @@
 
       </div>
     </section>
+    </main>
 
     <footer class="sig">
       <div class="name">
