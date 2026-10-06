@@ -91,3 +91,6 @@ Every page includes this, placed with the reset so a tab stop is visible on crea
 ```
 - **`.hack` (Step Modules):** A two-column grid. Left column houses a large Caveat number (`.nbr`); right column holds the header, tags, and body copy. The text column is `minmax(0, 1fr)` and `.hack > .body` sets `min-width: 0`, so a long code line scrolls inside `.term` instead of stretching the page sideways. At `640px` the whole step stacks to one `minmax(0, 1fr)` column.
 - **`.term` (Code Terminal):** A dark-mode block simulating a MacOS window, complete with a title bar (`.term .bar`) containing three colored dots (red, yellow, green).
+
+## 7. Launch card
+`ship-2026-07-25-launch/social-card.html` is a 1200×630 artboard, not a flowing page. Pixel sizes stay on the board so a screenshot of `.card` is the social image. `.stage` uses `aspect-ratio: 1200 / 630` and `container-type: inline-size`. The card is `position: absolute` inside that stage and scaled with `scale(calc(100cqw / 1200px))`, so the unscaled 1200px box does not widen the page and a phone shows the whole card. Colors on that file are the tokens above. Tape and shadow are the same hues at partial opacity (`oklch(... / 0.55)`), not a new palette and not hex.

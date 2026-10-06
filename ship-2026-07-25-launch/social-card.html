@@ -4,130 +4,280 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The Field Notebook — launch card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Geist+Mono:wght@500;600&family=Geist:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 4px;
   }
   :root {
-    --bg: #f4f1ea;
-    --ink: #17140f;
-    --ink-soft: #57514644;
-    --ink-mid: #6b6358;
-    --line: #d9d2c4;
-    --red: #c0392b;
-    --accent: #2f5de0;
+    --ink:         oklch(0.20 0.01 60);
+    --ink-soft:    oklch(0.42 0.015 60);
+    --ink-mute:    oklch(0.60 0.012 60);
+    --paper:       oklch(0.985 0.012 85);
+    --paper-deep:  oklch(0.93 0.022 85);
+    --line:        oklch(0.86 0.03 80);
+    --margin:      oklch(0.70 0.13 27);
+    --margin-soft: oklch(0.92 0.06 27);
+    --accent:      oklch(0.49 0.19 264);
+    --accent-ink:  oklch(0.40 0.18 264);
+    --accent-wash: oklch(0.93 0.05 250);
+    --code-bg:     oklch(0.22 0.012 60);
+    --code-ink:    oklch(0.93 0.01 80);
+    --code-mute:   oklch(0.68 0.015 80);
+    --code-blue:   oklch(0.78 0.10 240);
+    --code-green:  oklch(0.80 0.13 145);
+    --rule:        oklch(0.20 0.01 60 / 0.04);
+    --tape:        oklch(0.78 0.13 68 / 0.55);
+    --margin-rule: oklch(0.70 0.13 27 / 0.45);
+    --shadow:      oklch(0.20 0.01 60 / 0.45);
+    --frame-shadow:oklch(0.40 0.06 80 / 0.4);
   }
-  body { display: grid; place-items: center; background: #2a2723; min-height: 100vh; padding: 24px; font-family: 'Inter', system-ui, sans-serif; }
+  body {
+    display: grid;
+    place-items: center;
+    background: var(--code-bg);
+    min-height: 100vh;
+    padding: 1.5rem;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
 
-  /* 1200x630 OG card */
-  .card {
-    width: 1200px; height: 630px;
-    background: var(--bg);
+  /* The artboard stays 1200×630 so a screenshot of .card is the OG image.
+     The stage scales that whole board to the viewport. */
+  .stage {
+    width: min(1200px, 100%);
+    aspect-ratio: 1200 / 630;
     position: relative;
+    container-type: inline-size;
+  }
+  .card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1200px;
+    height: 630px;
+    transform: scale(calc(100cqw / 1200px));
+    transform-origin: top left;
+    background: var(--paper);
     overflow: hidden;
     display: grid;
-    grid-template-columns: 1.32fr 1fr;
-    box-shadow: 0 40px 120px -40px #000a;
+    grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+    box-shadow: 0 40px 120px -40px var(--shadow);
   }
-
-  /* faint ruled-paper hint on the left, very subtle — ties to the product without copying it */
   .card::before {
     content: '';
-    position: absolute; inset: 0;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 46px, #0000000a 46px, #0000000a 47px);
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 46px, var(--rule) 46px, var(--rule) 47px);
     pointer-events: none;
   }
 
-  /* LEFT — the pitch */
-  .left { padding: 46px 56px 44px; display: flex; flex-direction: column; position: relative; z-index: 1; }
-
-  .kicker { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink-mid); text-transform: uppercase; }
-  .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .left {
+    padding: 46px 56px 44px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+  }
+  .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--margin); }
 
   .stat { display: flex; align-items: baseline; gap: 16px; margin-top: 20px; }
-  .stat .num { font-size: 138px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.8; color: var(--ink); }
-  .stat .num-label { font-size: 21px; font-weight: 700; line-height: 1.15; color: var(--ink); max-width: 8ch; }
-  .stat .num-label span { display: block; color: var(--ink-mid); font-weight: 500; }
+  .stat .num {
+    font-family: 'Geist', serif;
+    font-size: 138px;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 0.8;
+    color: var(--ink);
+  }
+  .stat .num-label {
+    font-family: 'Geist', serif;
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ink);
+    max-width: 8ch;
+  }
+  .stat .num-label span { display: block; color: var(--ink-mute); font-weight: 500; }
 
-  h1 { margin-top: 24px; font-size: 37px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.07; color: var(--ink); max-width: 17ch; }
+  h1 {
+    margin-top: 24px;
+    font-family: 'Geist', serif;
+    font-size: 37px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.07;
+    color: var(--ink);
+    max-width: 17ch;
+  }
   h1 .hl { color: var(--accent); }
 
-  .sub { margin-top: 15px; font-size: 18px; font-weight: 450; line-height: 1.4; color: var(--ink-mid); max-width: 36ch; }
+  .sub {
+    margin-top: 15px;
+    font-size: 18px;
+    font-weight: 450;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    max-width: 36ch;
+  }
 
   .foot { margin-top: auto; display: flex; align-items: center; gap: 16px; padding-top: 22px; }
-  .foot .url { font-size: 16px; font-weight: 600; color: var(--ink); font-family: 'Inter', monospace; }
-  .foot .sep { color: var(--line); }
-  .foot .by { font-size: 16px; font-weight: 500; color: var(--ink-mid); }
+  .foot .url { font-size: 16px; font-weight: 600; color: var(--ink); font-family: 'Geist Mono', monospace; }
 
-  /* RIGHT — the artifact, framed like a piece on a wall */
-  .right { position: relative; z-index: 1; display: grid; place-items: center; padding: 40px 48px 40px 8px; }
+  .right {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    padding: 40px 48px 40px 8px;
+    min-width: 0;
+  }
   .frame {
-    width: 100%; max-width: 400px; aspect-ratio: 3/3.5;
-    background: #fbf8f1;
-    border: 1px solid #e2dccd;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 3 / 3.5;
+    background: var(--paper);
+    border: 1px solid var(--line);
     border-radius: 10px;
-    box-shadow: 0 30px 60px -28px #4a3f2e66, 0 4px 10px -4px #0002;
+    box-shadow: 0 30px 60px -28px var(--frame-shadow), 0 4px 10px -4px var(--shadow);
     transform: rotate(2.2deg);
     overflow: hidden;
     position: relative;
   }
-  /* washi tape */
   .frame::before {
-    content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(-2deg);
-    width: 116px; height: 26px; background: #e6b84088; border-radius: 2px; z-index: 3;
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 116px;
+    height: 26px;
+    background: var(--tape);
+    border-radius: 2px;
+    z-index: 3;
   }
   .mini { padding: 30px 26px; height: 100%; display: flex; flex-direction: column; position: relative; }
-  .mini::before { content: ''; position: absolute; top: 0; bottom: 0; left: 20px; width: 2px; background: #e0796e55; }
-  .mini-vol { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a89a86; padding-left: 18px; }
-  .mini-title { margin-top: 14px; font-size: 27px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: #17140f; padding-left: 18px; }
+  .mini::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    width: 2px;
+    background: var(--margin-rule);
+  }
+  .mini-vol {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    padding-left: 18px;
+  }
+  .mini-title {
+    margin-top: 14px;
+    font-family: 'Geist', serif;
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    padding-left: 18px;
+  }
   .mini-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; padding-left: 18px; }
-  .mini-pills span { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: #eae2d1; color: #6b6358; }
-  .mini-pills span.b { background: #dfe6fb; color: #2f5de0; }
-  .mini-pills span.r { background: #f7dcd7; color: #c0392b; }
-  .mini-body { margin-top: 18px; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: #6b6358; }
-  .mini-code { margin-top: auto; margin-left: 18px; background: #201d18; border-radius: 7px; padding: 12px 14px; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; color: #d7cfc2; }
-  .mini-code .k { color: #9db4ff; } .mini-code .s { color: #8fce9b; } .mini-code .c { color: #7d7466; }
+  .pill {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--paper-deep);
+    color: var(--ink-soft);
+  }
+  .pill.build { background: var(--accent-wash); color: var(--accent-ink); }
+  .pill.new { background: var(--margin-soft); color: var(--margin); }
+  .mini-body { margin-top: 18px; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+  .mini-code {
+    margin-top: auto;
+    margin-left: 18px;
+    background: var(--code-bg);
+    border-radius: 7px;
+    padding: 12px 14px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--code-ink);
+  }
+  .mini-code .k { color: var(--code-blue); }
+  .mini-code .s { color: var(--code-green); }
+  .mini-code .c { color: var(--code-mute); }
 
-  /* corner mark */
-  .mark { position: absolute; bottom: 20px; right: 24px; z-index: 4; font-size: 13px; font-weight: 500; color: var(--ink-mid); letter-spacing: 0.01em; }
-  .mark b { color: var(--ink); font-weight: 700; }
+  .mark {
+    position: absolute;
+    bottom: 20px;
+    right: 24px;
+    z-index: 4;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: 0.01em;
+  }
+  .mark b { color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="left">
-      <div class="kicker"><span class="dot"></span> Lupo Studios · autonomous publishing</div>
+  <div class="stage">
+    <div class="card">
+      <div class="left">
+        <div class="kicker"><span class="dot"></span> Lupo Studios · autonomous publishing</div>
 
-      <div class="stat">
-        <div class="num">34</div>
-        <div class="num-label">issues<span>in six weeks</span></div>
-      </div>
+        <div class="stat">
+          <div class="num">34</div>
+          <div class="num-label">issues<span>in six weeks</span></div>
+        </div>
 
-      <h1>A Claude routine wrote a <span class="hl">field guide</span> to building with AI. I directed it.</h1>
+        <h1>A Claude routine wrote a <span class="hl">field guide</span> to building with AI. I directed it.</h1>
 
-      <p class="sub">One scheduled agent, running on its own for six weeks — one consistent design system, one voice, 34 volumes. I set the brief, curated, and shipped it.</p>
+        <p class="sub">One scheduled agent, running on its own for six weeks — one consistent design system, one voice, 34 volumes. I set the brief, curated, and shipped it.</p>
 
-      <div class="foot">
-        <span class="url">localwolfpackai.github.io/the-field-notebook</span>
-      </div>
-    </div>
-
-    <div class="right">
-      <div class="frame">
-        <div class="mini">
-          <div class="mini-vol">Vol. 36 · tool use</div>
-          <div class="mini-title">When the model gets a verb</div>
-          <div class="mini-pills"><span class="b">tool use</span><span>verbs</span><span class="r">supervised</span></div>
-          <div class="mini-body">Let your app act — look something up, book a table, issue a refund — while you keep a hand on the risky moves.</div>
-          <div class="mini-code"><span class="c">// a $340 refund waits for your tap</span><br><span class="k">approved_by</span>: <span class="s">"human"</span></div>
+        <div class="foot">
+          <span class="url">localwolfpackai.github.io/the-field-notebook</span>
         </div>
       </div>
-    </div>
 
-    <div class="mark"><b>The Mess is the Method</b> · 2026-07-25 · IG @_lupo</div>
+      <div class="right">
+        <div class="frame">
+          <div class="mini">
+            <div class="mini-vol">Vol. 36 · tools</div>
+            <div class="mini-title">When the model gets a verb</div>
+            <div class="mini-pills"><span class="pill build">tools</span><span class="pill">verbs</span><span class="pill new">safe</span></div>
+            <div class="mini-body">Let your app act — look something up, book a table, issue a refund — while you keep a hand on the risky moves.</div>
+            <div class="mini-code"><span class="c">// a $340 refund waits for your tap</span><br><span class="k">approved_by</span>: <span class="s">"human"</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mark"><b>The Mess is the Method</b> · 2026-07-25 · IG @_lupo</div>
+    </div>
   </div>
 </body>
 </html>
