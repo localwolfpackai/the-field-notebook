@@ -1,0 +1,19 @@
+---
+description: Stack badges under a field-guide title stay on the notebook palette
+globs: "**/*.html"
+alwaysApply: false
+---
+
+# Stack badges
+
+`.sbadge` chips sit in `.badges` under the byline. They are one word, colored by a palette class.
+
+- Use `class="sbadge margin"` (or `accent`, `sage`, `amber`, `violet`, `ink`). Do not set `style="--pill-c:#..."`.
+- The label inside `<b>` is one word: `tools`, not `tool use`.
+- Color comes from the OKLCH tokens already on the page (`--margin`, `--accent`, `--sage`, `--amber`, `--violet`, `--ink`). Do not add a brand hex for Claude, Gemini, or Vercel.
+- `.badges` is a wrapping flex row with `gap` and `min-width: 0`. Do not set `white-space: nowrap` on `.sbadge`.
+- Keep this CSS in the page `<style>` block. Do not add a shared stylesheet.
+
+# Phone-safe steps
+
+`.hack` and `.move` use `4.5rem minmax(0, 1fr)`, and `minmax(0, 1fr)` alone at `640px`. `.hack .body`, `.move .body`, and `.term` set `min-width: 0`. A long line scrolls inside `.term pre`. Do not let a code sample set the page width.

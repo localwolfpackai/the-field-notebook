@@ -66,5 +66,6 @@ While currently hardcoded in many places (see `AUDIT.md`), spacing generally adh
 
 ## 5. Specific Components
 - **`.toc` (Table of Contents):** Styled like an attached sticky note, complete with a pseudo-element "tape" (`.toc::before`) and a slight rotation (`transform: rotate(-0.4deg)`).
-- **`.hack` (Step Modules):** A two-column grid. Left column houses a large Caveat number (`.nbr`); right column holds the header, tags, and body copy.
+- **`.hack` (Step Modules):** A two-column grid. Left column houses a large Caveat number (`.nbr`); right column holds the header, tags, and body copy. The text column is `minmax(0, 1fr)` with `min-width: 0` on `.body` and `.term`, so a long code line scrolls inside the terminal instead of widening the page. At `640px` the step stacks to one column.
 - **`.term` (Code Terminal):** A dark-mode block simulating a MacOS window, complete with a title bar (`.term .bar`) containing three colored dots (red, yellow, green).
+- **`.sbadge` (Stack badges):** A wrapping row under the byline. Each chip is one word and takes its stripe from a palette class, not a brand hex: `margin`, `accent`, `sage`, `amber`, `violet`, `ink`. The row (`.badges`) uses `flex-wrap` and `gap` so a phone can break the row instead of scrolling sideways.

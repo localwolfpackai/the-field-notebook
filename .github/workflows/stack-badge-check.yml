@@ -1,0 +1,28 @@
+name: Stack badge check
+
+on:
+  pull_request:
+    paths:
+      - "**/*.html"
+      - "scripts/check-stack-badges.py"
+      - ".github/workflows/stack-badge-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.html"
+      - "scripts/check-stack-badges.py"
+      - ".github/workflows/stack-badge-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  badges:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check stack badges
+        run: python3 scripts/check-stack-badges.py
