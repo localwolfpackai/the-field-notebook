@@ -15,6 +15,7 @@ When working in this repository, Claude should adopt the persona and constraints
 ## 3. Formatting
 - Use the predefined HTML class structures. E.g., for terminal outputs, use `<div class="term">`; for step-by-step guides, use `<article class="hack">`.
 - Ensure all markdown output or HTML generation follows the strict density rules (pills/badges are single words).
+- Stack badges (`.sbadge`) use one palette class (`margin`, `accent`, `sage`, `amber`, `violet`, `ink`) and one word. Never paint them with a hex `--pill-c`, and never set `white-space: nowrap` on them.
 
 ## 4. Problem Solving
 - **Analyze before executing:** Read `DOCS.md` and `DESIGN.md` thoroughly before introducing new layout components.

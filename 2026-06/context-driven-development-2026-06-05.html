@@ -292,12 +292,13 @@
     /* MOVE BLOCKS ------------------------------------------- */
     .hack {
       display: grid;
-      grid-template-columns: 4.5rem 1fr;
+      grid-template-columns: 4.5rem minmax(0, 1fr);
       gap: clamp(0.5rem, 1vw, 1rem);
       margin: 0 0 3rem;
       scroll-margin-top: 2rem;
     }
-    @media (max-width: 640px) { .hack { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .hack { grid-template-columns: minmax(0, 1fr); } }
+    .hack .body, .term { min-width: 0; }
 
     .hack .nbr {
       font-family: 'Caveat', cursive;
