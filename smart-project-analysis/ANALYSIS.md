@@ -1,118 +1,33 @@
 # Smart Project Analysis — The Field Notebook
 
 **Repository:** [localwolfpackai/the-field-notebook](https://github.com/localwolfpackai/the-field-notebook)  
-**Branch:** `cursor/smart-project-analysis-b686`  
-**Scan date:** 2026-09-04  
-**Interactive dashboard:** [health-dashboard.html](./health-dashboard.html)
+**Scan date:** 2026-10-08  
+**Page:** [health-dashboard.html](./health-dashboard.html)
 
----
+The September 4 snapshot is retired. It claimed there were no pull requests, no GitHub Actions, a July 30 last commit, stale `DOCS.md` status, and duplicate volume numbers. Those claims do not match main on October 8.
 
-## Overall Health Score: **87%** 🟢
+## Score: 82%
 
-| Status | Count |
-|--------|-------|
-| 🔴 Critical | 0 |
-| 🟡 Needs Attention | 5 |
-| 🟢 Healthy | 6 |
+The guides are on GitHub Pages. Nothing merged in the last 24 hours, so the public index is unchanged since the October 3 design-audit merge.
 
-**Plain-language summary:** Your project builds and deploys fine. All 34 field-guide entries are present, linked, and live on GitHub Pages. There are no broken workflows, no stale pull requests, and no package vulnerabilities. The main gaps are outdated contributor docs, two duplicate volume numbers in entry mastheads, and no automated CI for link-checking.
+| Area | Score | What is true today |
+|------|-------|--------------------|
+| Pages | 95 | Pages is up. `link-check.yml` already runs on main. |
+| Packages | 100 | No `package.json`. Zero-build HTML. |
+| Drafts | 55 | Drafts #4, #5, #6, and #7 are open. They all edit the index. |
+| Index | 70 | Main still uses a 280px card track and some two-word pills. Draft #7 fixes that, and its checks passed. |
+| Docs | 90 | `DOCS.md` status is current. The generator brief no longer says the repo is unpublished. |
+| Fonts | 85 | Google Fonts is still on every page. |
 
----
+## Do this
 
-## Category Breakdown
+Merge [draft #7](https://github.com/localwolfpackai/the-field-notebook/pull/7) after a skim. Leave #4, #5, and #6 as drafts until the next day. They overlap on the same HTML.
 
-| Category | Score | Status | Summary |
-|----------|-------|--------|---------|
-| Builds & Deploy | 95/100 | 🟢 | GitHub Pages status: **built**. Last 2 deploy runs succeeded. |
-| Dependencies | 100/100 | 🟢 | No `package.json` or lockfiles. Static HTML only. |
-| Pull Requests | 100/100 | 🟢 | 0 open PRs. Nothing stale or unmerged. |
-| Security | 85/100 | 🟡 | HTTPS everywhere. Google Fonts CDN on all pages. Dependabot disabled (low impact). |
-| Documentation | 75/100 | 🟡 | `DOCS.md` and `SKILL.md` have stale "not yet in git" notes. |
-| Content Integrity | 85/100 | 🟡 | 34 entries consistent across README, DOCS, and index. 2 duplicate Vol. numbers. |
-| Activity | 70/100 | 🟡 | Last commit: 2026-07-30 (~35 days ago). |
+## Steady
 
----
+- Live site: https://localwolfpackai.github.io/the-field-notebook/
+- Last merge on main: 2026-10-03, pull request #3 (design audit)
+- Index volume labels are unique (01–03, then 06–36)
+- No dependency manifests
 
-## 🔴 Critical Issues
-
-**None detected.**
-
-- No failed CI runs
-- No broken index links (34/34 resolve)
-- No missing entry files
-- No `http://` resource references
-
----
-
-## 🟡 Needs Attention
-
-### 1. Stale contributor documentation
-
-`DOCS.md` line 150 still reads:
-
-> Not yet under version control — a git push is coming.
-
-The repo has been on GitHub since July 2026 and is deployed to GitHub Pages.
-
-**Fix:** Update the Status section with the live repo URL and Pages link.
-
-### 2. Duplicate volume numbers
-
-| Vol. | Files |
-|------|-------|
-| 17 | `2026-06/build-an-ai-app-2026-06-17.html`, `2026-06/devtools-context-extractor-2026-06-09.html` |
-| 21 | `2026-06/steal-a-sites-soul-2026-06-22.html`, `2026-06/texture-layer-2026-06-21.html` |
-
-**Fix:** Use `DOCS.md` catalog as source of truth and update masthead crumbs.
-
-### 3. No GitHub Actions workflows
-
-No `.github/workflows/` directory. Pages uses the built-in legacy builder (working), but there is no automated validation on push.
-
-**Fix:** Add a link-check or HTML lint workflow.
-
-### 4. Project activity gap
-
-Last push: **2026-07-30**. No open issues or PRs.
-
-**Fix:** Schedule next entry or mark collection as complete in README.
-
-### 5. External font CDN
-
-35 HTML files load fonts from `fonts.googleapis.com`. Pages won't render designed typography offline.
-
-**Fix (optional):** Self-host fonts or strengthen fallback stacks.
-
----
-
-## 🟢 Healthy
-
-- **GitHub Pages** — Live at https://localwolfpackai.github.io/the-field-notebook/
-- **Link integrity** — All index links resolve; all entries link back to index
-- **Entry count** — 34 entries (6 May + 23 June + 5 July) matches README, DOCS, and index
-- **No package vulnerabilities** — No dependency manifests to audit
-- **HTTPS** — Zero insecure resource URLs
-- **PR hygiene** — No open or stale pull requests
-
----
-
-## Smart Suggestions
-
-| Priority | Action | Effort |
-|----------|--------|--------|
-| 1 | Update `DOCS.md` Status section | ~5 min |
-| 2 | Fix duplicate Vol. 17 and Vol. 21 crumbs | ~10 min |
-| 3 | Add `.github/workflows/link-check.yml` | ~15 min |
-| 4 | Enable branch protection on `main` | ~2 min (GitHub settings) |
-| 5 | Self-host Google Fonts (optional) | ~30 min |
-
-### Useful links
-
-- [Live site](https://localwolfpackai.github.io/the-field-notebook/)
-- [Repository](https://github.com/localwolfpackai/the-field-notebook)
-- [GitHub Pages settings](https://github.com/localwolfpackai/the-field-notebook/settings/pages)
-- [Recent workflow runs](https://github.com/localwolfpackai/the-field-notebook/actions)
-
----
-
-*Generated by Cursor Cloud Agent — Smart Project Analysis automation.*
+—Lupo · The Mess is the Method
