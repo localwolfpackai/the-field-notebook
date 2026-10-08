@@ -107,7 +107,18 @@
 
 *   **Finding:** Standardized borders and shadows.
 *   **Current state:**
-    *   Border: `1px solid oklch(0.86 0.03 80)` frequently used.
+    *   Border: `1px solid oklch(0.86 0.03 80)` frequently used on lesson pages.
+    *   The index now calls that color `--line`.
     *   Radii: Variables `--radius-sm`, `-md`, `-lg` consistently used.
 *   **Assessment:** Shadows and borders are highly uniform and define the "paper" aesthetic flawlessly.
-*   **Recommended fix:** Consolidate the specific border color string into a `--border-color` variable for easier theme swapping if a true dark mode is ever added.
+*   **Recommended fix:** Lesson pages should use `var(--line)` the same way the index does, so a theme change is one edit per file.
+
+## 12. INDEX PASS (2026-10-08)
+
+Applied on `index.html` only. Lesson pages are unchanged, so sections 2, 3, and 8 still describe those files.
+
+*   Catalog pills are one word. The card sentence still carries the longer idea.
+*   The card grid can shrink with the page: `minmax(min(100%, 16rem), 1fr)`.
+*   The title link stretches over the card. Keyboard focus draws one `--accent` ring on the card.
+*   Month jumps (July, June, May) sit under the latest entry. A skip link points at `#catalog`.
+*   Card hairlines use `--line`. The notebook background scrolls on viewports at or under 760px, where a fixed background stutters.
