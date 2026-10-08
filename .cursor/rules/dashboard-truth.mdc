@@ -1,0 +1,16 @@
+---
+description: Keep the health dashboard honest, token-colored, and phone-safe
+globs: smart-project-analysis/**,SKILL.md,scripts/check-dashboard.py
+alwaysApply: false
+---
+
+# Health dashboard
+
+- Rewrite stale sentences. Do not leave the September 2026 story (no pull requests, no workflows, July 30, duplicate volumes) if main has moved.
+- Status color is `var(--margin)` and `var(--margin-soft)`. Do not invent `--red`.
+- Hairlines use `var(--line)`. Do not add hex colors.
+- A `.pill` holds exactly one word. Put the count in the pill and the label beside it.
+- Summary cards use `repeat(auto-fit, minmax(min(100%, 15rem), 1fr))`.
+- Collapse the score hero to one column at `760px`, and set `background-attachment: scroll` at that width.
+- Keep CSS in the page `<style>` block. Do not add a shared stylesheet.
+- Do not edit `index.html` or the lesson HTML in the same change. Those files already have open drafts.

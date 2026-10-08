@@ -35,3 +35,4 @@ The Field Notebook employs a strict, zero-build, OKLCH-based design system that 
 - [DESIGN.md](DESIGN.md) — The core design system tokens, typography scales, and OKLCH palette.
 - [AGENTS.md](AGENTS.md) — Directives for LLMs/Agents working in this codebase.
 - [CLAUDE.md](CLAUDE.md) — Persona and systemic constraints for Claude code assistants.
+- [smart-project-analysis/health-dashboard.html](smart-project-analysis/health-dashboard.html) — Whether the live site and the docs still match. Open it in a browser.
