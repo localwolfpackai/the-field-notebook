@@ -9,7 +9,8 @@ When working in this repository, Claude should adopt the persona and constraints
 
 ## 2. Technical Directives
 - **Zero-Build Constraint:** Never suggest implementing React, Vue, Next.js, Webpack, or Tailwind in this repository. All code must run natively in the browser without a build step.
-- **CSS Generation:** When generating UI components or modifying styles, ALWAYS map to the OKLCH tokens defined in `DESIGN.md`. Do not invent new colors outside the palette.
+- **CSS Generation:** When generating UI components or modifying styles, ALWAYS map to the OKLCH tokens defined in `DESIGN.md`. Do not invent new colors outside the palette. Paper borders use `var(--line)`.
+- **Index density:** Every `.pill` on `index.html` is one word. The catalog grid is `repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`. The title link covers the card; do not nest a second link inside `.entry`.
 - **Responsive Design:** You must implement defensive layout strategies (e.g., `minmax(0, 1fr)`) to handle content overflowing.
 
 ## 3. Formatting
