@@ -28,6 +28,7 @@
       --amber-wash: oklch(0.96 0.07 85);
       --red:        oklch(0.55 0.20 25);
       --red-wash:   oklch(0.95 0.06 25);
+      --line:       oklch(0.86 0.03 80);
       --radius-sm: 6px;
       --radius-md: 12px;
       --radius-lg: 18px;
@@ -62,10 +63,10 @@
     .crumbs .tag { background: var(--accent-wash); color: var(--accent-ink); padding: 0.15em 0.55em; border-radius: 999px; font-size: 0.7rem; }
     h1 { font-size: clamp(2rem, 1.2rem + 3.5vw, 3.4rem); margin-top: 1rem; }
     .deck { color: var(--ink-soft); max-width: 62ch; margin-top: 0.75rem; }
-    .meta { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed oklch(0.82 0.02 80); }
+    .meta { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--line); }
 
     /* Score ring */
-    .hero { display: grid; grid-template-columns: 200px 1fr; gap: 2rem; align-items: center; background: var(--paper-alt); border: 1px solid oklch(0.86 0.03 80); border-radius: var(--radius-lg); padding: 2rem; margin: 2rem 0; }
+    .hero { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 2rem; align-items: center; background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 2rem; margin: 2rem 0; }
     .score-ring { position: relative; width: 180px; height: 180px; }
     .score-ring svg { transform: rotate(-90deg); }
     .score-ring .bg { fill: none; stroke: var(--paper-deep); stroke-width: 12; }
@@ -73,17 +74,19 @@
     .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Geist', serif; }
     .score-num strong { font-size: 2.8rem; font-weight: 800; line-height: 1; color: var(--sage); }
     .score-num span { font-size: 0.75rem; color: var(--ink-mute); font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
-    .hero-copy h2 { font-size: 1.35rem; margin-bottom: 0.5rem; }
+    .hero-copy { min-width: 0; }
+    .hero-copy h2 { font-size: 1.35rem; margin-bottom: 0.5rem; text-wrap: balance; }
     .hero-copy p { margin: 0; color: var(--ink-soft); }
-    .pill-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 1rem; }
+    .count { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
     .pill { font-family: 'Geist Mono', monospace; font-size: 0.72rem; padding: 0.3em 0.7em; border-radius: 999px; letter-spacing: 0.03em; }
     .pill.green { background: var(--sage-wash); color: var(--sage); }
     .pill.amber { background: var(--amber-wash); color: var(--amber); }
     .pill.red { background: var(--red-wash); color: var(--red); }
 
     /* Summary cards */
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 2rem 0; }
-    .card { background: var(--paper-alt); border: 1px solid oklch(0.88 0.02 80); border-radius: var(--radius-md); padding: 1.25rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; margin: 2rem 0; }
+    .card { background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 1.25rem; min-width: 0; }
     .card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
     .card h3 { font-size: 0.95rem; }
     .status-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -101,17 +104,17 @@
     .issue.healthy { border-left-color: var(--sage); }
     .issue h4 { font-size: 0.95rem; margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
     .issue p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
-    .fix { margin-top: 0.6rem; font-size: 0.85rem; padding: 0.6rem 0.8rem; background: var(--paper); border-radius: var(--radius-sm); border: 1px dashed oklch(0.85 0.02 80); }
+    .fix { margin-top: 0.6rem; font-size: 0.85rem; padding: 0.6rem 0.8rem; background: var(--paper); border-radius: var(--radius-sm); border: 1px dashed var(--line); }
     .fix strong { color: var(--accent-ink); font-size: 0.78rem; font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
 
     .suggest-list { list-style: none; padding: 0; margin: 0; }
-    .suggest-list li { padding: 0.75rem 0; border-bottom: 1px dashed oklch(0.88 0.02 80); font-size: 0.92rem; }
+    .suggest-list li { padding: 0.75rem 0; border-bottom: 1px dashed var(--line); font-size: 0.92rem; }
     .suggest-list li:last-child { border-bottom: none; }
 
-    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px dashed oklch(0.82 0.02 80); font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px dashed var(--line); font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
 
-    @media (max-width: 640px) {
-      .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
       .pill-row { justify-content: center; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -148,9 +151,9 @@
         <h2>Your project is in good shape — a few housekeeping items remain.</h2>
         <p>GitHub Pages is live and serving all 34 entries. There are no broken links, no failed builds, and no stale pull requests. The main gaps are outdated contributor docs, duplicate volume numbers in two entries, and no automated CI for link-checking.</p>
         <div class="pill-row">
-          <span class="pill green">0 Critical</span>
-          <span class="pill amber">5 Needs Attention</span>
-          <span class="pill green">6 Healthy</span>
+          <span class="count"><span class="pill green">0</span> critical</span>
+          <span class="count"><span class="pill amber">5</span> review</span>
+          <span class="count"><span class="pill green">6</span> healthy</span>
         </div>
       </div>
     </div>

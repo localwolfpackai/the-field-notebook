@@ -25,3 +25,4 @@ When working in this repository, Claude should adopt the persona and constraints
 - `.toc ol` uses `gap: 0.6rem`. `.toc li` uses `grid-template-columns: 1.8rem 1fr` and `gap: 0.5rem`.
 - Card borders use `var(--line)`. Copy the token, not a fresh `oklch()` border.
 - A pill, tag, or badge is one word or one number. A two-word label is a sentence. Put the sentence in the card body.
+- The launch card (`ship-2026-07-25-launch/social-card.html`) keeps a 1200×630 artboard and scales it with `.stage`. Colors on that card are the OKLCH tokens. No hex.
