@@ -20,6 +20,13 @@ PILL_FILES = (
     "smart-project-analysis/health-dashboard.html",
     "ship-2026-07-25-launch/social-card.html",
 )
+BADGE_COLORS = {"ink", "accent", "sage", "amber", "violet", "margin"}
+BADGE_SPAN = re.compile(
+    r'<span class="sbadge(?P<classes>[^"]*)"(?P<rest>[^>]*)>(?P<body>.*?)</span>',
+    re.S,
+)
+BADGE_TAG = re.compile(r"<[^>]+>")
+BADGE_RULE = re.compile(r"\.sbadge\s*\{([^}]*)\}", re.S)
 
 
 def main() -> int:
@@ -49,6 +56,39 @@ def main() -> int:
         errors.append(
             "ship-2026-07-25-launch/social-card.html: launch card CSS still uses a hex color"
         )
+
+    badge_pages = 0
+    for path in html_files:
+        text = path.read_text()
+        if 'class="sbadge' not in text:
+            continue
+        rel = path.relative_to(ROOT)
+        badge_pages += 1
+        if 'style="--pill-c:#' in text:
+            errors.append(f"{rel}: stack badge still sets --pill-c with a hex color")
+        for match in BADGE_SPAN.finditer(text):
+            rest = match.group("rest")
+            if "style=" in rest or "--pill-c" in rest:
+                errors.append(f"{rel}: stack badge uses an inline style")
+            classes = match.group("classes").split()
+            unknown = [c for c in classes if c not in BADGE_COLORS]
+            if unknown:
+                errors.append(f"{rel}: unknown sbadge class {unknown!r}")
+            if not classes:
+                errors.append(f"{rel}: sbadge is missing a palette class")
+            label = BADGE_TAG.sub("", match.group("body"))
+            label = label.replace("&amp;", "&").strip()
+            if re.search(r"\s", label):
+                errors.append(f"{rel}: stack badge has more than one word: {label!r}")
+        rules = BADGE_RULE.findall("\n".join(STYLE.findall(text)))
+        if not rules:
+            errors.append(f"{rel}: missing a .sbadge rule")
+        for block in rules:
+            if HEX_IN_CSS.search(block) or "nowrap" in block:
+                errors.append(f"{rel}: .sbadge CSS uses hex or nowrap")
+                break
+    if badge_pages == 0:
+        errors.append("no stack badges found")
 
     if errors:
         print("\n".join(errors))

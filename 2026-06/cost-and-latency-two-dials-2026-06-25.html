@@ -787,17 +787,41 @@
       .term, .demo { box-shadow: none; }
       .holes, .demo .demo-foot { display: none; }
     }
-      .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
-    .sbadge { font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.02em;
-      background: var(--paper-alt, oklch(0.96 0.018 85)); border: 1px solid oklch(0.86 0.03 80);
-      border-left: 3px solid var(--pill-c, oklch(0.55 0.02 80)); border-radius: 5px;
-      padding: 0.22em 0.55em; color: var(--ink-soft, #5a544a); white-space: nowrap; }
-    .sbadge b { color: var(--ink, #2a261f); font-weight: 600; }
+      .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.4rem;
+      min-width: 0;
+    }
+    .sbadge {
+      --line: oklch(0.86 0.03 80);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--paper-alt);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--pill-c, var(--ink-mute));
+      border-radius: var(--radius-sm);
+      padding: 0.22em 0.65em;
+      color: var(--ink-soft);
+    }
+    .sbadge b { color: var(--ink); font-weight: 600; }
+    .sbadge.ink { --pill-c: var(--ink); }
+    .sbadge.accent { --pill-c: var(--accent); }
+    .sbadge.sage { --pill-c: var(--sage); }
+    .sbadge.margin { --pill-c: var(--margin); }
+    .sbadge.amber { --pill-c: var(--amber); }
+    .sbadge.violet { --pill-c: var(--violet); }
       .toc li .pill, .toc li .entry-tag, .toc-card li .pill, .toc-card li .entry-tag {
       font-size: 0.56rem; padding: 0.1em 0.45em; margin-right: 0.4rem; vertical-align: 0.08em;
       text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px;
     }
     .toc li a, .toc-card li a { display: inline; }
+      @media (max-width: 760px) {
+      body { background-attachment: scroll; }
+    }
   </style>
 </head>
 <body>
@@ -836,10 +860,10 @@
       </div>
 
       <div class="badges" aria-label="stack badges">
-        <span class="sbadge" style="--pill-c:#D97757"><b>Claude</b> Haiku → Sonnet</span>
-        <span class="sbadge" style="--pill-c:#4285F4"><b>Gemini</b> Flash → Pro</span>
-        <span class="sbadge" style="--pill-c:#2EA043"><b>prompt caching</b> on</span>
-        <span class="sbadge" style="--pill-c:#8957E5"><b>streaming</b> TTFT</span>
+        <span class="sbadge margin"><b>Claude</b></span>
+        <span class="sbadge accent"><b>Gemini</b></span>
+        <span class="sbadge sage"><b>cache</b></span>
+        <span class="sbadge violet"><b>streaming</b></span>
       </div>
 
       <div class="meta-row">
