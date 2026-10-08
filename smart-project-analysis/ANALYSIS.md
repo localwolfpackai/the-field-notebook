@@ -4,30 +4,25 @@
 **Scan date:** 2026-10-08  
 **Page:** [health-dashboard.html](./health-dashboard.html)
 
-The September 4 snapshot is retired. It claimed there were no pull requests, no GitHub Actions, a July 30 last commit, stale `DOCS.md` status, and duplicate volume numbers. Those claims do not match main on October 8.
+## Score: 84%
 
-## Score: 82%
+Pull requests #4 and #5 merged on October 8. The public index now has a keyboard focus ring, one-word pills, and card tracks that can shrink to the screen. The launch card uses notebook tokens.
 
-The guides are on GitHub Pages. Nothing merged in the last 24 hours, so the public index is unchanged since the October 3 design-audit merge.
+The health page’s old sentences (no pull requests, no workflows, a July 30 last commit) were still on main after those merges. This update replaces them.
+
+## What is true
 
 | Area | Score | What is true today |
 |------|-------|--------------------|
-| Pages | 95 | Pages is up. `link-check.yml` already runs on main. |
+| Pages | 95 | Pages rebuilt. Link check and notebook check run on main. |
 | Packages | 100 | No `package.json`. Zero-build HTML. |
-| Drafts | 55 | Drafts #4, #5, #6, and #7 are open. They all edit the index. |
-| Index | 70 | Main still uses a 280px card track and some two-word pills. Draft #7 fixes that, and its checks passed. |
-| Docs | 90 | `DOCS.md` status is current. The generator brief no longer says the repo is unpublished. |
+| Index | 90 | One-word pills. Tracks use `min(100%, 280px)`. Focus ring is on. |
+| Drafts | 60 | #6 and #7 are open and both conflict with main. |
+| Badges | 70 | Fourteen guides still use hex stack badges. The repair is in conflicting draft #6. |
 | Fonts | 85 | Google Fonts is still on every page. |
 
 ## Do this
 
-Merge [draft #7](https://github.com/localwolfpackai/the-field-notebook/pull/7) after a skim. Leave #4, #5, and #6 as drafts until the next day. They overlap on the same HTML.
-
-## Steady
-
-- Live site: https://localwolfpackai.github.io/the-field-notebook/
-- Last merge on main: 2026-10-03, pull request #3 (design audit)
-- Index volume labels are unique (01–03, then 06–36)
-- No dependency manifests
+Open the live index and press Tab. You should see a blue ring. Do not merge #6 or #7; GitHub will report conflicts. The badge recolor has to be redone on top of today’s main.
 
 —Lupo · The Mess is the Method

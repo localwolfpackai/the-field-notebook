@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Project Health — The Field Notebook · Lupo · The Mess is the Method</title>
-  <meta name="description" content="Oct 8, 2026 health snapshot of the Field Notebook: the live site is unchanged, and four draft pull requests overlap." />
+  <meta name="description" content="Oct 8, 2026 health snapshot: focus rings and token colors landed; two older drafts now conflict." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -82,7 +82,7 @@
     .score-ring { position: relative; width: min(180px, 100%); aspect-ratio: 1; }
     .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
     .score-ring .bg { fill: none; stroke: var(--paper-deep); stroke-width: 12; }
-    .score-ring .fg { fill: none; stroke: var(--amber); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 79; transition: stroke-dashoffset 1.2s var(--ease-paper); }
+    .score-ring .fg { fill: none; stroke: var(--amber); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 70; transition: stroke-dashoffset 1.2s var(--ease-paper); }
     .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Geist', serif; }
     .score-num strong { font-size: 2.8rem; font-weight: 800; line-height: 1; color: var(--amber); }
     .score-num span { font-size: 0.75rem; color: var(--ink-mute); font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -94,7 +94,6 @@
     .pill { font-family: 'Geist Mono', monospace; font-size: 0.72rem; padding: 0.3em 0.7em; border-radius: 999px; letter-spacing: 0.03em; }
     .pill.sage { background: var(--sage-wash); color: var(--sage); }
     .pill.amber { background: var(--amber-wash); color: var(--amber); }
-    .pill.margin { background: var(--margin-soft); color: var(--margin); }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; margin: 2rem 0; }
     .card { background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 1.25rem; min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
@@ -103,12 +102,11 @@
     .status-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
     .status-dot.sage { background: var(--sage); box-shadow: 0 0 0 3px var(--sage-wash); }
     .status-dot.amber { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-wash); }
-    .status-dot.margin { background: var(--margin); box-shadow: 0 0 0 3px var(--margin-soft); }
     .card p { font-size: 0.92rem; color: var(--ink-soft); }
     .card .score-mini { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--ink-mute); }
 
     section { display: flex; flex-direction: column; gap: 0.75rem; margin: 2.5rem 0; }
-    section > h2 { font-size: 1.25rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--margin-soft); }
+    section > h2 { font-size: 1.25rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--margin); }
     .issue { background: var(--paper-alt); border-left: 4px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
     .issue.steady { border-left-color: var(--sage); }
     .issue h3 { font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
@@ -145,28 +143,28 @@
         <span class="tag">snapshot</span>
       </div>
       <h1>Project health</h1>
-      <p class="deck">What a reader gets on the live site today, and what is sitting in draft pull requests. This page is a status note. The guides themselves start at the index.</p>
-      <p class="meta">Scanned Oct 8, 2026 · main last merged Oct 3 · <a href="../index.html">Back to the index</a></p>
+      <p class="deck">What changed on the live site today, and which drafts will now collide if you merge them. This page is a status note. The guides start at the index.</p>
+      <p class="meta">Scanned Oct 8, 2026 · #4 and #5 merged today · <a href="../index.html">Back to the index</a></p>
     </header>
 
     <main id="status">
       <div class="hero">
-        <div class="score-ring" aria-label="Health score 82 percent">
+        <div class="score-ring" aria-label="Health score 84 percent">
           <svg viewBox="0 0 180 180" aria-hidden="true">
             <circle class="bg" cx="90" cy="90" r="70" />
             <circle class="fg" cx="90" cy="90" r="70" />
           </svg>
           <div class="score-num">
-            <strong>82%</strong>
+            <strong>84%</strong>
             <span>Health</span>
           </div>
         </div>
         <div class="hero-copy">
-          <h2>The guides are live. The facelift is still in drafts.</h2>
-          <p>Nothing merged in the last 24 hours, so the public index looks the same as it did on October 3. Four draft pull requests each try to tidy the pages, and they all start from that same old index.</p>
+          <h2>The facelift landed. This status page had not.</h2>
+          <p>Pull requests #4 and #5 merged today. Tabs now draw a blue ring, index chips are one word, and the launch card uses the notebook colors. The sentences on this page were still describing September.</p>
           <div class="pill-row">
             <span class="count"><span class="pill sage">0</span> critical</span>
-            <span class="count"><span class="pill amber">4</span> drafts</span>
+            <span class="count"><span class="pill amber">2</span> drafts</span>
             <span class="count"><span class="pill sage">3</span> steady</span>
           </div>
         </div>
@@ -175,32 +173,32 @@
       <div class="grid">
         <article class="card">
           <div class="top"><h3>Pages</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>GitHub Pages is serving all 34 guides. The link checker on main is the one that already exists, <code>link-check.yml</code>.</p>
+          <p>GitHub Pages rebuilt after the merges. Link check and the notebook check both run on main.</p>
           <div class="score-mini">Score: 95 / 100</div>
         </article>
         <article class="card">
           <div class="top"><h3>Packages</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>No <code>package.json</code>. The site is still one HTML file per guide, opened directly in the browser.</p>
+          <p>No <code>package.json</code>. Each guide is still one HTML file with its CSS in a style block.</p>
           <div class="score-mini">Score: 100 / 100</div>
         </article>
         <article class="card">
-          <div class="top"><h3>Drafts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Four open drafts, #4 through #7. None merged. Each one edits the index, so they will collide if they land together.</p>
-          <div class="score-mini">Score: 55 / 100</div>
-        </article>
-        <article class="card">
-          <div class="top"><h3>Index</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>On main, catalog cards still ask for a 280px column, and several pills hold two words. Draft #7 repairs both. Its checks passed.</p>
-          <div class="score-mini">Score: 70 / 100</div>
-        </article>
-        <article class="card">
-          <div class="top"><h3>Docs</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p><code>DOCS.md</code> already says the repo is on GitHub. The generator brief no longer tells an agent the project is unpublished.</p>
+          <div class="top"><h3>Index</h3><span class="status-dot sage" title="Steady"></span></div>
+          <p>Catalog chips are one word. Card tracks use <code>min(100%, 280px)</code>, so a phone can shrink them. Focus is a 2px accent ring.</p>
           <div class="score-mini">Score: 90 / 100</div>
         </article>
         <article class="card">
+          <div class="top"><h3>Drafts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
+          <p>Drafts #6 and #7 are still open, and both conflict with main now. Merging either one will stop and ask you to untangle files.</p>
+          <div class="score-mini">Score: 60 / 100</div>
+        </article>
+        <article class="card">
+          <div class="top"><h3>Badges</h3><span class="status-dot amber" title="Needs a decision"></span></div>
+          <p>Fourteen guides still paint their title chips with brand hex colors and more than one word. That fix is sitting in conflicting draft #6.</p>
+          <div class="score-mini">Score: 70 / 100</div>
+        </article>
+        <article class="card">
           <div class="top"><h3>Fonts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Every page still loads Geist, Inter, and Caveat from Google Fonts. Offline, the browser falls back to system faces.</p>
+          <p>Geist, Inter, and Caveat still load from Google Fonts. Offline, the browser uses system faces.</p>
           <div class="score-mini">Score: 85 / 100</div>
         </article>
       </div>
@@ -209,46 +207,39 @@
         <h2 id="attention-title">Needs a decision</h2>
 
         <article class="issue">
-          <h3><span class="status-dot amber" aria-hidden="true"></span> Four drafts, one index</h3>
-          <p>Draft #7 (opened this morning) makes the index cards shrink on a phone and keeps each pill to one word. Drafts #4, #5, and #6 do other useful tidy-ups — focus rings, the launch card, stack badges — but they also rewrite that same index and the lesson pages.</p>
-          <div class="fix"><strong>Do this</strong> — Open <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">draft #7</a>. If the index description matches what you want, mark it ready and merge it. Leave #4, #5, and #6 as drafts until tomorrow. Merging more than one today will ask you to resolve a conflict, and you should not have to do that.</div>
+          <h3><span class="status-dot amber" aria-hidden="true"></span> Two drafts now conflict</h3>
+          <p><a href="https://github.com/localwolfpackai/the-field-notebook/pull/6">Draft #6</a> recolors the stack badges. <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">Draft #7</a> retouches the index. Both were written before #4 and #5 landed, so GitHub marks them conflicting.</p>
+          <div class="fix"><strong>Do this</strong> — Do not click Merge on #6 or #7. Leave them as drafts. The index work from #7 is mostly already on the site. The badge work in #6 is still wanted, but it has to be redone on top of today’s main, not merged as-is.</div>
         </article>
 
         <article class="issue">
-          <h3><span class="status-dot amber" aria-hidden="true"></span> The live index can still overflow</h3>
-          <p>Until #7 merges, a narrow phone can scroll sideways on the catalog. The cards use <code>minmax(280px, 1fr)</code>, and chips such as “tool use” and “feedback loop” break the one-word rule.</p>
-          <div class="fix"><strong>Already written</strong> — You do not need a new prompt for this. It is the body of draft #7. Merging that draft is the whole task.</div>
-        </article>
-
-        <article class="issue">
-          <h3><span class="status-dot amber" aria-hidden="true"></span> Faces still come from a CDN</h3>
-          <p>Google Fonts is allowed by the project rules. It is the remaining outside request on every page. Leave it until the draft pile is down to one.</p>
-          <div class="fix"><strong>Not today</strong> — Self-hosting the four families is a separate pass. Do not start it while the HTML drafts are open.</div>
+          <h3><span class="status-dot amber" aria-hidden="true"></span> Title chips still use a second palette</h3>
+          <p>On guides such as the cost-and-latency page, the chips across the top are inline hex colors (<code>--pill-c</code>) and labels like “prompt caching”. They can force a sideways scroll on a phone. The notebook already has <code>--margin</code>, <code>--accent</code>, <code>--sage</code>, <code>--amber</code>, and <code>--violet</code> for this.</p>
+          <div class="fix"><strong>Not by merging #6</strong> — Close that draft when you are ready, then paste the badge prompt from today’s digest into Cursor. One page first, not all fourteen.</div>
         </article>
       </section>
 
       <section id="steady" aria-labelledby="steady-title">
         <h2 id="steady-title">Steady</h2>
         <article class="issue steady">
+          <h3>What you can see today</h3>
+          <p>Press Tab on the index or any guide. The focus ring is accent blue. Index pills read <code>tools</code>, <code>loop</code>, <code>system</code> — one word each. The launch card scales and stays inside the notebook palette.</p>
+        </article>
+        <article class="issue steady">
           <h3>The September snapshot was wrong</h3>
-          <p>This page used to say there were no pull requests, no workflows, a July 30 last commit, and duplicate volume numbers. Main has a link checker. The last merge is the October 3 design audit. Index volume labels are unique.</p>
+          <p>This page used to claim there were no pull requests, no workflows, a July 30 last commit, and shared volume labels. Main has had a link checker for weeks. Volume labels on the index are unique.</p>
         </article>
         <article class="issue steady">
-          <h3>Link check is already on main</h3>
-          <p><code>.github/workflows/link-check.yml</code> runs on HTML and markdown changes. You do not need to add that workflow again.</p>
-        </article>
-        <article class="issue steady">
-          <h3>No package vulnerabilities</h3>
-          <p>There is nothing to npm-audit. Keep new UI in the page’s own <code>&lt;style&gt;</code> block.</p>
+          <h3>Docs match the repo</h3>
+          <p><code>DOCS.md</code> already says the project is on GitHub. The generator brief no longer tells an agent the repo is unpublished.</p>
         </article>
       </section>
 
       <section id="next" aria-labelledby="next-title">
         <h2 id="next-title">One next step</h2>
         <ul class="suggest-list">
-          <li><strong>Do this:</strong> merge <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">draft #7</a> after you skim it. That is the index facelift. Stop there for today.</li>
-          <li>Drafts to leave closed-until-later: <a href="https://github.com/localwolfpackai/the-field-notebook/pull/4">#4</a>, <a href="https://github.com/localwolfpackai/the-field-notebook/pull/5">#5</a>, <a href="https://github.com/localwolfpackai/the-field-notebook/pull/6">#6</a>.</li>
-          <li>Live site: <a href="https://localwolfpackai.github.io/the-field-notebook/">localwolfpackai.github.io/the-field-notebook</a></li>
+          <li><strong>Do this:</strong> open the <a href="https://localwolfpackai.github.io/the-field-notebook/">live index</a> and press Tab once. You should see a blue ring. That confirms today’s merges. Then stop.</li>
+          <li>Leave <a href="https://github.com/localwolfpackai/the-field-notebook/pull/6">#6</a> and <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">#7</a> unmerged. They conflict.</li>
         </ul>
       </section>
     </main>
