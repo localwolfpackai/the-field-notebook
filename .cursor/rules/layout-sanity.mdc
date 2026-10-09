@@ -1,0 +1,11 @@
+---
+description: Phone breakpoints and focus rings must be CSS the browser actually applies
+globs: "**/*.html"
+alwaysApply: true
+---
+
+# Layout sanity
+
+- A phone breakpoint is one `@media` rule. Do not write `@container, @media`. The browser drops that whole rule, and the page stays two columns on a phone.
+- `:focus-visible` uses `outline: 2px solid var(--accent)`. The same page's `:root` must define `--accent`. A ring that names a missing token is invisible.
+- A wrapping card track uses `minmax(min(100%, 260px), 1fr)`. A bare `minmax(260px, 1fr)` can force the page wider than the screen.
