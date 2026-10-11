@@ -19,6 +19,7 @@
       --paper:      oklch(0.985 0.012 85);
       --paper-alt:  oklch(0.96 0.018 85);
       --paper-deep: oklch(0.93 0.022 85);
+      --line:       oklch(0.86 0.03 80);
       --rule:       oklch(0.86 0.04 230);
       --rule-soft:  oklch(0.92 0.025 230);
       --margin:     oklch(0.70 0.13 27);
@@ -100,6 +101,20 @@
       font-size: 0.9em;
       color: var(--ink);
     }
+
+    .back-row {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0.9rem clamp(1rem, 7vw, 5rem) 0;
+    }
+    a.back {
+      font-family: 'Geist Mono', ui-monospace, monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      color: var(--ink-mute);
+      text-decoration: none;
+    }
+    a.back:hover { color: var(--accent-ink); }
 
     .page {
       max-width: 1180px;
@@ -224,13 +239,12 @@
     }
     .compass .two {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 0.9rem;
     }
-    @media (max-width: 640px) { .compass .two { grid-template-columns: 1fr; } }
     .compass .tool {
       background: var(--paper);
-      border: 1px solid var(--paper-deep);
+      border: 1px solid var(--line);
       border-radius: var(--radius-md);
       padding: 0.85rem 1rem;
     }
@@ -266,7 +280,7 @@
 
     .card {
       background: var(--paper-alt);
-      border: 1px solid var(--paper-deep);
+      border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       padding: clamp(1.2rem, 2.5vw, 1.9rem);
       position: relative;
@@ -304,6 +318,11 @@
       padding: 0.18em 0.6em;
       border-radius: 6px;
       white-space: nowrap;
+    }
+    .oops .label.amber {
+      color: oklch(0.48 0.12 68);
+      background: var(--amber-wash);
+      border-color: oklch(0.85 0.08 80);
     }
     .card h3 {
       font-size: clamp(1.25rem, 1.05rem + 1vw, 1.7rem);
@@ -431,8 +450,12 @@
       font-family: 'Geist Mono', monospace;
       font-size: 0.84rem;
       color: var(--ink-mute);
-      display: flex; align-items: center; gap: 0.6rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
+    .signoff span:last-child { min-width: 0; }
     .signoff .dash { color: var(--margin); }
 
     .tldr {
@@ -447,6 +470,10 @@
     .tldr b { font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
 
     ::selection { background: var(--margin-soft); }
+    @media (max-width: 760px) {
+      body { background-attachment: scroll; }
+      .compass .two { grid-template-columns: minmax(0, 1fr); }
+    }
     @media (max-width: 560px) {
       .oops { gap: 0.4rem; }
       .terminal .body { font-size: 0.79rem; }
@@ -454,7 +481,7 @@
   </style>
 </head>
 <body>
-  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+  <div class="back-row"><a class="back" href="../index.html">&larr; all entries</a></div>
 
   <div class="page">
     <div class="holes" aria-hidden="true">
@@ -466,7 +493,7 @@
         <span>FIELD NOTES</span><span class="dot">●</span>
         <span>GIT &amp; GITHUB</span><span class="dot">●</span>
         <span>2026-05-30</span>
-        <span class="tag">no. 07</span>
+        <span class="tag">07</span>
       </div>
       <h1>The Undo Book <span class="arrow">↩</span></h1>
       <p class="scrawl">"oh no" → "oh phew" in one command</p>
@@ -619,7 +646,7 @@
 
       <!-- 07 -->
       <article class="card" data-n="07" id="committed-secret">
-        <div class="oops"><span class="label">oh no</span> <span class="label" style="color:var(--amber);background:var(--amber-wash);border-color:oklch(0.85 0.08 80)">the scary one</span></div>
+        <div class="oops"><span class="label">oh no</span> <span class="label amber">secret</span></div>
         <h3>You committed your .env (or an API key)</h3>
         <p class="what">Git did exactly what you told it — it photographed every staged file, <code>.env</code> included, and froze it into history. The file isn't so much "in" the repo as <em>photographed by it</em>: deleting the line now doesn't remove it from the old snapshot. That's the part that trips everyone up — undoing the commit and scrubbing the secret from history are two separate jobs. And the first question isn't a Git question at all: <strong>did this leave your machine yet?</strong></p>
         <div class="terminal">
@@ -744,7 +771,7 @@
       <p>Look at the cards again and the same shape repeats: <code>git status</code> to see where you are, <code>git reflog</code> when something "disappeared," and a strong bias toward <strong>recovering onto a new branch</strong> instead of resetting in place. Almost nothing on this page is actually destructive except <code>reset --hard</code> and <code>push --force</code> — so those are the only two commands worth slowing down for.</p>
       <p>What changed things for me wasn't memorizing the fixes. It was believing the premise: the work is usually still there, just unlabeled. Once you stop assuming Git deleted your stuff, the panic drops and the right command gets obvious. Steal what's useful here, and the next time the terminal yells in red, you'll already know it's a "phew," not an "oh no."</p>
       <p class="mantra">commit small, push often, and let the reflog be your safety net.</p>
-      <div class="signoff"><span class="dash">—</span>Lupo · The Mess is the Method · field note no. 07 · 2026-05-30</div>
+      <div class="signoff"><span class="dash">—</span><span>Lupo · The Mess is the Method · field note no. 07 · 2026-05-30</span></div>
     </section>
 
   </div>

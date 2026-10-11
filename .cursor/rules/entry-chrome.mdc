@@ -1,0 +1,15 @@
+---
+description: Chrome for the collaboration loop and the undo book
+globs: "2026-05/github-{collaboration-loop,undo-book}-*.html"
+alwaysApply: false
+---
+
+# Entry chrome
+
+These two pages keep their CSS in the page. Do not add a shared stylesheet.
+
+- The link back to the index is `<a class="back">` inside `.back-row`. Do not put a `style` attribute on it. `.back-row` uses `padding: 0.9rem clamp(1rem, 7vw, 5rem) 0` so the link lines up with the headline.
+- Define `--line` from `DESIGN.md`. `.card` uses `border: 1px solid var(--line)`.
+- At `max-width: 760px`, set `body { background-attachment: scroll; }` so the ruled paper scrolls on a phone.
+- A `.tag` is one word or one number (`08`, not `no. 08`).
+- On the undo book, `.signoff` uses `flex-wrap: wrap`. The compass uses `minmax(0, 1fr)` and stacks to one column at `760px`, not `640px`.

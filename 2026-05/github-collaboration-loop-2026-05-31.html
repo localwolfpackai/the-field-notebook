@@ -19,6 +19,7 @@
       --paper:      oklch(0.985 0.012 85);
       --paper-alt:  oklch(0.96 0.018 85);
       --paper-deep: oklch(0.93 0.022 85);
+      --line:       oklch(0.86 0.03 80);
       --rule:       oklch(0.86 0.04 230);
       --rule-soft:  oklch(0.92 0.025 230);
       --margin:     oklch(0.70 0.13 27);
@@ -100,6 +101,20 @@
       font-size: 0.9em;
       color: var(--ink);
     }
+
+    .back-row {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0.9rem clamp(1rem, 7vw, 5rem) 0;
+    }
+    a.back {
+      font-family: 'Geist Mono', ui-monospace, monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      color: var(--ink-mute);
+      text-decoration: none;
+    }
+    a.back:hover { color: var(--accent-ink); }
 
     .page {
       max-width: 1180px;
@@ -272,7 +287,7 @@
 
     .card {
       background: var(--paper-alt);
-      border: 1px solid var(--paper-deep);
+      border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       padding: clamp(1.2rem, 2.5vw, 1.9rem);
       position: relative;
@@ -460,6 +475,9 @@
     }
 
     ::selection { background: var(--margin-soft); }
+    @media (max-width: 760px) {
+      body { background-attachment: scroll; }
+    }
     @media (max-width: 560px) {
       .oops { gap: 0.4rem; }
       .terminal .body { font-size: 0.79rem; }
@@ -467,7 +485,7 @@
   </style>
 </head>
 <body>
-  <div style="max-width:1180px;margin:0 auto;padding:0.9rem 1.5rem 0;"><a href="../index.html" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:0.8rem;letter-spacing:0.03em;color:inherit;opacity:0.6;text-decoration:none;">&larr; all entries</a></div>
+  <div class="back-row"><a class="back" href="../index.html">&larr; all entries</a></div>
 
   <div class="page">
     <div class="holes" aria-hidden="true">
@@ -479,7 +497,7 @@
         <span>FIELD NOTES</span><span class="dot">●</span>
         <span>GIT &amp; GITHUB</span><span class="dot">●</span>
         <span>2026-05-31</span>
-        <span class="tag">no. 08</span>
+        <span class="tag">08</span>
       </div>
       <h1>The Collaboration Loop <span class="arrow">⇄</span></h1>
       <p class="scrawl">your first PR to someone else's repo, without the cold sweat</p>
