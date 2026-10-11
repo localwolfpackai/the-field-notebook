@@ -1,0 +1,14 @@
+---
+description: Keep the notebook index dense, token-colored, and phone-safe
+globs: index.html
+alwaysApply: false
+---
+
+# Index catalog
+
+- A `.pill` holds exactly one word. Put the longer idea in the card sentence.
+- The entry grid is `repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`. Do not set a fixed `280px` track.
+- Card hairlines use `var(--line)`. Do not add hex colors or a second palette.
+- The title link stretches over `.entry`. Do not nest another `<a>` inside the card.
+- Month section ids are words (`july`, `june`, `may`). An id that starts with a digit breaks `querySelector`.
+- Keep CSS in this page's `<style>` block. Do not add a shared stylesheet.

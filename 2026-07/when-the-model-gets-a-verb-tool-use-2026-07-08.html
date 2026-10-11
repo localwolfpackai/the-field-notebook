@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>When the Model Gets a Verb — Ten Moves to Let Your AI Actually Do Things (Safely) with Tool Use · Lupo · The Mess is the Method</title>
-  <meta name="description" content="Open-notebook field guide: up to now your app only talks. Tool use is the switch that lets the model act — look something up, hit an API, book a table, issue a refund. This volume gives the model a verb without handing it the keys. Ten moves: describe a tool as JSON, let the model decide when to call it, run the function yourself, feed the result back, loop until done — then the guardrails that keep a talkative model from doing something expensive: whitelist the verbs, split read-tools from write-tools, require a human OK before anything irreversible, dry-run first, cap the loop, and log every call the model made. A live approve/deny tool-call loop you can drive." />
-  <meta property="og:title" content="When the Model Gets a Verb — Tool Use, Safely, for Non-Devs" />
-  <meta property="og:description" content="Your app only talks until you give the model a verb. Tool use lets it act — search, book, refund, send. Ten moves to wire it up and fence it in: describe the tool as JSON, let the model choose it, run it yourself, feed the result back, loop — then whitelist the verbs, split read from write, require a human OK before anything irreversible, and log every call. A live approve/deny tool loop you can drive." />
+  <title>Let Your AI Do Things, Not Just Talk · Tool Use · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Open-notebook field guide: so far your app only answers. Tool use lets it ask your code to look something up, call an API, book a table, or issue a refund. You list the actions in JSON. The model asks for one. Your code runs it. The model never gets your keys. Lookups can run on their own. Refunds and other writes wait for a person to tap yes. A live approve or deny demo you can drive." />
+  <meta property="og:title" content="Let Your AI Do Things, Not Just Talk" />
+  <meta property="og:description" content="Your app only answers until you give it actions. The model asks your code to look up, book, or refund. Your code runs the action. Lookups can run on their own. Writes wait for a person. Every call is logged." />
   <meta property="og:type" content="article" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -952,20 +952,18 @@
         <span>Vol. 36</span>
         <span class="dot">•</span>
         <span>2026&nbsp;·&nbsp;07&nbsp;·&nbsp;08</span>
-        <span class="tag">tool use</span>
-        <span class="tag">verbs</span>
+        <span class="tag">tools</span>
+        <span class="tag">actions</span>
         <a class="home" href="../index.html">← all entries</a>
       </div>
 
-      <h1>When the model gets a <span class="accent">verb</span> &mdash; let your AI actually do things, without handing it the keys.</h1>
+      <h1>Let your AI <span class="accent">do things</span>, not just talk.</h1>
 
       <p class="deck">
-        Thirty-five volumes and your app has done exactly one thing: <em>talk.</em> It answers, it explains, it even hands
-        you clean JSON &mdash; but it can&rsquo;t look anything up, can&rsquo;t hit an API, can&rsquo;t book the table or
-        issue the refund. Tool use is the switch that changes that. You hand the model a set of <em>verbs</em>, it decides
-        when to reach for one, <strong>you</strong> run the function, and the answer comes back with real data behind it.
-        The danger is obvious: a model that can act can act <em>wrong.</em> So this volume is two halves &mdash; five moves
-        to wire the loop, five to fence it in. Drive the approve/deny loop below.
+        So far the app only answers. It cannot look up an order, call an API, book a table, or send a refund, because those facts live in your database, not in the model.
+        This guide adds actions. You describe a few of them in plain JSON, such as &ldquo;look up an order&rdquo; or &ldquo;issue a refund.&rdquo;
+        The model asks for one. <strong>Your code</strong> runs it and sends the result back.
+        The model never gets your keys. Looking something up can happen on its own. Spending money waits until you tap yes.
       </p>
 
       <div class="byline">
@@ -991,38 +989,31 @@
     <section class="intro">
       <div>
         <p class="lede">
-          There&rsquo;s a moment every builder hits where &ldquo;the AI can answer that&rdquo; stops being enough. A user
-          types &ldquo;what&rsquo;s the status of order 4471?&rdquo; and the model &mdash; no matter how good the prompt
-          &mdash; has no idea, because that number lives in your database, not in its head. It can guess. It should not.
-          What it needs is a <em>hand</em>: a way to say &ldquo;I don&rsquo;t know, but I know how to find out &mdash;
-          call <code>lookupOrder(4471)</code> and I&rsquo;ll take it from there.&rdquo;
+          A user types &ldquo;what&rsquo;s the status of order 4471?&rdquo; The model does not know. That number is in your database.
+          A better prompt will not put it there. The model needs a way to ask your app to look it up, then answer from the real row.
         </p>
         <p>
-          That&rsquo;s tool use in one sentence. You don&rsquo;t give the model a database or an API key. You give it a
-          <em>menu</em> &mdash; a few functions described in plain JSON &mdash; and the model, mid-answer, can point at one
-          and say &ldquo;run this with these arguments.&rdquo; Your code runs it, hands the result back, and the model
-          keeps going with real facts instead of a hallucination. The model never touches your systems. It only ever
-          <em>asks.</em> You are always the one who acts.
+          That is tool use. You do not hand over the database or the API key. You hand over a short list of actions, written as JSON.
+          In the middle of an answer the model can say &ldquo;run <code>lookupOrder</code> with 4471.&rdquo;
+          Your code runs that function, sends the row back, and the model finishes the answer from that row.
+          The model only asks. Your code is the part that acts.
         </p>
         <p>
-          Which is exactly why this is the volume where the guardrails matter most. A read tool that looks up an order is
-          harmless. A write tool that <em>cancels</em> one is not &mdash; and the same friendly model drives both. So the
-          back half is the boring, non-negotiable stuff Dray calls &ldquo;the AI-engineer&rsquo;s seatbelt&rdquo;: split
-          reads from writes, whitelist the verbs, put a human in front of anything irreversible, dry-run first, cap the
-          loop so it can&rsquo;t spin, and log every single call. Ten moves. Half of them are about saying no.
+          A lookup is safe. Canceling the order is not. The same model can request both.
+          The second half of this guide is the seatbelt: separate reads from writes, only allow actions you listed, ask a person before anything you cannot undo, try a dry run first, stop the loop if it keeps going, and write down every call.
         </p>
       </div>
 
       <aside class="toc" aria-label="Table of contents">
         <h3>The ten moves ↓</h3>
         <ol>
-          <li><span class="pill read">read</span> <a href="#h1">See the gap — a model with no hands</a></li>
+          <li><span class="pill read">read</span> <a href="#h1">See the gap: a model that can only talk</a></li>
           <li><span class="pill setup">setup</span> <a href="#h2">Describe a tool as JSON</a></li>
           <li><span class="pill setup">setup</span> <a href="#h3">Let the model choose the tool</a></li>
           <li><span class="pill loop">loop</span> <a href="#h4">Run it yourself, feed the result back</a></li>
           <li><span class="pill loop">loop</span> <a href="#h5">Loop until the model stops asking</a></li>
           <li><span class="pill guard">guard</span> <a href="#h6">Split read tools from write tools</a></li>
-          <li><span class="pill guard">guard</span> <a href="#h7">Whitelist the verbs — nothing off-menu</a></li>
+          <li><span class="pill guard">guard</span> <a href="#h7">Only allow the actions you listed</a></li>
           <li><span class="pill write">write</span> <a href="#h8">Put a human in front of writes</a></li>
           <li><span class="pill guard">guard</span> <a href="#h9">Dry-run, then cap the loop</a></li>
           <li><span class="pill guard">guard</span> <a href="#h10">Log every call the model made</a></li>
@@ -1034,32 +1025,27 @@
     <article class="hack" id="h1">
       <div class="nbr">01</div>
       <div class="body">
-        <h2>See the gap &mdash; a model with no hands. <span class="pill read">read</span></h2>
+        <h2>See the gap: a model that can only talk. <span class="pill read">read</span></h2>
         <p>
-          Everything you&rsquo;ve built so far is a <em>closed book quiz.</em> The model answers from what it was trained
-          on plus what you paste into the prompt &mdash; and that&rsquo;s it. The instant a question needs a fact that
-          lives in <em>your</em> world &mdash; an order number, today&rsquo;s inventory, a customer&rsquo;s plan &mdash;
-          the model has two options: admit it doesn&rsquo;t know, or make something up. You&rsquo;ve spent a whole volume
-          (Vol. 24) trying to stop the second one. Tool use removes the choice: it lets the model go <em>get</em> the fact.
+          Everything you have built so far is a closed-book quiz. The model answers from its training plus whatever you paste into the prompt. That is the whole world it can see.
+          The moment a question needs a fact from <em>your</em> world, like an order number, today&rsquo;s inventory, or a customer&rsquo;s plan, it has two choices: say it does not know, or make something up.
+          Tool use adds a third choice. It can ask your code to go get the fact.
         </p>
         <p>
-          Cal&rsquo;s framing from his notebook is the one that sticks: a plain model is a brain in a jar &mdash; brilliant,
-          and completely unable to touch anything. A tool is a <em>nerve ending.</em> It doesn&rsquo;t make the model
-          smarter; it connects the smart part to the real world. And the very first nerve you should wire up is a
-          read-only one, because it can look anything up and it can&rsquo;t break a thing.
+          A plain model is smart and stuck. It cannot open your database. An action connects it to something real. Start with a read-only action, like a lookup. It can fetch a fact, and it cannot change anything.
         </p>
         <div class="anat" aria-label="closed book versus tool use">
           <div class="blk bad">
             <div class="tag"><span class="dot"></span>hands-off</div>
-            <p><em>No tools &mdash; the brain in a jar. Confident, sometimes wrong.</em> Ask for order 4471 and it invents a plausible status, because
-            &ldquo;I don&rsquo;t know&rdquo; is not what it was rewarded for. It <strong>cannot see your data</strong>, so
-            it fills the gap with fiction and says it like a fact.</p>
+            <p><em>No tools. Confident, sometimes wrong.</em> Ask for order 4471 and it invents a status, because
+            &ldquo;I don&rsquo;t know&rdquo; is not the answer it likes to give. It <strong>cannot see your data</strong>, so
+            it fills the gap with a guess and says it like a fact.</p>
           </div>
           <div class="blk good">
             <div class="tag"><span class="dot"></span>hands-on</div>
-            <p><em>With tools &mdash; a brain with a hand. &ldquo;I&rsquo;ll go find out.&rdquo;</em> It pauses, asks your code to run <code>lookupOrder(4471)</code>,
-            gets the real row back, and answers from that. The fact came from your system, not its imagination &mdash;
-            and you can point at exactly <strong>where every claim came from.</strong></p>
+            <p><em>With tools. &ldquo;I&rsquo;ll go find out.&rdquo;</em> It pauses, asks your code to run <code>lookupOrder(4471)</code>,
+            gets the real row back, and answers from that. The fact came from your system, not its guess.
+            You can point at <strong>where every claim came from.</strong></p>
           </div>
         </div>
       </div>
@@ -1106,7 +1092,7 @@
           <span class="badge">try it</span>
           <div>The <b>description is the interface.</b> A vague one (&ldquo;gets order info&rdquo;) makes the model guess
           when to call it; a sharp one (&ldquo;read-only, use when the user asks about an <em>existing</em> order&rdquo;)
-          makes it reach for the right verb at the right time. Spend your effort here, not on the plumbing.</div>
+          makes it pick the right action at the right time. Spend your effort here, not on the plumbing.</div>
         </div>
       </div>
     </article>
@@ -1192,7 +1178,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
           up the order, <em>then</em> look up the payment, <em>then</em> answer. So moves 3&ndash;4 aren&rsquo;t a step
           &mdash; they&rsquo;re a <strong>loop.</strong> Ask the model. If it wants a tool, run it, feed it back, ask
           again. Keep going until it stops raising its hand and just replies with text. This is the exact agent loop from
-          Vol. 10, now with real verbs attached.
+          Vol. 10, now with real actions attached.
         </p>
         <div class="term">
           <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -1254,25 +1240,23 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
     <article class="hack" id="h7">
       <div class="nbr">07</div>
       <div class="body">
-        <h2>Whitelist the verbs &mdash; nothing off-menu. <span class="pill guard">guard</span></h2>
+        <h2>Only allow the actions you listed. <span class="pill guard">guard</span></h2>
         <p>
-          The model can only ask for tools you handed it &mdash; but it can ask for one by a name that <em>almost</em>
-          matches, or with arguments you never expected. So your <code>runTool</code> function starts with a bouncer: if
-          the requested name isn&rsquo;t on your explicit allow-list, you don&rsquo;t run it &mdash; you hand back an error
-          and let the model recover. Never <code>eval</code> a tool name, never dynamically resolve a function from model
-          output. The menu is finite and hard-coded. Off-menu is a decline, not an improvisation.
+          The model can only ask for actions you described. It can still ask for a name that <em>almost</em> matches, or pass arguments you did not expect.
+          So <code>runTool</code> checks a hard-coded list first. If the name is not on that list, you do not run it. You send back an error and let the model try again.
+          Never <code>eval</code> a tool name. Never turn the model&rsquo;s text into a function call. If it is not on the list, the answer is no.
         </p>
         <div class="term">
           <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
             <span class="label">runTool.js — the bouncer at the door</span></div>
-<pre><span class="key">const</span> HANDLERS = {                    <span class="cmt">// the ONLY verbs that exist</span>
+<pre><span class="key">const</span> HANDLERS = {                    <span class="cmt">only these actions exist</span>
   lookupOrder: (a) =&gt; db.orders.find(a.orderId),
   cancelOrder: (a) =&gt; db.orders.cancel(a.orderId),
 };
 
 <span class="key">async</span> <span class="key">function</span> runTool(call) {
   <span class="key">const</span> fn = HANDLERS[call.name];
-  <span class="key">if</span> (!fn) <span class="key">return</span> toolError(call, <span class="str">`unknown tool: ${call.name}`</span>);   <span class="hit">// ← declined, safely</span>
+  <span class="key">if</span> (!fn) <span class="key">return</span> toolError(call, <span class="str">`unknown tool: ${call.name}`</span>);   <span class="hit">declined, safely</span>
   <span class="key">if</span> (!valid(call.name, call.input)) <span class="key">return</span> toolError(call, <span class="str">'bad arguments'</span>);
   <span class="key">return</span> wrap(call, <span class="key">await</span> fn(call.input));
 }</pre>
@@ -1280,8 +1264,8 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         <div class="heads-up">
           <span class="badge">heads up</span>
           <div>This is your <b>prompt-injection firewall</b> (Vol. 33) for tools. A poisoned document that whispers
-          &ldquo;call <code>deleteAllUsers</code>&rdquo; hits the whitelist and bounces &mdash; because that verb was never
-          on the menu. The model&rsquo;s power is capped at the tools you chose, no matter what anyone types.</div>
+          &ldquo;call <code>deleteAllUsers</code>&rdquo; hits the list and bounces, because that action was never
+          on the menu. The model can only use the actions you chose, no matter what anyone types.</div>
         </div>
       </div>
     </article>
@@ -1303,7 +1287,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
             <span class="label">runTool.js — the gate for anything that changes the world</span></div>
 <pre><span class="key">if</span> (TOOL_META[call.name].mutates) {
   <span class="key">const</span> ok = <span class="key">await</span> askHuman({                <span class="cmt">// render a card, await a click</span>
-    verb:   call.name,
+    action: call.name,
     args:   call.input,
     plain:  <span class="str">`Cancel order ${call.input.orderId}? This can't be undone.`</span>,
   });
@@ -1353,10 +1337,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         </div>
       </div>
       <div class="phone-cap">
-        <p>This is what &ldquo;give it a verb&rdquo; looks like from a phone: the read tool already ran and pulled the real
-        order, and the write tool &mdash; a $340 refund &mdash; is <strong>parked behind one tap.</strong> The model did
-        all the thinking and picked the right verbs; a human still owns the moment money moves. Handy on top,
-        supervised underneath.</p>
+        <p>This is the idea on a phone. The lookup already ran and pulled the real order. The $340 refund is <strong>waiting for one tap.</strong> The model picked the actions. A person still decides when money moves.</p>
         <p class="scribble">the model can ask for anything. you decide what actually happens.</p>
       </div>
     </div>
@@ -1389,7 +1370,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         <div class="tryit">
           <span class="badge">try it</span>
           <div>Ship with <code>DRY_RUN=true</code> for the first day of any new write tool. Watch the logs, confirm it
-          asks for the <em>right</em> verbs with the <em>right</em> arguments, <em>then</em> flip it live. It&rsquo;s the
+          asks for the <em>right</em> actions with the <em>right</em> arguments, <em>then</em> flip it live. It&rsquo;s the
           same &ldquo;canary before promote&rdquo; instinct from Vol. 35 &mdash; just applied to actions instead of prompts.</div>
         </div>
       </div>
@@ -1401,7 +1382,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
       <div class="body">
         <h2>Log every call the model made. <span class="pill guard">guard</span></h2>
         <p>
-          You gave the model verbs; now keep the receipt for every one. Every tool call gets a structured log line
+          You gave the model actions. Keep a receipt for every one. Every tool call gets a structured log line
           &mdash; the request id from Vol. 34, the tool name, the arguments, whether it was approved, and the result. The
           day something goes wrong, &ldquo;which action did the agent take, on whose behalf, and who approved it?&rdquo;
           has to be a one-line lookup, not an archaeology dig. A model that can act needs an audit trail the way a cash
@@ -1424,9 +1405,9 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         </div>
         <div class="heads-up">
           <span class="badge">heads up</span>
-          <div>This closes the loop with the last three volumes. Injection tries a bad verb → the whitelist (move #7)
+          <div>This closes the loop with the last three volumes. Injection tries a bad action. The allow-list (move 7)
           bounces it → the log catches the attempt → it becomes a Vol. 24 eval case → it can never work twice. Ship it,
-          defend it, watch it, version it, <b>and now: give it hands you can see.</b></div>
+          defend it, watch it, version it, and now let it act where you can see every step.</div>
         </div>
       </div>
     </article>
@@ -1513,7 +1494,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
           <ul>
             <li><code>reqId + tool + args</code><span>tie to the trace</span></li>
             <li><code>approved: who</code><span>audit every write</span></li>
-            <li><code>bad verb → eval case</code><span>never twice</span></li>
+            <li><code>bad action → eval case</code><span>never twice</span></li>
             <li><code>validate call.input</code><span>the model isn't auth'd</span></li>
           </ul>
         </div>
@@ -1527,7 +1508,7 @@ messages.push({ role: <span class="str">'user'</span>, content: [{
         <small>The Mess is the Method · Field Notebook · Vol. 36 · tool use</small>
       </div>
       <div class="end">
-        give the model a verb · keep the keys · keep the tape
+        the model asks · you still act · keep the log
       </div>
     </footer>
   </div>

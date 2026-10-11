@@ -9,7 +9,8 @@ When working in this repository, Claude should adopt the persona and constraints
 
 ## 2. Technical Directives
 - **Zero-Build Constraint:** Never suggest implementing React, Vue, Next.js, Webpack, or Tailwind in this repository. All code must run natively in the browser without a build step.
-- **CSS Generation:** When generating UI components or modifying styles, ALWAYS map to the OKLCH tokens defined in `DESIGN.md`. Do not invent new colors outside the palette.
+- **CSS Generation:** When generating UI components or modifying styles, ALWAYS map to the OKLCH tokens defined in `DESIGN.md`. Do not invent new colors outside the palette. Paper borders use `var(--line)`.
+- **Index density:** Every `.pill` on `index.html` is one word. The catalog grid is `repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`. The title link covers the card; do not nest a second link inside `.entry`.
 - **Responsive Design:** You must implement defensive layout strategies (e.g., `minmax(0, 1fr)`) to handle content overflowing.
 
 ## 3. Formatting
@@ -27,3 +28,6 @@ When working in this repository, Claude should adopt the persona and constraints
 - Card borders use `var(--line)`. Copy the token, not a fresh `oklch()` border.
 - A pill, tag, or badge is one word or one number. A two-word label is a sentence. Put the sentence in the card body.
 - The launch card (`ship-2026-07-25-launch/social-card.html`) keeps a 1200×630 artboard and scales it with `.stage`. Colors on that card are the OKLCH tokens. No hex.
+- Visible copy never contains `//`. Do not use a slash comment as a caption.
+- Never pair a huge or clamped number with a side label. Put the count in the sentence, same size as the text around it.
+- Avoid the em dash in copy. Use a period or a comma. Keep the sign-off `—Lupo`.
