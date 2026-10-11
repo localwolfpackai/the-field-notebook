@@ -1,0 +1,16 @@
+---
+description: Keep the May field notebook stamp in the grid, and tags to one word
+globs: "2026-05/github-field-notebook-2026-05-28.html"
+alwaysApply: false
+---
+
+# Stamp stays in the flow
+
+This page is the older GitHub field notebook. Its headline and the rubber stamp share one grid.
+
+- `.stamp` lives in a grid cell (`grid-column: 2; justify-self: end`). Do not set `position: absolute` on it. An absolute stamp covers the title near 760px.
+- Do not write `@container` unless the same style block sets `container-type` on an ancestor. Split the intro with `@media (min-width: 760px)` and `minmax(0, 1fr)`.
+- `.entry-tag` and `.pill` text is one word. The longer phrase belongs in the heading. The command belongs in `.term`.
+- The `0.56rem` tag size stays inside `@media (max-width: 600px)`. Outside that query, tags use the normal `.entry-tag` size.
+- At `max-width: 760px`, `body` uses `background-attachment: scroll`. A fixed ruling repaints on every phone scroll.
+- No `style=""` attributes. The back link is `.back`. The closing note is `.entry.closer`.

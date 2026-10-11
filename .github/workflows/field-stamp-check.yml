@@ -1,0 +1,28 @@
+name: Field stamp check
+
+on:
+  pull_request:
+    paths:
+      - "2026-05/github-field-notebook-2026-05-28.html"
+      - "scripts/check-field-stamp.py"
+      - ".github/workflows/field-stamp-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "2026-05/github-field-notebook-2026-05-28.html"
+      - "scripts/check-field-stamp.py"
+      - ".github/workflows/field-stamp-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check the field-notebook stamp, tags, and phone background
+        run: python3 scripts/check-field-stamp.py
