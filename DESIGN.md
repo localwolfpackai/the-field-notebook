@@ -73,7 +73,7 @@ Other rhythm that stays:
   - `--radius-sm`: `6px`
   - `--radius-md`: `12px`
   - `--radius-lg`: `18px`
-- **Borders:** Paper cards use `1px solid var(--line)`. Do not paste the raw `oklch()` value again.
+- **Borders:** Paper cards use `1px solid var(--line)`. Entry cards use `var(--line-strong)`; a hovered card uses `var(--line-hot)`. Do not paste the raw `oklch()` value again, and do not swap in a hex color.
 - **Shadows:** Cards use deep, soft, colorful shadows (e.g., `0 12px 28px -20px oklch(0.40 0.06 80 / 0.4)` on `.toc`).
 - **Texture:** The `.page` background implements CSS gradients to simulate ruled notebook lines.
 
