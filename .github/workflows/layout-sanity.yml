@@ -1,0 +1,28 @@
+name: Layout sanity
+
+on:
+  pull_request:
+    paths:
+      - "**/*.html"
+      - "scripts/check-layout-sanity.py"
+      - ".github/workflows/layout-sanity.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.html"
+      - "scripts/check-layout-sanity.py"
+      - ".github/workflows/layout-sanity.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check focus tokens and phone breakpoints
+        run: python3 scripts/check-layout-sanity.py
