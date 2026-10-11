@@ -26,3 +26,6 @@ When working in this repository, Claude should adopt the persona and constraints
 - Card borders use `var(--line)`. Copy the token, not a fresh `oklch()` border.
 - A pill, tag, or badge is one word or one number. A two-word label is a sentence. Put the sentence in the card body.
 - The launch card (`ship-2026-07-25-launch/social-card.html`) keeps a 1200×630 artboard and scales it with `.stage`. Colors on that card are the OKLCH tokens. No hex.
+- Visible copy never contains `//`. Do not use a slash comment as a caption.
+- Never pair a huge or clamped number with a side label. Put the count in the sentence, same size as the text around it.
+- Avoid the em dash in copy. Use a period or a comma. Keep the sign-off `—Lupo`.
