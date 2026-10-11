@@ -1,0 +1,30 @@
+name: Dashboard check
+
+on:
+  pull_request:
+    paths:
+      - "smart-project-analysis/**"
+      - "scripts/check-dashboard.py"
+      - "SKILL.md"
+      - ".github/workflows/dashboard-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "smart-project-analysis/**"
+      - "scripts/check-dashboard.py"
+      - "SKILL.md"
+      - ".github/workflows/dashboard-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check the health dashboard
+        run: python3 scripts/check-dashboard.py

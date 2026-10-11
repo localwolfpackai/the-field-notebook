@@ -27,4 +27,4 @@ If you notice there are a lot of html files, organize into a proper timeline of 
 
 * Note we no longer sign off with "Still Human" no clean up any files that habve that, sign off with The Mess is the Method. 
 
-Make sure to create a and update a proper index and docs. We arent pushing to git yet, but its coming.
+Make sure to create and update a proper index and docs. The notebook is already on GitHub and GitHub Pages. Do not write that it is unpublished.

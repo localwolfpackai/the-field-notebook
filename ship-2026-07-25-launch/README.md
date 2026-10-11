@@ -10,7 +10,7 @@
 |------|------|------|
 | `social-card.html` | OG / LinkedIn / X launch card | 1200×630 |
 
-Open `social-card.html` in a browser. To export a PNG: screenshot the `.card` element at 1200×630, or open in Chrome and use DevTools device capture.
+Open `social-card.html` in a browser. The page scales the 1200×630 board to the window. To export a PNG, screenshot the `.card` element (it is laid out at 1200×630 even when the stage shrinks it). In Chrome: DevTools → inspect `.card` → Capture node screenshot.
 
 ## Captions
 

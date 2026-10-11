@@ -1,0 +1,16 @@
+---
+description: Field Notebook UI constraints for generated HTML and CSS
+globs: "**/*.{html,css,md}"
+alwaysApply: true
+---
+
+# Notebook UI
+
+This site is zero-build. Each HTML page keeps its CSS in a `<style>` block. Do not add React, npm, Tailwind, or a shared stylesheet.
+
+- Colors come from the OKLCH tokens in `DESIGN.md`. Card borders use `var(--line)`. Do not invent hex colors. The launch card is a 1200×630 artboard inside `.stage`, which scales the whole board to the viewport. Do not restyle that card with hex, and do not add a shared stylesheet to "DRY it up."
+- Pills, tags, and badges contain exactly one word or number (`tools`, not `tool use`).
+- Every page keeps `:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }`.
+- `.toc ol` uses `gap: 0.6rem`. `.toc li` uses `grid-template-columns: 1.8rem 1fr` and `gap: 0.5rem`.
+- Space siblings with the parent grid or flex `gap`. Do not add a one-off `margin-top` to fix alignment.
+- Paragraphs stay within `var(--measure)` (`68ch`). At `760px` and `640px`, multi-column grids collapse to one column. Use `minmax(0, 1fr)`, and `min-width: 0` on the text cell, so a long code line scrolls inside `.term` instead of widening the page.
