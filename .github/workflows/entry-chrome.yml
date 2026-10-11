@@ -1,0 +1,30 @@
+name: Entry chrome
+
+on:
+  pull_request:
+    paths:
+      - "2026-05/github-collaboration-loop-2026-05-31.html"
+      - "2026-05/github-undo-book-2026-05-30.html"
+      - "scripts/check-entry-chrome.py"
+      - ".github/workflows/entry-chrome.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "2026-05/github-collaboration-loop-2026-05-31.html"
+      - "2026-05/github-undo-book-2026-05-30.html"
+      - "scripts/check-entry-chrome.py"
+      - ".github/workflows/entry-chrome.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check back links, card edges, and phone paper
+        run: python3 scripts/check-entry-chrome.py
