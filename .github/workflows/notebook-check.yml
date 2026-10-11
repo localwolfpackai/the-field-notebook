@@ -1,0 +1,28 @@
+name: Notebook check
+
+on:
+  pull_request:
+    paths:
+      - "**/*.html"
+      - "scripts/check-notebook.py"
+      - ".github/workflows/notebook-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.html"
+      - "scripts/check-notebook.py"
+      - ".github/workflows/notebook-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check focus rings, TOC rhythm, pills, and launch-card colors
+        run: python3 scripts/check-notebook.py

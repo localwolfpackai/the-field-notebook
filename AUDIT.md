@@ -1,5 +1,21 @@
 # Comprehensive Front-End and Design Audit
 
+## Shipped from this audit (2026-10-05)
+
+The write-up landed before the CSS did. These pieces of it are now in the pages:
+
+- The 27 guides that share `.toc` use `gap: 0.6rem` and a `1.8rem` number column. The older GitHub field notebook (`.toc-card`) uses the same `0.6rem` list gap.
+- Every HTML page draws a `:focus-visible` ring in `--accent`.
+- The index names `--line`, `--on-accent`, and a `--space-*` scale, wraps the catalog in `<main>`, and keeps pills to one word.
+- Step blocks (`.hack`) use `minmax(0, 1fr)` plus `min-width: 0` on the text cell, so a long terminal line scrolls inside the card on a phone instead of dragging the whole page sideways.
+
+## Shipped 2026-10-06
+
+- `ship-2026-07-25-launch/social-card.html` paints with the OKLCH tokens. The artboard is still 1200×630. A `.stage` scales that board to the viewport, so a phone shows the whole card instead of a sideways scroll.
+- The health dashboard hero uses `minmax(0, 1fr)`, stacks at 760px, and keeps counts in one-word pills (`0`, `5`, `6`) with the category written beside the pill.
+
+Still open, on purpose: entry pages still repeat their CSS instead of sharing a file (that is the zero-build rule). Guides that quote another product's brand colors keep those hex values in the lesson. Do not "fix" the launch card by adding a build step.
+
 ## 1. STRUCTURE & SEMANTICS
 
 *   **Finding:** The markup uses logical semantic tags across pages (`<header>`, `<section>`, `<article>`, `<aside>`, `<footer>`).
