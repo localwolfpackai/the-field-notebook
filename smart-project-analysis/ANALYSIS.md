@@ -1,28 +1,30 @@
-# Smart Project Analysis — The Field Notebook
+# Smart Project Analysis. The Field Notebook
 
 **Repository:** [localwolfpackai/the-field-notebook](https://github.com/localwolfpackai/the-field-notebook)  
-**Scan date:** 2026-10-08  
+**Scan date:** 2026-10-11  
 **Page:** [health-dashboard.html](./health-dashboard.html)
 
-## Score: 84%
+## Score: 91%
 
-Pull requests #4 and #5 merged on October 8. The public index now has a keyboard focus ring, one-word pills, and card tracks that can shrink to the screen. The launch card uses notebook tokens.
+Six pull requests merged on October 11. Nothing is open. The health page had been describing October 8, including a warning not to merge pull requests 6 and 7. Those sentences were false by the evening, so this note replaces them.
 
-The health page’s old sentences (no pull requests, no workflows, a July 30 last commit) were still on main after those merges. This update replaces them.
+The giant percent ring is gone. A display-size number with a small label beside it fights the notebook rule. The score now sits in a sentence, at the same size as the text around it.
 
 ## What is true
 
 | Area | Score | What is true today |
 |------|-------|--------------------|
-| Pages | 95 | Pages rebuilt. Link check and notebook check run on main. |
+| Pages | 95 | Link check, notebook check, layout sanity, stamp, entry chrome, index, and dashboard checks run on main. |
 | Packages | 100 | No `package.json`. Zero-build HTML. |
-| Index | 90 | One-word pills. Tracks use `min(100%, 280px)`. Focus ring is on. |
-| Drafts | 60 | #6 and #7 are open and both conflict with main. |
-| Badges | 70 | Fourteen guides still use hex stack badges. The repair is in conflicting draft #6. |
+| Index | 95 | One-word pills. Tracks use `min(100%, 16rem)`. Focus ring is on. |
+| Queue | 100 | No open pull requests. 7, 8, 10, 11, 12, and 13 merged. 6 and 9 closed. |
+| Badges | 70 | Fourteen guides still use hex title chips. The closed pull requests did not land that fix. |
 | Fonts | 85 | Google Fonts is still on every page. |
+
+The six scores average to 91.
 
 ## Do this
 
-Open the live index and press Tab. You should see a blue ring. Do not merge #6 or #7; GitHub will report conflicts. The badge recolor has to be redone on top of today’s main.
+Open the pull request for this health-page update and click Merge. That is the only step. Leave pull requests 6 and 9 closed. The chip recolor is a later, separate edit, one guide at a time.
 
 —Lupo · The Mess is the Method

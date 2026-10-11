@@ -3,6 +3,7 @@
 
 Daily facts may change. The September 2026 story must not come back, and
 the page must not invent a second red or a fixed 240px card track.
+The October 8 draft warning and the display-size score ring must not come back.
 """
 
 from __future__ import annotations
@@ -23,6 +24,16 @@ STALE = (
     "No `.github/workflows`",
     "not yet under version control",
     "July 30, 2026",
+    "Scanned Oct 8, 2026",
+    "2026-10-08",
+    "Drafts #6 and #7 are still open",
+    "Do not click Merge on #6",
+    "#4 and #5 merged today",
+    "min(100%, 280px)",
+    "conflicting draft #6",
+    "both conflict with main",
+    "score-ring",
+    "font-size: 2.8rem",
 )
 
 STYLE_BANS = (
@@ -30,6 +41,8 @@ STYLE_BANS = (
     "minmax(280px",
     "--red:",
     "--red-wash:",
+    "font-size: 2.8rem",
+    "score-ring",
 )
 
 PILL = re.compile(r'<span class="pill[^"]*">([^<]*)</span>')

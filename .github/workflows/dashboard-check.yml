@@ -1,6 +1,7 @@
 name: Dashboard check
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "smart-project-analysis/**"
