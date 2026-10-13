@@ -10,6 +10,8 @@
   <meta property="og:type" content="article" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Performance: Preload critical CSS -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -72,7 +74,8 @@
           var(--margin-soft) calc(max(2rem, 7vw) + 1px),
           transparent calc(max(2rem, 7vw) + 1px));
       background-attachment: fixed;
-      text-rendering: optimizeLegibility;
+      /* Performance: optimizeLegibility causes layout thrashing; using auto */
+      text-rendering: auto;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -621,6 +624,11 @@
       .term { box-shadow: none; }
       .holes { display: none; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      /* Performance: Respect prefers-reduced-motion for scrolling */
+      html { scroll-behavior: auto !important; }
+    }
+
   </style>
 </head>
 <body>

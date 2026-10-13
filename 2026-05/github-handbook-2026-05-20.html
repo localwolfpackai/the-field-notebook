@@ -36,6 +36,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+      /* Performance: Respect prefers-reduced-motion for scrolling */
+      html { scroll-behavior: auto !important; }
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
@@ -88,7 +90,8 @@
     line-height: 0.95;
     letter-spacing: -0.03em;
     font-weight: 800;
-    text-rendering: optimizeLegibility;
+    /* Performance: optimizeLegibility causes layout thrashing; using auto */
+    text-rendering: auto;
   }
   h2 {
     font-size: clamp(1.6rem, 3vw, 2.4rem);

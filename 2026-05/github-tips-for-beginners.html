@@ -9,7 +9,9 @@
 <title>GitHub for AI-era beginners — ten moves that compound</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!-- Performance: Preload critical CSS -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
     color-scheme: light;
@@ -51,7 +53,8 @@
     font-size: var(--step-fs);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    /* Performance: optimizeLegibility causes layout thrashing; using auto */
+    text-rendering: auto;
     background-image:
       radial-gradient(circle at 12% 8%, oklch(0.92 0.04 230 / 0.35), transparent 38%),
       radial-gradient(circle at 92% 22%, oklch(0.94 0.05 68 / 0.30), transparent 42%),
@@ -440,6 +443,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+      /* Performance: Respect prefers-reduced-motion for scrolling */
+      html { scroll-behavior: auto !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
