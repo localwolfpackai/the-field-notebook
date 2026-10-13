@@ -31,3 +31,21 @@ Agents operating within this repository must adhere strictly to these structural
 - Restyle one guide per pull request. A change that touches every guide at once collides with `main` and gets closed.
 - Do not delete branches or tags yourself. `scripts/branch-cleanup.sh report` lists every branch with its pull request, diff, checks, and a verdict. Paste that table into your digest when branches pile up.
 - Tags under `archive/cleanup/` are backups of deleted branches. Read them for reference. Never push to them or open a pull request from them.
+
+## 7. Labels
+Labels let Lupo scan the pull request list and see what each one is, who made it, and whether he needs to do anything. Most of them get added on their own from the branch name and the files changed. Two are up to you.
+
+**Add these yourself when they fit:**
+- `needs-lupo`: he has to look at the page or click merge before this moves. Put it on any pull request whose description has a DO THIS section. Take it off once he has done it.
+- `new-guide`: the pull request adds a new field guide.
+
+**These show up on their own, so leave them alone:**
+- `by-cursor`, `by-claude`, `by-jules`: who opened it. They come from the branch name, so start your branch with `cursor/`, `claude/`, or `jules`.
+- `page-fix`: a guide or the index looks or reads better.
+- `checks`: the automatic checks or their scripts changed.
+- `documentation`: notes for people and agents changed, like this file.
+- `dependencies`: the tools the checks run on got updated.
+
+**Also available:** `bug` for something broken on the live site, and `repo-hygiene` for branch and repo cleanup.
+
+Use only these. If none fits, say so in the description instead of making a new label.

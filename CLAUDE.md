@@ -20,7 +20,8 @@ When working in this repository, Claude should adopt the persona and constraints
 ## 4. Problem Solving
 - **Analyze before executing:** Read `DOCS.md` and `DESIGN.md` thoroughly before introducing new layout components.
 - **Fixing bugs:** Prefer modifying parent layout properties (like CSS `grid` and `gap`) over adding granular sibling spacing (like `margin-top`).
-- **Branches:** Follow section 6 of `AGENTS.md`. One branch per pull request, never push to a merged branch, and run `scripts/branch-cleanup.sh report` instead of deleting branches yourself.
+- **Branches:** Follow section 6 of `AGENTS.md`. Start branches with `claude/`, one branch per pull request, never push to a merged branch, and run `scripts/branch-cleanup.sh report` instead of deleting branches yourself.
+- **Labels:** Follow section 7 of `AGENTS.md`. Add `needs-lupo` when he has to look or click, `new-guide` for a new guide. The rest are automatic.
 
 ## 5. Applied UI Conventions
 - Keep `:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }` on every page. A cream notebook with no focus ring hides the tab stop.
