@@ -1,0 +1,11 @@
+---
+description: One branch per pull request, never reuse a merged branch, never delete branches
+alwaysApply: true
+---
+
+# Branch hygiene
+
+- Start every change on a fresh branch from `main`. Once its pull request merges or closes, never push to that branch again.
+- Restyle one guide per pull request. Do not reopen pull requests 6 or 9.
+- Do not delete branches or tags. Lupo approves deletions. Run `scripts/branch-cleanup.sh report` and paste the table into the daily digest when more than five branches are open.
+- Tags under `archive/cleanup/` are backups. Read them. Never push to them.
