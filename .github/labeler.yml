@@ -1,0 +1,32 @@
+# Labels every pull request gets on its own, from the branch name and the
+# files it touches. The full list and what each label means: AGENTS.md section 7.
+
+by-cursor:
+  - head-branch: ['^cursor/']
+
+by-claude:
+  - head-branch: ['^claude/']
+
+by-jules:
+  - head-branch: ['^jules']
+
+dependencies:
+  - head-branch: ['^dependabot/', '^deps/']
+
+page-fix:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'index.html'
+          - '20*/**/*.html'
+          - 'smart-project-analysis/**'
+          - 'ship-*/**'
+
+checks:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/check-*.py'
+          - '.github/workflows/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['*.md', '.cursor/rules/**']
