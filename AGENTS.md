@@ -25,3 +25,9 @@ Agents operating within this repository must adhere strictly to these structural
 ## 5. Reviewing Output
 - Check for regression in visual spacing. Specifically, verify that lists (like `.toc ol`) have adequate breathing room for pill badges without crowding lines.
 - Always check that responsive layout breakpoints (`760px`, `640px`) collapse cleanly into `1fr` single-column layouts for mobile.
+
+## 6. Branches and Pull Requests
+- One branch per pull request. Once that pull request merges or closes, never push to its branch again. Start a fresh branch from `main`. A merged branch that gets new commits looks unmerged and blocks cleanup.
+- Restyle one guide per pull request. A change that touches every guide at once collides with `main` and gets closed.
+- Do not delete branches or tags yourself. `scripts/branch-cleanup.sh report` lists every branch with its pull request, diff, checks, and a verdict. Paste that table into your digest when branches pile up.
+- Tags under `archive/cleanup/` are backups of deleted branches. Read them for reference. Never push to them or open a pull request from them.
