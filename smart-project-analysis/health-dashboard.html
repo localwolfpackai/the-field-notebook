@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Project Health — The Field Notebook · Lupo · The Mess is the Method</title>
-  <meta name="description" content="Oct 8, 2026 health snapshot: focus rings and token colors landed; two older drafts now conflict." />
+  <title>Project Health · The Field Notebook · Lupo · The Mess is the Method</title>
+  <meta name="description" content="Oct 11, 2026 health snapshot: six pull requests merged, the queue is empty, and fourteen guides still use hex title chips." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -70,32 +70,44 @@
     }
     .skip:focus { transform: none; }
 
-    .page { max-width: 1100px; margin: 0 auto; padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) 4rem; }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 2vw + 1rem, 3rem) clamp(1rem, 7vw, 5rem) 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
 
+    header { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
     .crumbs { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
     .crumbs .tag { background: var(--accent-wash); color: var(--accent-ink); padding: 0.15em 0.55em; border-radius: 999px; font-size: 0.7rem; }
-    h1 { font-size: clamp(2rem, 1.2rem + 3.5vw, 3.4rem); margin-top: 1rem; }
-    .deck { color: var(--ink-soft); margin-top: 0.75rem; }
-    .meta { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--line); max-width: none; }
+    h1 { font-size: clamp(2rem, 1.2rem + 3.5vw, 3.4rem); }
+    .deck { color: var(--ink-soft); }
+    .meta { font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); padding-top: 0.75rem; border-top: 1px dashed var(--line); max-width: none; }
 
-    .hero { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 2rem; align-items: center; background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem); margin: 2rem 0; }
-    .score-ring { position: relative; width: min(180px, 100%); aspect-ratio: 1; }
-    .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    .score-ring .bg { fill: none; stroke: var(--paper-deep); stroke-width: 12; }
-    .score-ring .fg { fill: none; stroke: var(--amber); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 70; transition: stroke-dashoffset 1.2s var(--ease-paper); }
-    .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Geist', serif; }
-    .score-num strong { font-size: 2.8rem; font-weight: 800; line-height: 1; color: var(--amber); }
-    .score-num span { font-size: 0.75rem; color: var(--ink-mute); font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
-    .hero-copy { min-width: 0; }
-    .hero-copy h2 { font-size: 1.35rem; margin-bottom: 0.5rem; }
-    .hero-copy p { color: var(--ink-soft); }
-    .pill-row { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 1rem; }
+    main { display: flex; flex-direction: column; gap: 2rem; min-width: 0; }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-width: 0;
+      background: var(--paper-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+    }
+    .hero .pen { font-family: 'Caveat', cursive; font-weight: 600; font-size: 1.5rem; line-height: 1; color: var(--margin); }
+    .hero h2 { font-size: 1.35rem; }
+    .hero p { color: var(--ink-soft); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.85rem; }
     .count { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
     .pill { font-family: 'Geist Mono', monospace; font-size: 0.72rem; padding: 0.3em 0.7em; border-radius: 999px; letter-spacing: 0.03em; }
     .pill.sage { background: var(--sage-wash); color: var(--sage); }
     .pill.amber { background: var(--amber-wash); color: var(--amber); }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; margin: 2rem 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
     .card { background: var(--paper-alt); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 1.25rem; min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
     .card .top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
     .card h3 { font-size: 0.95rem; }
@@ -103,9 +115,8 @@
     .status-dot.sage { background: var(--sage); box-shadow: 0 0 0 3px var(--sage-wash); }
     .status-dot.amber { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-wash); }
     .card p { font-size: 0.92rem; color: var(--ink-soft); }
-    .card .score-mini { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--ink-mute); }
 
-    section { display: flex; flex-direction: column; gap: 0.75rem; margin: 2.5rem 0; }
+    section { display: flex; flex-direction: column; gap: 0.75rem; }
     section > h2 { font-size: 1.25rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--margin); }
     .issue { background: var(--paper-alt); border-left: 4px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
     .issue.steady { border-left-color: var(--sage); }
@@ -114,21 +125,17 @@
     .fix { font-size: 0.85rem; padding: 0.6rem 0.8rem; background: var(--paper); border-radius: var(--radius-sm); border: 1px dashed var(--line); max-width: var(--measure); }
     .fix strong { color: var(--accent-ink); font-size: 0.78rem; font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
 
-    .suggest-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
-    .suggest-list li { padding: 0.75rem 0; border-bottom: 1px dashed var(--line); font-size: 0.92rem; max-width: var(--measure); }
-    .suggest-list li:last-child { border-bottom: none; }
+    .suggest-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+    .suggest-list li { padding-bottom: 0.75rem; border-bottom: 1px dashed var(--line); font-size: 0.92rem; max-width: var(--measure); }
+    .suggest-list li:last-child { border-bottom: none; padding-bottom: 0; }
 
-    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px dashed var(--line); font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    footer { padding-top: 1.5rem; border-top: 1px dashed var(--line); font-family: 'Geist Mono', monospace; font-size: 0.78rem; color: var(--ink-mute); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
 
     @media (max-width: 760px) {
       body { background-attachment: scroll; }
-      .hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
-      .pill-row { justify-content: center; }
-      .hero-copy p { margin-inline: auto; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .score-ring .fg { transition: none; }
     }
   </style>
 </head>
@@ -143,63 +150,47 @@
         <span class="tag">snapshot</span>
       </div>
       <h1>Project health</h1>
-      <p class="deck">What changed on the live site today, and which drafts will now collide if you merge them. This page is a status note. The guides start at the index.</p>
-      <p class="meta">Scanned Oct 8, 2026 · #4 and #5 merged today · <a href="../index.html">Back to the index</a></p>
+      <p class="deck">What is on the live site after Oct 11, and the one visual job that is still open. This page is a status note. The guides start at the index.</p>
+      <p class="meta">Scanned Oct 11, 2026 · six pull requests merged · no open pull requests · <a href="../index.html">Back to the index</a></p>
     </header>
 
     <main id="status">
       <div class="hero">
-        <div class="score-ring" aria-label="Health score 84 percent">
-          <svg viewBox="0 0 180 180" aria-hidden="true">
-            <circle class="bg" cx="90" cy="90" r="70" />
-            <circle class="fg" cx="90" cy="90" r="70" />
-          </svg>
-          <div class="score-num">
-            <strong>84%</strong>
-            <span>Health</span>
-          </div>
-        </div>
-        <div class="hero-copy">
-          <h2>The facelift landed. This status page had not.</h2>
-          <p>Pull requests #4 and #5 merged today. Tabs now draw a blue ring, index chips are one word, and the launch card uses the notebook colors. The sentences on this page were still describing September.</p>
-          <div class="pill-row">
-            <span class="count"><span class="pill sage">0</span> critical</span>
-            <span class="count"><span class="pill amber">2</span> drafts</span>
-            <span class="count"><span class="pill sage">3</span> steady</span>
-          </div>
+        <p class="pen">Queue is clear.</p>
+        <h2>Six merges landed. The title chips did not.</h2>
+        <p>This morning the index, the launch card, and a first pass at this health page merged. Around midday the handbook, the field stamp, and the May back links merged too. Pull requests 6 and 9 were closed on purpose. They edited the same chips, so merging them would have fought pages that had just landed.</p>
+        <p>Call the notebook 91 out of 100. Pages, the index, and the review queue are steady. Fourteen guides still paint their title chips with brand hex colors and more than one word.</p>
+        <div class="pill-row">
+          <span class="count"><span class="pill sage">0</span> open</span>
+          <span class="count"><span class="pill sage">6</span> merged</span>
+          <span class="count"><span class="pill amber">14</span> chips</span>
         </div>
       </div>
 
       <div class="grid">
         <article class="card">
           <div class="top"><h3>Pages</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>GitHub Pages rebuilt after the merges. Link check and the notebook check both run on main.</p>
-          <div class="score-mini">Score: 95 / 100</div>
+          <p>GitHub Pages is serving main. Link check, notebook check, layout sanity, the stamp check, entry chrome, the index check, and this dashboard check all run on pull requests. Pages score 95 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Packages</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>No <code>package.json</code>. Each guide is still one HTML file with its CSS in a style block.</p>
-          <div class="score-mini">Score: 100 / 100</div>
+          <p>No <code>package.json</code>. Each guide is still one HTML file with its CSS in a style block. Packages score 100 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Index</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>Catalog chips are one word. Card tracks use <code>min(100%, 280px)</code>, so a phone can shrink them. Focus is a 2px accent ring.</p>
-          <div class="score-mini">Score: 90 / 100</div>
+          <p>Catalog chips are one word. Card tracks use <code>min(100%, 16rem)</code>, so a phone can shrink them. Focus is a 2px accent ring. That landed in pull request 7. The index scores 95 out of 100.</p>
         </article>
         <article class="card">
-          <div class="top"><h3>Drafts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Drafts #6 and #7 are still open, and both conflict with main now. Merging either one will stop and ask you to untangle files.</p>
-          <div class="score-mini">Score: 60 / 100</div>
+          <div class="top"><h3>Queue</h3><span class="status-dot sage" title="Steady"></span></div>
+          <p>Nothing is waiting for review. Pull requests 7, 8, 10, 11, 12, and 13 merged. Pull requests 6 and 9 are closed. The queue scores 100 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Badges</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Fourteen guides still paint their title chips with brand hex colors and more than one word. That fix is sitting in conflicting draft #6.</p>
-          <div class="score-mini">Score: 70 / 100</div>
+          <p>Fourteen guides still paint title chips with hex colors and more than one word. The repairs in pull requests 6 and 9 were closed, not merged, so the chips on main are unchanged. Badges score 70 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Fonts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Geist, Inter, and Caveat still load from Google Fonts. Offline, the browser uses system faces.</p>
-          <div class="score-mini">Score: 85 / 100</div>
+          <p>Geist, Inter, and Caveat still load from Google Fonts. Offline, the browser uses system faces. Fonts score 85 out of 100.</p>
         </article>
       </div>
 
@@ -207,15 +198,9 @@
         <h2 id="attention-title">Needs a decision</h2>
 
         <article class="issue">
-          <h3><span class="status-dot amber" aria-hidden="true"></span> Two drafts now conflict</h3>
-          <p><a href="https://github.com/localwolfpackai/the-field-notebook/pull/6">Draft #6</a> recolors the stack badges. <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">Draft #7</a> retouches the index. Both were written before #4 and #5 landed, so GitHub marks them conflicting.</p>
-          <div class="fix"><strong>Do this</strong> — Do not click Merge on #6 or #7. Leave them as drafts. The index work from #7 is mostly already on the site. The badge work in #6 is still wanted, but it has to be redone on top of today’s main, not merged as-is.</div>
-        </article>
-
-        <article class="issue">
           <h3><span class="status-dot amber" aria-hidden="true"></span> Title chips still use a second palette</h3>
-          <p>On guides such as the cost-and-latency page, the chips across the top are inline hex colors (<code>--pill-c</code>) and labels like “prompt caching”. They can force a sideways scroll on a phone. The notebook already has <code>--margin</code>, <code>--accent</code>, <code>--sage</code>, <code>--amber</code>, and <code>--violet</code> for this.</p>
-          <div class="fix"><strong>Not by merging #6</strong> — Close that draft when you are ready, then paste the badge prompt from today’s digest into Cursor. One page first, not all fourteen.</div>
+          <p>On guides such as the cost and latency page, the chips across the top set <code>--pill-c</code> to a hex color. Some labels are more than one word, such as prompt caching. A long chip can push the page wider than a phone. The notebook already has <code>--margin</code>, <code>--accent</code>, <code>--sage</code>, <code>--amber</code>, and <code>--violet</code> for this.</p>
+          <div class="fix"><strong>Do this</strong> Leave the closed pull requests closed. When you want the chips fixed, paste the prompt from today’s digest into a new Cursor chat. Start with one guide, the cost and latency page, and stop there.</div>
         </article>
       </section>
 
@@ -223,11 +208,11 @@
         <h2 id="steady-title">Steady</h2>
         <article class="issue steady">
           <h3>What you can see today</h3>
-          <p>Press Tab on the index or any guide. The focus ring is accent blue. Index pills read <code>tools</code>, <code>loop</code>, <code>system</code> — one word each. The launch card scales and stays inside the notebook palette.</p>
+          <p>Press Tab on the index. The focus ring is accent blue. Index pills are one word. The launch card has no giant side number. On a phone, the handbook stacks, the stamp sits beside the headline instead of on it, and the May back link lines up with the page edge.</p>
         </article>
         <article class="issue steady">
-          <h3>The September snapshot was wrong</h3>
-          <p>This page used to claim there were no pull requests, no workflows, a July 30 last commit, and shared volume labels. Main has had a link checker for weeks. Volume labels on the index are unique.</p>
+          <h3>The September snapshot stays wrong</h3>
+          <p>This page used to claim there were no pull requests, no workflows, a July 30 last commit, and shared volume labels. That story is still false. Do not put it back.</p>
         </article>
         <article class="issue steady">
           <h3>Docs match the repo</h3>
@@ -238,8 +223,8 @@
       <section id="next" aria-labelledby="next-title">
         <h2 id="next-title">One next step</h2>
         <ul class="suggest-list">
-          <li><strong>Do this:</strong> open the <a href="https://localwolfpackai.github.io/the-field-notebook/">live index</a> and press Tab once. You should see a blue ring. That confirms today’s merges. Then stop.</li>
-          <li>Leave <a href="https://github.com/localwolfpackai/the-field-notebook/pull/6">#6</a> and <a href="https://github.com/localwolfpackai/the-field-notebook/pull/7">#7</a> unmerged. They conflict.</li>
+          <li><strong>Do this:</strong> open the pull request that updates this page and click Merge. That publishes today’s status. You do not need to open another pull request, and you do not need to reopen 6 or 9.</li>
+          <li>After it merges, open the <a href="https://localwolfpackai.github.io/the-field-notebook/smart-project-analysis/health-dashboard.html">live health page</a> and check that the handwritten note says the queue is clear.</li>
         </ul>
       </section>
     </main>

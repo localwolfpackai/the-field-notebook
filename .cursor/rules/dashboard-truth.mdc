@@ -7,10 +7,12 @@ alwaysApply: false
 # Health dashboard
 
 - Rewrite stale sentences. Do not leave the September 2026 story (no pull requests, no workflows, July 30, duplicate volumes) if main has moved.
+- Do not describe a pull request as open, conflicting, or unsafe to merge after it has been merged or closed.
+- Do not draw a score ring or a display-size percent with a side label. Put the health number in a sentence at body size.
 - Status color is `var(--margin)` and `var(--margin-soft)`. Do not invent `--red`.
 - Hairlines use `var(--line)`. Do not add hex colors.
 - A `.pill` holds exactly one word. Put the count in the pill and the label beside it.
 - Summary cards use `repeat(auto-fit, minmax(min(100%, 15rem), 1fr))`.
-- Collapse the score hero to one column at `760px`, and set `background-attachment: scroll` at that width.
+- At `760px`, set `background-attachment: scroll`. A multi-column hero uses `minmax(0, 1fr)` at that width.
 - Keep CSS in the page `<style>` block. Do not add a shared stylesheet.
-- Do not edit `index.html` or the lesson HTML in the same change. Those files already have open drafts.
+- Keep a dashboard edit inside `smart-project-analysis/`. Do not edit `index.html` or lesson HTML in the same change.
