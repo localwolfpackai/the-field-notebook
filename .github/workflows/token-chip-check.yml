@@ -1,0 +1,28 @@
+name: Token chip check
+
+on:
+  pull_request:
+    paths:
+      - "2026-06/ship-the-tokens-first-design-systems-2026-06-30.html"
+      - "scripts/check-token-chips.py"
+      - ".github/workflows/token-chip-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "2026-06/ship-the-tokens-first-design-systems-2026-06-30.html"
+      - "scripts/check-token-chips.py"
+      - ".github/workflows/token-chip-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chips:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check the tokens page title chips
+        run: python3 scripts/check-token-chips.py
