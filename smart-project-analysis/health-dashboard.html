@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Project Health · The Field Notebook · Lupo · The Mess is the Method</title>
-  <meta name="description" content="Oct 11, 2026 health snapshot: six pull requests merged, the queue is empty, and fourteen guides still use hex title chips." />
+  <meta name="description" content="Oct 17, 2026 health snapshot: the queue on main is empty, two guides use notebook title chips, and twelve guides still use hex." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -150,20 +150,20 @@
         <span class="tag">snapshot</span>
       </div>
       <h1>Project health</h1>
-      <p class="deck">What is on the live site after Oct 11, and the one visual job that is still open. This page is a status note. The guides start at the index.</p>
-      <p class="meta">Scanned Oct 11, 2026 · six pull requests merged · no open pull requests · <a href="../index.html">Back to the index</a></p>
+      <p class="deck">What is on main after Oct 17, and the one visual job that is still open. This page is a status note. The guides start at the index.</p>
+      <p class="meta">Scanned Oct 17, 2026 · no open pull requests on main · <a href="../index.html">Back to the index</a></p>
     </header>
 
     <main id="status">
       <div class="hero">
         <p class="pen">Queue is clear.</p>
-        <h2>Six merges landed. The title chips did not.</h2>
-        <p>This morning the index, the launch card, and a first pass at this health page merged. Around midday the handbook, the field stamp, and the May back links merged too. Pull requests 6 and 9 were closed on purpose. They edited the same chips, so merging them would have fought pages that had just landed.</p>
-        <p>Call the notebook 91 out of 100. Pages, the index, and the review queue are steady. Fourteen guides still paint their title chips with brand hex colors and more than one word.</p>
+        <h2>Two chip pages landed. Twelve guides still use hex.</h2>
+        <p>The cost and latency guide moved onto notebook colors on Oct 13. The caching guide did the same on Oct 16. Pull requests 6 and 9 stay closed. They tried to recolor every guide at once, so merging them would have fought pages that had just landed.</p>
+        <p>Call the notebook 91 out of 100. Pages, the index, and the review queue are steady. Twelve guides still paint their title chips with brand hex colors and more than one word.</p>
         <div class="pill-row">
           <span class="count"><span class="pill sage">0</span> open</span>
-          <span class="count"><span class="pill sage">6</span> merged</span>
-          <span class="count"><span class="pill amber">14</span> chips</span>
+          <span class="count"><span class="pill sage">2</span> done</span>
+          <span class="count"><span class="pill amber">12</span> chips</span>
         </div>
       </div>
 
@@ -182,11 +182,11 @@
         </article>
         <article class="card">
           <div class="top"><h3>Queue</h3><span class="status-dot sage" title="Steady"></span></div>
-          <p>Nothing is waiting for review. Pull requests 7, 8, 10, 11, 12, and 13 merged. Pull requests 6 and 9 are closed. The queue scores 100 out of 100.</p>
+          <p>Nothing was waiting on main at this scan. The cost page chips merged in pull request 15. The caching page chips merged in pull request 21. Pull requests 6 and 9 are closed. The queue scores 100 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Badges</h3><span class="status-dot amber" title="Needs a decision"></span></div>
-          <p>Fourteen guides still paint title chips with hex colors and more than one word. The repairs in pull requests 6 and 9 were closed, not merged, so the chips on main are unchanged. Badges score 70 out of 100.</p>
+          <p>Twelve guides still paint title chips with hex colors and more than one word. The cost page and the caching page are done. Badges score 70 out of 100.</p>
         </article>
         <article class="card">
           <div class="top"><h3>Fonts</h3><span class="status-dot amber" title="Needs a decision"></span></div>
@@ -199,8 +199,8 @@
 
         <article class="issue">
           <h3><span class="status-dot amber" aria-hidden="true"></span> Title chips still use a second palette</h3>
-          <p>On guides such as the cost and latency page, the chips across the top set <code>--pill-c</code> to a hex color. Some labels are more than one word, such as prompt caching. A long chip can push the page wider than a phone. The notebook already has <code>--margin</code>, <code>--accent</code>, <code>--sage</code>, <code>--amber</code>, and <code>--violet</code> for this.</p>
-          <div class="fix"><strong>Do this</strong> Leave the closed pull requests closed. When you want the chips fixed, paste the prompt from today’s digest into a new Cursor chat. Start with one guide, the cost and latency page, and stop there.</div>
+          <p>Twelve guides still set <code>--pill-c</code> to a hex color. The cost page and the caching page no longer do. The next one is the tokens-first guide. Its chips still say Claude Artifacts, Gemini Build Apps, tokens first, and kills AI slop. A long chip can push the page wider than a phone. The notebook already has <code>--margin</code>, <code>--accent</code>, <code>--sage</code>, <code>--amber</code>, and <code>--violet</code> for this.</p>
+          <div class="fix"><strong>Do this</strong> Merge this health page. The tokens-first guide is a separate pull request. Merge that one too. It paints one guide. Leave pull requests 6 and 9 closed. You do not edit a file.</div>
         </article>
       </section>
 
@@ -223,8 +223,8 @@
       <section id="next" aria-labelledby="next-title">
         <h2 id="next-title">One next step</h2>
         <ul class="suggest-list">
-          <li><strong>Do this:</strong> open the pull request that updates this page and click Merge. That publishes today’s status. You do not need to open another pull request, and you do not need to reopen 6 or 9.</li>
-          <li>After it merges, open the <a href="https://localwolfpackai.github.io/the-field-notebook/smart-project-analysis/health-dashboard.html">live health page</a> and check that the handwritten note says the queue is clear.</li>
+          <li><strong>Do this:</strong> open the pull request for this page and click Merge. That publishes today’s status. Then open the tokens-guide pull request and click Merge. That paints one guide. You do not need to open a pull request yourself, and you do not need to reopen 6 or 9.</li>
+          <li>After the health page merges, open the <a href="https://localwolfpackai.github.io/the-field-notebook/smart-project-analysis/health-dashboard.html">live health page</a> and check that the headline says twelve guides still use hex. After the tokens guide merges, this page will still say twelve until the next scan. That is expected.</li>
         </ul>
       </section>
     </main>
