@@ -1,0 +1,18 @@
+---
+description: Title chips on the tokens-first guide
+globs: 2026-06/ship-the-tokens-first-design-systems-2026-06-30.html,scripts/check-token-chips.py
+alwaysApply: false
+---
+
+# Tokens page chips
+
+This page's stack chips (`.sbadge`) use the OKLCH tokens already in `:root`. Do not set `--pill-c` to a hex color.
+
+- One word inside each chip. Put the rest of the label in the sentence under the row.
+- Claude uses `var(--margin)`. Gemini uses `var(--accent)`. Tokens uses `var(--sage)`. Slop uses `var(--amber)`.
+- The chip border uses `var(--line)`. Define `--line` on this page.
+- The row wraps (`flex-wrap: wrap`). Do not set `white-space: nowrap` on `.sbadge`.
+- At `760px`, `body` uses `background-attachment: scroll`.
+- Do not edit the other guides in the same change. They still have hex chips. One page per pull request.
+- Do not reopen pull requests 6 or 9. Do not edit the health page, the cost page, or the caching page in this change.
+- Leave the hex colors in the lesson paragraphs. They are examples of the mess.
