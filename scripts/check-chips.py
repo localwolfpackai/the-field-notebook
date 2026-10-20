@@ -80,6 +80,12 @@ def check_chips(page: str, text: str, errors: list) -> list:
             errors.append(f"{page}: chip {label!r} still has an inline style")
         if re.search(r"\s", label):
             errors.append(f"{page}: chip has more than one word: {label!r}")
+    for rule in RULE.findall(text):
+        if HEX.search(rule) or "--pill-c" in rule or "nowrap" in rule:
+            errors.append(
+                f"{page}: .sbadge rule still has a hex color, --pill-c, or nowrap"
+            )
+            break
     return seen
 
 
@@ -93,12 +99,6 @@ def check_done(page: str, text: str, wanted: tuple, errors: list) -> None:
         errors.append(f"{page}: --line is missing, so the chip border has no token")
     if seen != list(wanted):
         errors.append(f"{page}: chips should be {', '.join(wanted)} (got {seen})")
-    for rule in RULE.findall(text):
-        if HEX.search(rule) or "--pill-c" in rule or "nowrap" in rule:
-            errors.append(
-                f"{page}: .sbadge rule still has a hex color, --pill-c, or nowrap"
-            )
-            break
 
 
 def main() -> int:
