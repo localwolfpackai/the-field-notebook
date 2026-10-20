@@ -79,6 +79,7 @@ Other rhythm that stays:
 
 ## 5. Specific Components
 - **`.toc` (Table of Contents):** Styled like an attached sticky note, complete with a pseudo-element "tape" (`.toc::before`) and a slight rotation (`transform: rotate(-0.4deg)`). The list inside breathes at `0.6rem`.
+- **`.sbadge` (Title chips):** One class per token: `margin`, `accent`, `sage`, `amber`, `violet`. One word per chip; the rest of the label goes in the sentence under the row. Each class sets `border-left-color: var(--x)` with the matching `-wash` or `-soft` background, for example `.sbadge.margin { border-left-color: var(--margin); background: var(--margin-soft); }`. No hex and no `--pill-c`. `scripts/check-chips.py` holds the finished guides and the ones still on hex.
 
 ## 6. Keyboard focus
 Every page includes this, placed with the reset so a tab stop is visible on cream paper:
