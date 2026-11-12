@@ -16,6 +16,10 @@ The write-up landed before the CSS did. These pieces of it are now in the pages:
 
 Still open, on purpose: entry pages still repeat their CSS instead of sharing a file (that is the zero-build rule). Guides that quote another product's brand colors keep those hex values in the lesson. Do not "fix" the launch card by adding a build step.
 
+## Shipped 2026-10-20
+
+- One chip check (`scripts/check-chips.py`) replaces three per-page copies. 3 guides done, 11 still hex. A new guide cannot add hex chips.
+
 ## 1. STRUCTURE & SEMANTICS
 
 *   **Finding:** The markup uses logical semantic tags across pages (`<header>`, `<section>`, `<article>`, `<aside>`, `<footer>`).

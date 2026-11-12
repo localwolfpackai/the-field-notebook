@@ -1,16 +1,18 @@
 ---
-description: Title chips on the cost and latency guide
-globs: 2026-06/cost-and-latency-two-dials-2026-06-25.html,scripts/check-title-chips.py
+description: Title chips (.sbadge) on every guide
+globs: 20*/**/*.html,scripts/check-chips.py
 alwaysApply: false
 ---
 
 # Title chips
 
-This page's stack chips (`.sbadge`) use the OKLCH tokens already in `:root`. Do not set `--pill-c` to a hex color.
+Stack chips (`.sbadge`) use the OKLCH tokens already in `:root`. Do not set `--pill-c` to a hex color.
 
 - One word inside each chip. Put the rest of the label in the sentence under the row.
-- Claude uses `var(--margin)`. Gemini uses `var(--accent)`. Caching uses `var(--sage)`. Streaming uses `var(--violet)`.
+- The chip border uses `var(--line)`. Define `--line` on the page.
 - The row wraps (`flex-wrap: wrap`). Do not set `white-space: nowrap` on `.sbadge`.
 - At `760px`, `body` uses `background-attachment: scroll`.
-- Do not edit the other guides in the same change. They still have hex chips. One page per pull request.
-- Do not reopen pull requests 6 or 9. Do not edit the health page in this change.
+- Leave the hex colors in the lesson paragraphs. They are examples, not chips.
+- Each finished page's chip colors live in `DONE` in `scripts/check-chips.py`. To restyle a guide, change that one guide and move its line from `LEGACY` to `DONE`.
+- Do not add a new script, workflow, or rule per page. One guide per pull request.
+- A new guide must not copy hex chips from the skeleton.

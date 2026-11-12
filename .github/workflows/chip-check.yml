@@ -1,0 +1,28 @@
+name: Chip check
+
+on:
+  pull_request:
+    paths:
+      - "20*/**/*.html"
+      - "scripts/check-chips.py"
+      - ".github/workflows/chip-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "20*/**/*.html"
+      - "scripts/check-chips.py"
+      - ".github/workflows/chip-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chips:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check the title chips on every guide
+        run: python3 scripts/check-chips.py
