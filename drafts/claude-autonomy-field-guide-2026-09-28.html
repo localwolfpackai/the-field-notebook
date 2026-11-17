@@ -82,6 +82,10 @@
     p { text-wrap: pretty; overflow-wrap: break-word; margin: 0; }
     a { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
     a:hover { text-decoration-thickness: 2px; }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
 
     code, pre, kbd { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
     code:not(pre code) {
